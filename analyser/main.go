@@ -3,5 +3,5 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Analyser starting...") // Placeholder
+	fmt.Println("Analyser starting...") // Placeholders
 }
