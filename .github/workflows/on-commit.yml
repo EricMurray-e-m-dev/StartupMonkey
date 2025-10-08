@@ -1,0 +1,54 @@
+name: Commit Checks
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  lint-collector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Run gofmt
+        run: |
+          cd collector
+          test -z "$(gofmt -l .)"
+      - name: Run go vet
+        run: |
+          cd collector
+          go vet ./...
+
+  lint-analyzer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Run gofmt
+        run: |
+          cd analyzer
+          test -z "$(gofmt -l .)"
+      - name: Run go vet
+        run: |
+          cd analyzer
+          go vet ./...
+
+  lint-executor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Run gofmt
+        run: |
+          cd executor
+          test -z "$(gofmt -l .)"
+      - name: Run go vet
+        run: |
+          cd executor
+          go vet ./...
