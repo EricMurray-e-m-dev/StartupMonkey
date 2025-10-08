@@ -1,0 +1,56 @@
+# Node.js / React / Next.js
+node_modules/
+.next/
+out/
+*.log
+*.lock
+*.cache
+*.tmp
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# General
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+*.class
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.log
+*.tmp
+*.lock
