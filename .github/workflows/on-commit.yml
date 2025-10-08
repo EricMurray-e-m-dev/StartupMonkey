@@ -21,7 +21,7 @@ jobs:
           cd collector
           go vet ./...
 
-  lint-analyzer:
+  lint-analyser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +30,11 @@ jobs:
           go-version: '1.25'
       - name: Run gofmt
         run: |
-          cd analyzer
+          cd analyser
           test -z "$(gofmt -l .)"
       - name: Run go vet
         run: |
-          cd analyzer
+          cd analyser
           go vet ./...
 
   lint-executor:
