@@ -11,28 +11,22 @@ out/
 *.env.test.local
 *.env.production.local
 
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.env
-*.venv/
-env/
-venv/
-*.egg-info/
-dist/
-build/
-
 # Go
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-*.test
-*.out
-vendor/
+bin/
+coverage.out
+coverage.html
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+htmlcov/
 
 # General
 .DS_Store
