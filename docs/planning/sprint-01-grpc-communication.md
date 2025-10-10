@@ -40,4 +40,4 @@ Establish gRPC communication between Collector and Analyser.
 
 
 ## Notes
-[Document learnings as you go]
+First day working on proto contracts. Very crucial stage of the development. Need to try and make the contracts as DB agnostic as possible. Changing contracts in the future will add big technical debt. Aim is to have a loose contract that I can spin up and just create adapters for that "plug" straight into the setup. SOLID important here.
