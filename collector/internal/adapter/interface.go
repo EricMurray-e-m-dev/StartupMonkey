@@ -7,6 +7,8 @@ type MetricAdapter interface {
 	HealthCheck() error
 }
 
+// RawMetrics contains DB Agnostic metrics collected by adapters.
+// This struct matches the MetricSnapshot message in gRPC Contract.
 type RawMetrics struct {
 	// Metadata: identifies the source and collection time
 	DatabaseID   string // Unique database identifier
