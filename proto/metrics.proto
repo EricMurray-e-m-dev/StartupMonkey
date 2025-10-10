@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package startupmonkey;
+
+option go_package = "github.com/EricMurray-e-m-dev/startupmonkey/proto";
+
+// Metrics Service handles metric collection & DB registering
+service MetricsService {
+    // Collector registers DB when it starts
+    rpc RegisterDatabase (DatabaseInfo) returns (RegistrationAck);
+
+    // Collector streams metrics continously
+    rpc StreamMetrics (stream MetricsSnapshot) returns (MetricsAck);
+}
+
+// DatabaseInfo contains metadata about the database
+message DatabaseInfo {
+    // Database Identity: 1-9
+    string database_id = 1;                             // Database ID
+    string database_name = 2;                           // Database name
+    string database_type = 3;                           // DB Type
+    string version = 4;                                 // Version
+    string host = 5;                                    // Host DB - Multi DB setup
+
+    // Config: 10-19
+    int32 max_connections = 10;                         // Max connections
+    bool connection_pooling_enabled = 11;               // Is Pooling active
+}
+
+// MetricsSnapshot is a point in time snapshot of state
+message MetricsSnapshot {
+    // Metadata: 1-9
+    string database_id = 1;                             // Source database
+    int64 timestamp = 2;                                // Timestamp
+    string database_type = 3;                           // DB Type - "postgresql", "mongodb", "sqlite"...
+
+    // System Metrics: 10-19
+    double cpu_percent = 10;                            // Measure system CPU usage
+    double memory_percent = 11;                         // Measure memory usage
+    double disk_io_read_mb_per_sec = 12;                // Read stats per sec
+    double disk_io_write_mb_per_sec = 13;               // Write stats per sec
+
+    // Connection Metrics: 20-29
+    int32 active_connections = 20;                      // Total connections established to DB
+    int32 idle_connections = 21;                        // Idling connections
+    int32 max_connections = 22;                         // Connections limit
+    double connection_wait_time_ms = 23;                // Avg time waiting for connection (0 = no wait)
+    
+    // Query Performance: 30-39
+    double query_latency_p50_ms = 30;                   // 50pct Queries faster than this
+    double query_latency_p95_ms = 31;                   // 95pct Queries faster than this
+    double query_latency_p99_ms = 32;                   // 99pct Queries faster than this
+    double queries_per_second = 33;                     // Throughput
+
+    // Cache Metrics: 40-49
+    double cache_hit_rate = 40;                         // Cache ratio 0.00 - 1.00
+    double cache_size_mb = 41;                          // Cache size
+
+    // Errors: 50-59
+    double errors_per_second = 50;                      // Error rate
+
+    // Extensible Metrics: 60-99
+    map<string, double> extended_metrics = 60;          // DB specific metrics
+    map<string, string> labels = 61;                    // Non-numeric metrics
+}
+
+// Acknowledge DB Registration
+message RegistrationAck {
+    bool success = 1;                                   // Register succeeded (true) or failed (false)
+    string message = 2;                                 // Context message
+    string assigned_id = 3;                             // Analyser ID assigned to metric
+}
+
+// Acknowledge Metrics Received
+message MetricsAck {
+    int64 total_metrics = 1;                            // Total amount of metric received
+    string status = 2;                                  // "healthy", "behind", "error"
+}
