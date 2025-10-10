@@ -1,5 +1,6 @@
 package adapter
 
+// MetricAdapter defines loosely what every DB Adapter will have to do in the future.
 type MetricAdapter interface {
 	Connect() error
 	CollectMetrics() (*RawMetrics, error)
