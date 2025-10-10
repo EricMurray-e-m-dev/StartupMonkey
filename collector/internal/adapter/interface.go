@@ -1,5 +1,10 @@
 package adapter
 
+import (
+	"errors"
+	"time"
+)
+
 // MetricAdapter defines loosely what every DB Adapter will have to do in the future.
 type MetricAdapter interface {
 	Connect() error
@@ -45,4 +50,26 @@ type RawMetrics struct {
 	ExtendedMetrics map[string]float64 // DB-specific numeric metrics (e.g., "pg.sequential_scans")
 	Labels          map[string]string  // Non-numeric metadata tags (e.g., "region": "us-east-1")
 
+}
+
+var (
+	// NotConnected - Connect() not called | failed
+	ErrNotConnected = errors.New("adapter: not connected to database")
+
+	// ConnectionLost - self explanatory for now
+	ErrConnectionLost = errors.New("adapter: database connection lost")
+
+	// UnsupportedDatabase - If connected DB is unsupported fallback error
+	ErrUnsupportedDatabase = errors.New("adapter: unsupported database type")
+)
+
+// NewRawMetrics creates RawMetrics with prefilled passed data, maps initialised
+func NewRawMetrics(databaseID, databaseType string) *RawMetrics {
+	return &RawMetrics{
+		DatabaseID:      databaseID,
+		DatabaseType:    databaseType,
+		Timestamp:       time.Now().Unix(),
+		ExtendedMetrics: map[string]float64{},
+		Labels:          make(map[string]string),
+	}
 }
