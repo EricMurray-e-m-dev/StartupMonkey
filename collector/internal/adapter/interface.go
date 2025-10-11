@@ -1,3 +1,5 @@
+// Package adapter provides the system with a range of adapters for different databases
+// Each adhere to the loose interface.go keeping everything SOLID
 package adapter
 
 import (
