@@ -68,3 +68,65 @@ func (p *PostgresAdapter) getActiveConnections(ctx context.Context) (int32, erro
 
 	return count, nil
 }
+
+func (p *PostgresAdapter) getIdleConnections(ctx context.Context) (int32, error) {
+	var count int32
+	query := "SELECT count(*) FROM pg_stat_activity WHERE state = 'idle'"
+
+	err := p.pool.QueryRow(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get idle connections: %w", err)
+	}
+
+	return count, nil
+}
+
+func (p *PostgresAdapter) getMaxConnections(ctx context.Context) (int32, error) {
+	var count int32
+	query := "SHOW max_connections"
+
+	err := p.pool.QueryRow(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get max connections: %w", err)
+	}
+
+	return count, nil
+}
+
+func (p *PostgresAdapter) getDatabaseSizeMB(ctx context.Context) (float64, error) {
+	var size int64
+	query := "SELECT pg_database_size(current_database())"
+
+	err := p.pool.QueryRow(ctx, query).Scan(&size)
+	if err != nil {
+		return 00, fmt.Errorf("failed to get db size: %w", err)
+	}
+
+	sizeMB := float64(size) / (1024 * 1024)
+	return sizeMB, nil
+}
+
+func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) {
+	var blkReads, blksHit int64
+
+	query := `
+		SELECT
+			sum(blks_read) as blks_read,
+			sum(blks_hit) as blks_hit
+		FROM pg_stat_database
+		WHERE datname = current_database()
+	`
+
+	err := p.pool.QueryRow(ctx, query).Scan(&blkReads, &blksHit)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get cache stats: %w", err)
+	}
+
+	total := blkReads + blksHit
+	if total == 0 {
+		return 0, nil
+	}
+
+	hitRate := float64(blkReads) / float64(blksHit)
+	return hitRate, nil
+}
