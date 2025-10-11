@@ -31,8 +31,53 @@ func (p *PostgresAdapter) Connect() error {
 	return nil
 }
 
-func (p *PostgresAdapter) CollectMetrics() (_ *RawMetrics, _ error) {
-	panic("not implemented") // TODO: Implement
+func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
+	if p.pool == nil {
+		return nil, ErrNotConnected
+	}
+
+	ctx := context.Background()
+
+	metrics := NewRawMetrics("postgres-1", "postgresql")
+
+	activeConn, err := p.getActiveConnections(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metrics.ActiveConnections = activeConn
+
+	idleConn, err := p.getIdleConnections(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metrics.IdleConnections = idleConn
+
+	maxConn, err := p.getMaxConnections(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metrics.MaxConnections = maxConn
+
+	dbSize, err := p.getDatabaseSizeMB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metrics.ExtendedMetrics["pg.database_size_mb"] = dbSize
+
+	cacheHitRate, err := p.getCacheHitRate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metrics.CacheHitRate = cacheHitRate
+
+	// TODO: System metrics (CPU, memory, disk I/O) should be collected by
+	// a separate SystemMetricsCollector in the Collector orchestrator.
+
+	// TODO: Query performance metrics (p50/p95/p99 latency) require
+	// pg_stat_statements extension.
+
+	return metrics, nil
+
 }
 
 func (p *PostgresAdapter) Close() error {
