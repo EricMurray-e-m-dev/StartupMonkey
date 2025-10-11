@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -127,15 +128,20 @@ func (p *PostgresAdapter) getIdleConnections(ctx context.Context) (int32, error)
 }
 
 func (p *PostgresAdapter) getMaxConnections(ctx context.Context) (int32, error) {
-	var count int32
+	var countString string
 	query := "SHOW max_connections"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&count)
+	err := p.pool.QueryRow(ctx, query).Scan(&countString)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get max connections: %w", err)
 	}
 
-	return count, nil
+	count, err := strconv.ParseInt(countString, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse max_connections: %w", err)
+	}
+
+	return int32(count), nil
 }
 
 func (p *PostgresAdapter) getDatabaseSizeMB(ctx context.Context) (float64, error) {
