@@ -1,4 +1,4 @@
-# Decision 001: Using Adapter Pattern Database Abstraction
+# Decision 003: Using Adapter Pattern Database Abstraction
 
 **Date:** 2025-10-13
 **Status:** Accepted
