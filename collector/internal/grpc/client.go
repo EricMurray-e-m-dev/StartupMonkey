@@ -23,6 +23,9 @@ func NewMetricsClient(analyserAddress string) *MetricsClient {
 }
 
 func (c *MetricsClient) Connect() error {
+	if c.analyserAddress == "" {
+		return fmt.Errorf("analyser address cannot be empty")
+	}
 
 	conn, err := grpc.NewClient(
 		c.analyserAddress,

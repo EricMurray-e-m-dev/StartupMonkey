@@ -1,9 +1,12 @@
 package unit
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
+	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,4 +45,34 @@ func TestMetricsClient_Close_SafeWhenNotConnected(t *testing.T) {
 
 	err = client.Close()
 	assert.NoError(t, err)
+}
+
+func TestMetricsClient_Close_AfterConnect(t *testing.T) {
+	client := grpcclient.NewMetricsClient("localhost:50051")
+
+	err := client.Connect()
+	assert.NoError(t, err)
+
+	err = client.Close()
+	assert.NoError(t, err)
+}
+
+func TestMetricsClient_StreamMetrics_NotConnected(t *testing.T) {
+	client := grpcclient.NewMetricsClient("localhost:50051")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	metrics := []*pb.MetricsSnapshot{
+		{
+			DatabaseId: "test-db",
+			Timestamp:  time.Now().Unix(),
+		},
+	}
+
+	ack, err := client.StreamMetrics(ctx, metrics)
+
+	assert.Error(t, err)
+	assert.Nil(t, ack)
+	assert.Contains(t, err.Error(), "not connected")
 }
