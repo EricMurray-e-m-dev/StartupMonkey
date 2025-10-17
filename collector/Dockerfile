@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o collector ./cmd/collector
 FROM alpine:3.20
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificate wget
+RUN apk add --no-cache ca-certificates wget
 
 # Create non-root user
 RUN addgroup -g 1000 appuser && \
