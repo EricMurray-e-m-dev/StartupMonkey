@@ -18,8 +18,13 @@ jobs:
         with:
           go-version: '1.25'
       
+      - name: Clean up any existing containers
+        run: |
+          docker compose -f docker-compose.yml -p startupmonkey-test down -v 2>/dev/null || true
+          docker system prune -f
+      
       - name: Start Docker services
-        run: docker compose up -d 
+        run: docker compose up -d
       
       - name: Wait for services to be ready
         run: sleep 30
@@ -35,4 +40,4 @@ jobs:
       
       - name: Stop Docker services
         if: always()
-        run: docker compose down -v  
+        run: docker compose down -v

@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -14,10 +15,13 @@ type TestEnvironment struct {
 }
 
 func NewTestEnvironment(t *testing.T, services []string) *TestEnvironment {
+	// Use timestamp or random suffix to avoid conflicts
+	projectName := fmt.Sprintf("startupmonkey-test-%d", time.Now().Unix())
+
 	return &TestEnvironment{
 		t:           t,
 		ComposeFile: "../../docker-compose.yml",
-		ProjectName: "startupmonkey-test",
+		ProjectName: projectName,
 		Services:    services,
 		StartTime:   time.Now(),
 	}
