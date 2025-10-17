@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Test PostgreSQL database for Collector to monitor
+  postgres:
+    image: postgres:16-alpine
+    container_name: startupmonkey-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - startupmonkey
+
+  # Analyser service
+  analyser:
+    build:
+      context: ./analyser
+      dockerfile: Dockerfile
+    container_name: startupmonkey-analyser
+    ports:
+      - "50051:50051"
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  # Collector service
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    container_name: startupmonkey-collector
+    environment:
+      # Database connection (Docker network)
+      - DB_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/testdb?sslmode=disable
+      - DB_ADAPTER=postgres
+      - DATABASE_ID=docker-test-db
+      - DATABASE_NAME=testdb
+      # Analyser connection (Docker network)
+      - ANALYSER_ADDRESS=analyser:50051
+      # Collection settings
+      - COLLECTION_INTERVAL=30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      analyser:
+        condition: service_started
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+networks:
+  startupmonkey:
+    driver: bridge
