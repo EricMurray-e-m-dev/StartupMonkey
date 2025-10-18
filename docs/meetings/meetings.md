@@ -1,26 +1,19 @@
 # Defining Standard Documentation Style for Meetings
 
-# Sprint Retrospective Template
+# Supervisor Meeting Template
 
-**Sprint:** [Number]
-**Dates:** [Start] - [End]
-**Completed Issues:** [Link to closed issues]
+**Sprint:** *
+**Dates:** 2025-*-*
 
-## What Went Well
+
+## Discussed
 - 
 
-## What Didn't Go Well
+## Plan For Week
 -
 
-## What We'll Change Next Sprint
+## Supervisor Requirements
 -
 
-## Velocity
-- Planned: X issues
-- Completed: Y issues
-- Velocity: Y/X = Z%
-
-## Notes for Dissertation
-- Technical challenges encountered:
-- Design decisions made:
-- Learning outcomes:
+## Notes
+- 
