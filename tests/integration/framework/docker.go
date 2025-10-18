@@ -7,10 +7,12 @@ import (
 	"time"
 )
 
+// Start starts the Docker Compose services
 func (e *TestEnvironment) Start() error {
 	e.t.Logf("Starting Docker Services: %v", e.Services)
 
-	buildCmd := exec.Command("docker-compose",
+	// Build images first
+	buildCmd := exec.Command("docker", "compose",
 		"-f", e.ComposeFile,
 		"-p", e.ProjectName,
 		"build",
@@ -20,26 +22,29 @@ func (e *TestEnvironment) Start() error {
 		return fmt.Errorf("docker-compose build failed: %w\n%s", err, output)
 	}
 
-	args := []string{"-f", e.ComposeFile, "-p", e.ProjectName, "up", "-d"}
+	// Start services
+	args := []string{"compose", "-f", e.ComposeFile, "-p", e.ProjectName, "up", "-d"}
 	args = append(args, e.Services...)
 
-	cmd := exec.Command("docker-compose", args...)
+	cmd := exec.Command("docker", args...)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("docker-compose build failed: %w\n%s", err, output)
+		return fmt.Errorf("docker-compose up failed: %w\n%s", err, output)
 	}
 
 	e.t.Log("Docker services started")
 	return nil
 }
 
+// WaitForHealthy waits for all services to be healthy
 func (e *TestEnvironment) WaitForHealthy(timeout time.Duration) error {
 	e.t.Logf("Waiting for services to be healthy (timeout: %v)", timeout)
 
 	deadline := time.Now().Add(timeout)
 
 	for time.Now().Before(deadline) {
-		cmd := exec.Command("docker-compose",
+		// Check if all services are running
+		cmd := exec.Command("docker", "compose",
 			"-f", e.ComposeFile,
 			"-p", e.ProjectName,
 			"ps", "--services", "--filter", "status=running",
@@ -47,11 +52,12 @@ func (e *TestEnvironment) WaitForHealthy(timeout time.Duration) error {
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("failed to check service status: %v", err)
+			return fmt.Errorf("failed to check service status: %w", err)
 		}
 
 		runningServices := strings.Split(strings.TrimSpace(string(output)), "\n")
 
+		// Check if all requested services are running
 		allRunning := true
 		for _, service := range e.Services {
 			found := false
@@ -68,19 +74,19 @@ func (e *TestEnvironment) WaitForHealthy(timeout time.Duration) error {
 		}
 
 		if allRunning {
-			e.t.Logf("All services healthy")
+			e.t.Log("All services healthy")
 			return nil
 		}
 
 		time.Sleep(2 * time.Second)
-
 	}
 
-	return fmt.Errorf("services health check timed out")
+	return fmt.Errorf("services did not become healthy within timeout")
 }
 
+// GetLogs retrieves logs from a specific service
 func (e *TestEnvironment) GetLogs(serviceName string) (string, error) {
-	cmd := exec.Command("docker-compose",
+	cmd := exec.Command("docker", "compose",
 		"-f", e.ComposeFile,
 		"-p", e.ProjectName,
 		"logs", serviceName,
@@ -94,17 +100,18 @@ func (e *TestEnvironment) GetLogs(serviceName string) (string, error) {
 	return string(output), nil
 }
 
+// Cleanup stops and removes all containers
 func (e *TestEnvironment) Cleanup() {
-	e.t.Logf("Cleaning up docker services...")
+	e.t.Log("Cleaning up docker services...")
 
-	cmd := exec.Command("docker-compose",
+	cmd := exec.Command("docker", "compose",
 		"-f", e.ComposeFile,
 		"-p", e.ProjectName,
 		"down", "-v",
 	)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		e.t.Logf("Warning: cleanup failed %v\n%s", err, output)
+		e.t.Logf("Warning: cleanup failed: %v\n%s", err, output)
 	}
 
 	duration := time.Since(e.StartTime)
