@@ -1,8 +1,0 @@
-services:
-  postgres:
-    ports: []
-    
-  analyser:
-    ports: []
-    
-  collector:

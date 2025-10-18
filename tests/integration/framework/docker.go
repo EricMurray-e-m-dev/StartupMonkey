@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
+// Start starts the Docker Compose services
 func (e *TestEnvironment) Start() error {
 	e.t.Logf("Starting Docker Services: %v", e.Services)
 
 	// Build images first
 	buildCmd := exec.Command("docker", "compose",
 		"-f", e.ComposeFile,
-		"-f", e.ComposeTestFile,
 		"-p", e.ProjectName,
 		"build",
 	)
@@ -23,7 +23,7 @@ func (e *TestEnvironment) Start() error {
 	}
 
 	// Start services
-	args := []string{"compose", "-f", e.ComposeFile, "-f", e.ComposeTestFile, "-p", e.ProjectName, "up", "-d"}
+	args := []string{"compose", "-f", e.ComposeFile, "-p", e.ProjectName, "up", "-d"}
 	args = append(args, e.Services...)
 
 	cmd := exec.Command("docker", args...)

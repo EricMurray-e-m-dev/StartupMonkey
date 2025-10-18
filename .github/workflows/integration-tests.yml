@@ -17,18 +17,25 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
+
+      - name: Debug port usage
+        run: |
+            echo "=== Checking port 5432 ==="
+            sudo lsof -i :5432 || echo "Port 5432 is free"
+            echo "=== Checking port 50051 ==="
+            sudo lsof -i :50051 || echo "Port 50051 is free"
+            echo "=== All listening ports ==="
+            sudo netstat -tulpn | grep LISTEN || true
       
-      - name: Stop all running containers
+      - name: Stop all running containers and clean up
         run: |
           docker ps -aq | xargs -r docker stop || true
           docker ps -aq | xargs -r docker rm -f || true
+          docker network prune -f || true
+          docker volume prune -f || true
       
       - name: Start Docker services
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.test.yml \
-            up -d --build
+        run: docker compose up -d --build
       
       - name: Wait for services to be ready
         run: sleep 30
@@ -40,16 +47,10 @@ jobs:
       
       - name: Show logs on failure
         if: failure()
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.test.yml \
-            logs
+        run: docker compose logs
       
       - name: Stop Docker services
         if: always()
         run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.test.yml \
-            down -v || true
+          docker compose down -v || true
+          docker ps -aq | xargs -r docker rm -f || true
