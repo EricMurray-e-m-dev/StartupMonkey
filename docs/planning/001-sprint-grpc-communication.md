@@ -1,4 +1,4 @@
-# Sprint 01: gRPC Communication
+# Sprint 001: gRPC Communication
 
 ## Primary Objective
 Establish gRPC communication between Collector and Analyser.

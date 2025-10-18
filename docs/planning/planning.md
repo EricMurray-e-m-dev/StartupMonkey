@@ -1,27 +1,26 @@
 # Defining Standard Documentation for Planning
 
-# Weekly Goals Template
+# Sprint Retrospective Template
 
-## Primary Objective
-Establish gRPC communication between Collector and Analyser
+**Sprint:** [Number]
+**Dates:** [Start] - [End]
+**Completed Issues:** [Link to closed issues]
 
-## Objectives
-1. 
-2. 
-3. 
+## What Went Well
+- 
 
-## Success Criteria
-- [ ] Protobuf definitions created
-- [ ] Collector sends dummy metrics
-- [ ] Analyser receives and logs metrics
-- [ ] Integration test passes
+## What Didn't Go Well
+-
 
-## Risks
+## What We'll Change Next Sprint
+-
 
-## Definition of Done
-- 1
-- 2
-- 3
+## Velocity
+- Planned: X issues
+- Completed: Y issues
+- Velocity: Y/X = Z%
 
-## Notes
-[Document learnings as you go]
+## Notes for Dissertation
+- Technical challenges encountered:
+- Design decisions made:
+- Learning outcomes:
