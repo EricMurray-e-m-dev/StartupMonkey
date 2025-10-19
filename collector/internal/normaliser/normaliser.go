@@ -10,5 +10,7 @@ func NewNormaliser(databaseType string) Normaliser {
 	switch databaseType {
 	case "postgres", "postgresql":
 		return &PostgresNormaliser{}
+	default:
+		return nil
 	}
 }
