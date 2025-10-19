@@ -8,14 +8,14 @@ import (
 )
 
 func TestNewAdapter_Postgres(t *testing.T) {
-	a, err := adapter.NewAdapter("postgres", "postgres://test@localhost/test")
+	a, err := adapter.NewAdapter("postgres", "postgres://test@localhost/test", "postgres")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
 
 func TestNewAdapter_UnsupportedType(t *testing.T) {
-	a, err := adapter.NewAdapter("unsupported-db", "conn-string")
+	a, err := adapter.NewAdapter("unsupported-db", "conn-string", "id")
 
 	assert.Error(t, err)
 	assert.Nil(t, a)

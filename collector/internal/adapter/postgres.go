@@ -10,12 +10,14 @@ import (
 
 type PostgresAdapter struct {
 	connectionString string
+	databaseId       string
 	pool             *pgxpool.Pool
 }
 
-func NewPostgresAdapter(connectionString string) *PostgresAdapter {
+func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
 	return &PostgresAdapter{
 		connectionString: connectionString,
+		databaseId:       databaseId,
 		pool:             nil,
 	}
 }
@@ -39,43 +41,60 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 
 	ctx := context.Background()
 
-	metrics := NewRawMetrics("postgres-1", "postgresql")
+	metrics := NewRawMetrics(p.databaseId, "postgresql")
 
 	activeConn, err := p.getActiveConnections(ctx)
 	if err != nil {
 		return nil, err
 	}
-	metrics.ActiveConnections = activeConn
 
 	idleConn, err := p.getIdleConnections(ctx)
 	if err != nil {
 		return nil, err
 	}
-	metrics.IdleConnections = idleConn
 
 	maxConn, err := p.getMaxConnections(ctx)
 	if err != nil {
 		return nil, err
 	}
-	metrics.MaxConnections = maxConn
 
-	dbSize, err := p.getDatabaseSizeMB(ctx)
+	metrics.Connections = &ConnectionMetrics{
+		Active: &activeConn,
+		Idle:   &idleConn,
+		Max:    &maxConn,
+		// Waiting nil - Need additional query
+	}
+
+	dbSizeBytes, err := p.getDatabaseSizeBytes(ctx)
 	if err != nil {
 		return nil, err
 	}
-	metrics.ExtendedMetrics["pg.database_size_mb"] = dbSize
+
+	metrics.Storage = &StorageMetrics{
+		UsedSizeBytes: &dbSizeBytes,
+		// Total nil - need filesystem query
+		// Free space same
+	}
+
+	dbSizeMB := float64(dbSizeBytes) / (1024 * 1024)
+	metrics.ExtendedMetrics["pg.database_size_mb"] = dbSizeMB
 
 	cacheHitRate, err := p.getCacheHitRate(ctx)
 	if err != nil {
 		return nil, err
 	}
-	metrics.CacheHitRate = cacheHitRate
+	metrics.Cache = &CacheMetrics{
+		HitRate: &cacheHitRate,
+		//Hit/Miss nil
+	}
 
-	// TODO: System metrics (CPU, memory, disk I/O) should be collected by
-	// a separate SystemMetricsCollector in the Collector orchestrator.
-
-	// TODO: Query performance metrics (p50/p95/p99 latency) require
-	// pg_stat_statements extension.
+	// === Query Metrics (Future) ===
+	// TODO: Implement when we add pg_stat_statements support
+	// metrics.Queries = &QueryMetrics{
+	//     AvgLatencyMs: &avgLatency,
+	//     P95LatencyMs: &p95Latency,
+	//     SequentialScans: &seqScans,
+	// }
 
 	return metrics, nil
 
@@ -144,17 +163,16 @@ func (p *PostgresAdapter) getMaxConnections(ctx context.Context) (int32, error) 
 	return int32(count), nil
 }
 
-func (p *PostgresAdapter) getDatabaseSizeMB(ctx context.Context) (float64, error) {
-	var size int64
+func (p *PostgresAdapter) getDatabaseSizeBytes(ctx context.Context) (int64, error) {
+	var sizeBytes int64
 	query := "SELECT pg_database_size(current_database())"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&size)
+	err := p.pool.QueryRow(ctx, query).Scan(&sizeBytes)
 	if err != nil {
 		return 00, fmt.Errorf("failed to get db size: %w", err)
 	}
 
-	sizeMB := float64(size) / (1024 * 1024)
-	return sizeMB, nil
+	return sizeBytes, nil
 }
 
 func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) {

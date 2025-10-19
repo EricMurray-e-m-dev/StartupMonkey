@@ -42,7 +42,7 @@ func (c *MetricsClient) Connect() error {
 	return nil
 }
 
-func (c *MetricsClient) StreamMetrics(ctx context.Context, metrics []*pb.MetricsSnapshot) (*pb.MetricsAck, error) {
+func (c *MetricsClient) StreamMetrics(ctx context.Context, metrics []*pb.MetricSnapshot) (*pb.MetricsAck, error) {
 
 	if c.client == nil {
 		return nil, fmt.Errorf("client not connected")

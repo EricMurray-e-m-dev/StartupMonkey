@@ -63,7 +63,7 @@ func TestMetricsClient_StreamMetrics_NotConnected(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	metrics := []*pb.MetricsSnapshot{
+	metrics := []*pb.MetricSnapshot{
 		{
 			DatabaseId: "test-db",
 			Timestamp:  time.Now().Unix(),
