@@ -1,3 +1,5 @@
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e h1:84Dm9BPXmmEIw47i95zq71dw7H1LRVJ036C59rQfj+M=
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=

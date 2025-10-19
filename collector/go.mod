@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/collector
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-00010101000000-000000000000
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.8.1
@@ -27,5 +27,3 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto

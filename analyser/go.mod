@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/analyser
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251013104841-b2acacaf2bd5
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
 )
@@ -18,6 +18,3 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Add this line at the bottom:
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto
