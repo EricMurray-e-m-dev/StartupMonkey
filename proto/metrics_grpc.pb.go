@@ -27,12 +27,12 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Metrics Service handles metric collection & DB registering
+// MetricsService handles metric collection and database registration
 type MetricsServiceClient interface {
-	// Collector registers DB when it starts
+	// Collector registers database when it starts
 	RegisterDatabase(ctx context.Context, in *DatabaseInfo, opts ...grpc.CallOption) (*RegistrationAck, error)
-	// Collector streams metrics continously
-	StreamMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricsSnapshot, MetricsAck], error)
+	// Collector streams metrics continuously
+	StreamMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricSnapshot, MetricsAck], error)
 }
 
 type metricsServiceClient struct {
@@ -53,29 +53,29 @@ func (c *metricsServiceClient) RegisterDatabase(ctx context.Context, in *Databas
 	return out, nil
 }
 
-func (c *metricsServiceClient) StreamMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricsSnapshot, MetricsAck], error) {
+func (c *metricsServiceClient) StreamMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[MetricSnapshot, MetricsAck], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &MetricsService_ServiceDesc.Streams[0], MetricsService_StreamMetrics_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[MetricsSnapshot, MetricsAck]{ClientStream: stream}
+	x := &grpc.GenericClientStream[MetricSnapshot, MetricsAck]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type MetricsService_StreamMetricsClient = grpc.ClientStreamingClient[MetricsSnapshot, MetricsAck]
+type MetricsService_StreamMetricsClient = grpc.ClientStreamingClient[MetricSnapshot, MetricsAck]
 
 // MetricsServiceServer is the server API for MetricsService service.
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility.
 //
-// Metrics Service handles metric collection & DB registering
+// MetricsService handles metric collection and database registration
 type MetricsServiceServer interface {
-	// Collector registers DB when it starts
+	// Collector registers database when it starts
 	RegisterDatabase(context.Context, *DatabaseInfo) (*RegistrationAck, error)
-	// Collector streams metrics continously
-	StreamMetrics(grpc.ClientStreamingServer[MetricsSnapshot, MetricsAck]) error
+	// Collector streams metrics continuously
+	StreamMetrics(grpc.ClientStreamingServer[MetricSnapshot, MetricsAck]) error
 	mustEmbedUnimplementedMetricsServiceServer()
 }
 
@@ -89,7 +89,7 @@ type UnimplementedMetricsServiceServer struct{}
 func (UnimplementedMetricsServiceServer) RegisterDatabase(context.Context, *DatabaseInfo) (*RegistrationAck, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterDatabase not implemented")
 }
-func (UnimplementedMetricsServiceServer) StreamMetrics(grpc.ClientStreamingServer[MetricsSnapshot, MetricsAck]) error {
+func (UnimplementedMetricsServiceServer) StreamMetrics(grpc.ClientStreamingServer[MetricSnapshot, MetricsAck]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamMetrics not implemented")
 }
 func (UnimplementedMetricsServiceServer) mustEmbedUnimplementedMetricsServiceServer() {}
@@ -132,11 +132,11 @@ func _MetricsService_RegisterDatabase_Handler(srv interface{}, ctx context.Conte
 }
 
 func _MetricsService_StreamMetrics_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(MetricsServiceServer).StreamMetrics(&grpc.GenericServerStream[MetricsSnapshot, MetricsAck]{ServerStream: stream})
+	return srv.(MetricsServiceServer).StreamMetrics(&grpc.GenericServerStream[MetricSnapshot, MetricsAck]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type MetricsService_StreamMetricsServer = grpc.ClientStreamingServer[MetricsSnapshot, MetricsAck]
+type MetricsService_StreamMetricsServer = grpc.ClientStreamingServer[MetricSnapshot, MetricsAck]
 
 // MetricsService_ServiceDesc is the grpc.ServiceDesc for MetricsService service.
 // It's only intended for direct use with grpc.RegisterService,

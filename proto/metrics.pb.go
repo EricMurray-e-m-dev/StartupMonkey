@@ -24,15 +24,15 @@ const (
 // DatabaseInfo contains metadata about the database
 type DatabaseInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Database Identity: 1-9
-	DatabaseId   string `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`       // Database ID
-	DatabaseName string `protobuf:"bytes,2,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"` // Database name
-	DatabaseType string `protobuf:"bytes,3,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"` // DB Type
-	Version      string `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`                               // Version
-	Host         string `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`                                     // Host DB - Multi DB setup
-	// Config: 10-19
-	MaxConnections           int32 `protobuf:"varint,10,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`                                 // Max connections
-	ConnectionPoolingEnabled bool  `protobuf:"varint,11,opt,name=connection_pooling_enabled,json=connectionPoolingEnabled,proto3" json:"connection_pooling_enabled,omitempty"` // Is Pooling active
+	// Database Identity
+	DatabaseId   string `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	DatabaseName string `protobuf:"bytes,2,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	DatabaseType string `protobuf:"bytes,3,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"`
+	Version      string `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	Host         string `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
+	// Config
+	MaxConnections           int32 `protobuf:"varint,10,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`
+	ConnectionPoolingEnabled bool  `protobuf:"varint,11,opt,name=connection_pooling_enabled,json=connectionPoolingEnabled,proto3" json:"connection_pooling_enabled,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -116,54 +116,44 @@ func (x *DatabaseInfo) GetConnectionPoolingEnabled() bool {
 	return false
 }
 
-// MetricsSnapshot is a point in time snapshot of state
-type MetricsSnapshot struct {
+// MetricSnapshot is the normalized metric data sent to Analyser
+// Contains health scores (0.0-1.0) and raw measurements
+type MetricSnapshot struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Metadata: 1-9
-	DatabaseId   string `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`       // Source database
-	Timestamp    int64  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                          // Timestamp
-	DatabaseType string `protobuf:"bytes,3,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"` // DB Type - "postgresql", "mongodb", "sqlite"...
-	// System Metrics: 10-19
-	CpuPercent          float64 `protobuf:"fixed64,10,opt,name=cpu_percent,json=cpuPercent,proto3" json:"cpu_percent,omitempty"`                                    // Measure system CPU usage
-	MemoryPercent       float64 `protobuf:"fixed64,11,opt,name=memory_percent,json=memoryPercent,proto3" json:"memory_percent,omitempty"`                           // Measure memory usage
-	DiskIoReadMbPerSec  float64 `protobuf:"fixed64,12,opt,name=disk_io_read_mb_per_sec,json=diskIoReadMbPerSec,proto3" json:"disk_io_read_mb_per_sec,omitempty"`    // Read stats per sec
-	DiskIoWriteMbPerSec float64 `protobuf:"fixed64,13,opt,name=disk_io_write_mb_per_sec,json=diskIoWriteMbPerSec,proto3" json:"disk_io_write_mb_per_sec,omitempty"` // Write stats per sec
-	// Connection Metrics: 20-29
-	ActiveConnections    int32   `protobuf:"varint,20,opt,name=active_connections,json=activeConnections,proto3" json:"active_connections,omitempty"`               // Total connections established to DB
-	IdleConnections      int32   `protobuf:"varint,21,opt,name=idle_connections,json=idleConnections,proto3" json:"idle_connections,omitempty"`                     // Idling connections
-	MaxConnections       int32   `protobuf:"varint,22,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`                        // Connections limit
-	ConnectionWaitTimeMs float64 `protobuf:"fixed64,23,opt,name=connection_wait_time_ms,json=connectionWaitTimeMs,proto3" json:"connection_wait_time_ms,omitempty"` // Avg time waiting for connection (0 = no wait)
-	// Query Performance: 30-39
-	QueryLatencyP50Ms float64 `protobuf:"fixed64,30,opt,name=query_latency_p50_ms,json=queryLatencyP50Ms,proto3" json:"query_latency_p50_ms,omitempty"` // 50pct Queries faster than this
-	QueryLatencyP95Ms float64 `protobuf:"fixed64,31,opt,name=query_latency_p95_ms,json=queryLatencyP95Ms,proto3" json:"query_latency_p95_ms,omitempty"` // 95pct Queries faster than this
-	QueryLatencyP99Ms float64 `protobuf:"fixed64,32,opt,name=query_latency_p99_ms,json=queryLatencyP99Ms,proto3" json:"query_latency_p99_ms,omitempty"` // 99pct Queries faster than this
-	QueriesPerSecond  float64 `protobuf:"fixed64,33,opt,name=queries_per_second,json=queriesPerSecond,proto3" json:"queries_per_second,omitempty"`      // Throughput
-	// Cache Metrics: 40-49
-	CacheHitRate float64 `protobuf:"fixed64,40,opt,name=cache_hit_rate,json=cacheHitRate,proto3" json:"cache_hit_rate,omitempty"` // Cache ratio 0.00 - 1.00
-	CacheSizeMb  float64 `protobuf:"fixed64,41,opt,name=cache_size_mb,json=cacheSizeMb,proto3" json:"cache_size_mb,omitempty"`    // Cache size
-	// Errors: 50-59
-	ErrorsPerSecond float64 `protobuf:"fixed64,50,opt,name=errors_per_second,json=errorsPerSecond,proto3" json:"errors_per_second,omitempty"` // Error rate
-	// Extensible Metrics: 60-99
-	ExtendedMetrics map[string]float64 `protobuf:"bytes,60,rep,name=extended_metrics,json=extendedMetrics,proto3" json:"extended_metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"` // DB specific metrics
-	Labels          map[string]string  `protobuf:"bytes,61,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`                                            // Non-numeric metrics
+	// === Metadata ===
+	DatabaseId   string `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	DatabaseType string `protobuf:"bytes,2,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"`
+	Timestamp    int64  `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// === Normalized Health Scores (0.0 - 1.0) ===
+	HealthScore      float64 `protobuf:"fixed64,10,opt,name=health_score,json=healthScore,proto3" json:"health_score,omitempty"`
+	ConnectionHealth float64 `protobuf:"fixed64,11,opt,name=connection_health,json=connectionHealth,proto3" json:"connection_health,omitempty"`
+	QueryHealth      float64 `protobuf:"fixed64,12,opt,name=query_health,json=queryHealth,proto3" json:"query_health,omitempty"`
+	StorageHealth    float64 `protobuf:"fixed64,13,opt,name=storage_health,json=storageHealth,proto3" json:"storage_health,omitempty"`
+	CacheHealth      float64 `protobuf:"fixed64,14,opt,name=cache_health,json=cacheHealth,proto3" json:"cache_health,omitempty"`
+	// === Context ===
+	AvailableMetrics []string `protobuf:"bytes,20,rep,name=available_metrics,json=availableMetrics,proto3" json:"available_metrics,omitempty"`
+	// === Raw Measurements (for Analyser to inspect) ===
+	Measurements *Measurements `protobuf:"bytes,30,opt,name=measurements,proto3" json:"measurements,omitempty"`
+	// === Optional: Pass-through ===
+	ExtendedMetrics map[string]float64 `protobuf:"bytes,40,rep,name=extended_metrics,json=extendedMetrics,proto3" json:"extended_metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
-func (x *MetricsSnapshot) Reset() {
-	*x = MetricsSnapshot{}
+func (x *MetricSnapshot) Reset() {
+	*x = MetricSnapshot{}
 	mi := &file_metrics_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MetricsSnapshot) String() string {
+func (x *MetricSnapshot) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MetricsSnapshot) ProtoMessage() {}
+func (*MetricSnapshot) ProtoMessage() {}
 
-func (x *MetricsSnapshot) ProtoReflect() protoreflect.Message {
+func (x *MetricSnapshot) ProtoReflect() protoreflect.Message {
 	mi := &file_metrics_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -175,164 +165,270 @@ func (x *MetricsSnapshot) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MetricsSnapshot.ProtoReflect.Descriptor instead.
-func (*MetricsSnapshot) Descriptor() ([]byte, []int) {
+// Deprecated: Use MetricSnapshot.ProtoReflect.Descriptor instead.
+func (*MetricSnapshot) Descriptor() ([]byte, []int) {
 	return file_metrics_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *MetricsSnapshot) GetDatabaseId() string {
+func (x *MetricSnapshot) GetDatabaseId() string {
 	if x != nil {
 		return x.DatabaseId
 	}
 	return ""
 }
 
-func (x *MetricsSnapshot) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetDatabaseType() string {
+func (x *MetricSnapshot) GetDatabaseType() string {
 	if x != nil {
 		return x.DatabaseType
 	}
 	return ""
 }
 
-func (x *MetricsSnapshot) GetCpuPercent() float64 {
+func (x *MetricSnapshot) GetTimestamp() int64 {
 	if x != nil {
-		return x.CpuPercent
+		return x.Timestamp
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetMemoryPercent() float64 {
+func (x *MetricSnapshot) GetHealthScore() float64 {
 	if x != nil {
-		return x.MemoryPercent
+		return x.HealthScore
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetDiskIoReadMbPerSec() float64 {
+func (x *MetricSnapshot) GetConnectionHealth() float64 {
 	if x != nil {
-		return x.DiskIoReadMbPerSec
+		return x.ConnectionHealth
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetDiskIoWriteMbPerSec() float64 {
+func (x *MetricSnapshot) GetQueryHealth() float64 {
 	if x != nil {
-		return x.DiskIoWriteMbPerSec
+		return x.QueryHealth
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetActiveConnections() int32 {
+func (x *MetricSnapshot) GetStorageHealth() float64 {
 	if x != nil {
-		return x.ActiveConnections
+		return x.StorageHealth
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetIdleConnections() int32 {
+func (x *MetricSnapshot) GetCacheHealth() float64 {
 	if x != nil {
-		return x.IdleConnections
+		return x.CacheHealth
 	}
 	return 0
 }
 
-func (x *MetricsSnapshot) GetMaxConnections() int32 {
+func (x *MetricSnapshot) GetAvailableMetrics() []string {
 	if x != nil {
-		return x.MaxConnections
+		return x.AvailableMetrics
 	}
-	return 0
+	return nil
 }
 
-func (x *MetricsSnapshot) GetConnectionWaitTimeMs() float64 {
+func (x *MetricSnapshot) GetMeasurements() *Measurements {
 	if x != nil {
-		return x.ConnectionWaitTimeMs
+		return x.Measurements
 	}
-	return 0
+	return nil
 }
 
-func (x *MetricsSnapshot) GetQueryLatencyP50Ms() float64 {
-	if x != nil {
-		return x.QueryLatencyP50Ms
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetQueryLatencyP95Ms() float64 {
-	if x != nil {
-		return x.QueryLatencyP95Ms
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetQueryLatencyP99Ms() float64 {
-	if x != nil {
-		return x.QueryLatencyP99Ms
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetQueriesPerSecond() float64 {
-	if x != nil {
-		return x.QueriesPerSecond
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetCacheHitRate() float64 {
-	if x != nil {
-		return x.CacheHitRate
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetCacheSizeMb() float64 {
-	if x != nil {
-		return x.CacheSizeMb
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetErrorsPerSecond() float64 {
-	if x != nil {
-		return x.ErrorsPerSecond
-	}
-	return 0
-}
-
-func (x *MetricsSnapshot) GetExtendedMetrics() map[string]float64 {
+func (x *MetricSnapshot) GetExtendedMetrics() map[string]float64 {
 	if x != nil {
 		return x.ExtendedMetrics
 	}
 	return nil
 }
 
-func (x *MetricsSnapshot) GetLabels() map[string]string {
-	if x != nil {
-		return x.Labels
-	}
-	return nil
+// Measurements contains raw values for Analyser to detect anomalies
+type Measurements struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Connections
+	ActiveConnections  *int32 `protobuf:"varint,1,opt,name=active_connections,json=activeConnections,proto3,oneof" json:"active_connections,omitempty"`
+	IdleConnections    *int32 `protobuf:"varint,2,opt,name=idle_connections,json=idleConnections,proto3,oneof" json:"idle_connections,omitempty"`
+	MaxConnections     *int32 `protobuf:"varint,3,opt,name=max_connections,json=maxConnections,proto3,oneof" json:"max_connections,omitempty"`
+	WaitingConnections *int32 `protobuf:"varint,4,opt,name=waiting_connections,json=waitingConnections,proto3,oneof" json:"waiting_connections,omitempty"`
+	// Queries
+	AvgQueryLatencyMs *float64 `protobuf:"fixed64,10,opt,name=avg_query_latency_ms,json=avgQueryLatencyMs,proto3,oneof" json:"avg_query_latency_ms,omitempty"`
+	P50QueryLatencyMs *float64 `protobuf:"fixed64,11,opt,name=p50_query_latency_ms,json=p50QueryLatencyMs,proto3,oneof" json:"p50_query_latency_ms,omitempty"`
+	P95QueryLatencyMs *float64 `protobuf:"fixed64,12,opt,name=p95_query_latency_ms,json=p95QueryLatencyMs,proto3,oneof" json:"p95_query_latency_ms,omitempty"`
+	P99QueryLatencyMs *float64 `protobuf:"fixed64,13,opt,name=p99_query_latency_ms,json=p99QueryLatencyMs,proto3,oneof" json:"p99_query_latency_ms,omitempty"`
+	SlowQueryCount    *int32   `protobuf:"varint,14,opt,name=slow_query_count,json=slowQueryCount,proto3,oneof" json:"slow_query_count,omitempty"`
+	SequentialScans   *int32   `protobuf:"varint,15,opt,name=sequential_scans,json=sequentialScans,proto3,oneof" json:"sequential_scans,omitempty"`
+	// Storage
+	UsedStorageBytes  *int64 `protobuf:"varint,20,opt,name=used_storage_bytes,json=usedStorageBytes,proto3,oneof" json:"used_storage_bytes,omitempty"`
+	TotalStorageBytes *int64 `protobuf:"varint,21,opt,name=total_storage_bytes,json=totalStorageBytes,proto3,oneof" json:"total_storage_bytes,omitempty"`
+	FreeStorageBytes  *int64 `protobuf:"varint,22,opt,name=free_storage_bytes,json=freeStorageBytes,proto3,oneof" json:"free_storage_bytes,omitempty"`
+	// Cache
+	CacheHitRate   *float64 `protobuf:"fixed64,30,opt,name=cache_hit_rate,json=cacheHitRate,proto3,oneof" json:"cache_hit_rate,omitempty"`
+	CacheHitCount  *int64   `protobuf:"varint,31,opt,name=cache_hit_count,json=cacheHitCount,proto3,oneof" json:"cache_hit_count,omitempty"`
+	CacheMissCount *int64   `protobuf:"varint,32,opt,name=cache_miss_count,json=cacheMissCount,proto3,oneof" json:"cache_miss_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
-// Acknowledge DB Registration
+func (x *Measurements) Reset() {
+	*x = Measurements{}
+	mi := &file_metrics_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Measurements) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Measurements) ProtoMessage() {}
+
+func (x *Measurements) ProtoReflect() protoreflect.Message {
+	mi := &file_metrics_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Measurements.ProtoReflect.Descriptor instead.
+func (*Measurements) Descriptor() ([]byte, []int) {
+	return file_metrics_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Measurements) GetActiveConnections() int32 {
+	if x != nil && x.ActiveConnections != nil {
+		return *x.ActiveConnections
+	}
+	return 0
+}
+
+func (x *Measurements) GetIdleConnections() int32 {
+	if x != nil && x.IdleConnections != nil {
+		return *x.IdleConnections
+	}
+	return 0
+}
+
+func (x *Measurements) GetMaxConnections() int32 {
+	if x != nil && x.MaxConnections != nil {
+		return *x.MaxConnections
+	}
+	return 0
+}
+
+func (x *Measurements) GetWaitingConnections() int32 {
+	if x != nil && x.WaitingConnections != nil {
+		return *x.WaitingConnections
+	}
+	return 0
+}
+
+func (x *Measurements) GetAvgQueryLatencyMs() float64 {
+	if x != nil && x.AvgQueryLatencyMs != nil {
+		return *x.AvgQueryLatencyMs
+	}
+	return 0
+}
+
+func (x *Measurements) GetP50QueryLatencyMs() float64 {
+	if x != nil && x.P50QueryLatencyMs != nil {
+		return *x.P50QueryLatencyMs
+	}
+	return 0
+}
+
+func (x *Measurements) GetP95QueryLatencyMs() float64 {
+	if x != nil && x.P95QueryLatencyMs != nil {
+		return *x.P95QueryLatencyMs
+	}
+	return 0
+}
+
+func (x *Measurements) GetP99QueryLatencyMs() float64 {
+	if x != nil && x.P99QueryLatencyMs != nil {
+		return *x.P99QueryLatencyMs
+	}
+	return 0
+}
+
+func (x *Measurements) GetSlowQueryCount() int32 {
+	if x != nil && x.SlowQueryCount != nil {
+		return *x.SlowQueryCount
+	}
+	return 0
+}
+
+func (x *Measurements) GetSequentialScans() int32 {
+	if x != nil && x.SequentialScans != nil {
+		return *x.SequentialScans
+	}
+	return 0
+}
+
+func (x *Measurements) GetUsedStorageBytes() int64 {
+	if x != nil && x.UsedStorageBytes != nil {
+		return *x.UsedStorageBytes
+	}
+	return 0
+}
+
+func (x *Measurements) GetTotalStorageBytes() int64 {
+	if x != nil && x.TotalStorageBytes != nil {
+		return *x.TotalStorageBytes
+	}
+	return 0
+}
+
+func (x *Measurements) GetFreeStorageBytes() int64 {
+	if x != nil && x.FreeStorageBytes != nil {
+		return *x.FreeStorageBytes
+	}
+	return 0
+}
+
+func (x *Measurements) GetCacheHitRate() float64 {
+	if x != nil && x.CacheHitRate != nil {
+		return *x.CacheHitRate
+	}
+	return 0
+}
+
+func (x *Measurements) GetCacheHitCount() int64 {
+	if x != nil && x.CacheHitCount != nil {
+		return *x.CacheHitCount
+	}
+	return 0
+}
+
+func (x *Measurements) GetCacheMissCount() int64 {
+	if x != nil && x.CacheMissCount != nil {
+		return *x.CacheMissCount
+	}
+	return 0
+}
+
+// Acknowledge database registration
 type RegistrationAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`                        // Register succeeded (true) or failed (false)
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`                         // Context message
-	AssignedId    string                 `protobuf:"bytes,3,opt,name=assigned_id,json=assignedId,proto3" json:"assigned_id,omitempty"` // Analyser ID assigned to metric
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	AssignedId    string                 `protobuf:"bytes,3,opt,name=assigned_id,json=assignedId,proto3" json:"assigned_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RegistrationAck) Reset() {
 	*x = RegistrationAck{}
-	mi := &file_metrics_proto_msgTypes[2]
+	mi := &file_metrics_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -344,7 +440,7 @@ func (x *RegistrationAck) String() string {
 func (*RegistrationAck) ProtoMessage() {}
 
 func (x *RegistrationAck) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[2]
+	mi := &file_metrics_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -357,7 +453,7 @@ func (x *RegistrationAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegistrationAck.ProtoReflect.Descriptor instead.
 func (*RegistrationAck) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{2}
+	return file_metrics_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RegistrationAck) GetSuccess() bool {
@@ -381,18 +477,18 @@ func (x *RegistrationAck) GetAssignedId() string {
 	return ""
 }
 
-// Acknowledge Metrics Received
+// Acknowledge metrics received
 type MetricsAck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TotalMetrics  int64                  `protobuf:"varint,1,opt,name=total_metrics,json=totalMetrics,proto3" json:"total_metrics,omitempty"` // Total amount of metric received
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`                                  // "healthy", "behind", "error"
+	TotalMetrics  int64                  `protobuf:"varint,1,opt,name=total_metrics,json=totalMetrics,proto3" json:"total_metrics,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MetricsAck) Reset() {
 	*x = MetricsAck{}
-	mi := &file_metrics_proto_msgTypes[3]
+	mi := &file_metrics_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +500,7 @@ func (x *MetricsAck) String() string {
 func (*MetricsAck) ProtoMessage() {}
 
 func (x *MetricsAck) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[3]
+	mi := &file_metrics_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +513,7 @@ func (x *MetricsAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsAck.ProtoReflect.Descriptor instead.
 func (*MetricsAck) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{3}
+	return file_metrics_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MetricsAck) GetTotalMetrics() int64 {
@@ -448,37 +544,59 @@ const file_metrics_proto_rawDesc = "" +
 	"\x04host\x18\x05 \x01(\tR\x04host\x12'\n" +
 	"\x0fmax_connections\x18\n" +
 	" \x01(\x05R\x0emaxConnections\x12<\n" +
-	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xbd\b\n" +
-	"\x0fMetricsSnapshot\x12\x1f\n" +
+	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xc2\x04\n" +
+	"\x0eMetricSnapshot\x12\x1f\n" +
 	"\vdatabase_id\x18\x01 \x01(\tR\n" +
-	"databaseId\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12#\n" +
-	"\rdatabase_type\x18\x03 \x01(\tR\fdatabaseType\x12\x1f\n" +
-	"\vcpu_percent\x18\n" +
-	" \x01(\x01R\n" +
-	"cpuPercent\x12%\n" +
-	"\x0ememory_percent\x18\v \x01(\x01R\rmemoryPercent\x123\n" +
-	"\x17disk_io_read_mb_per_sec\x18\f \x01(\x01R\x12diskIoReadMbPerSec\x125\n" +
-	"\x18disk_io_write_mb_per_sec\x18\r \x01(\x01R\x13diskIoWriteMbPerSec\x12-\n" +
-	"\x12active_connections\x18\x14 \x01(\x05R\x11activeConnections\x12)\n" +
-	"\x10idle_connections\x18\x15 \x01(\x05R\x0fidleConnections\x12'\n" +
-	"\x0fmax_connections\x18\x16 \x01(\x05R\x0emaxConnections\x125\n" +
-	"\x17connection_wait_time_ms\x18\x17 \x01(\x01R\x14connectionWaitTimeMs\x12/\n" +
-	"\x14query_latency_p50_ms\x18\x1e \x01(\x01R\x11queryLatencyP50Ms\x12/\n" +
-	"\x14query_latency_p95_ms\x18\x1f \x01(\x01R\x11queryLatencyP95Ms\x12/\n" +
-	"\x14query_latency_p99_ms\x18  \x01(\x01R\x11queryLatencyP99Ms\x12,\n" +
-	"\x12queries_per_second\x18! \x01(\x01R\x10queriesPerSecond\x12$\n" +
-	"\x0ecache_hit_rate\x18( \x01(\x01R\fcacheHitRate\x12\"\n" +
-	"\rcache_size_mb\x18) \x01(\x01R\vcacheSizeMb\x12*\n" +
-	"\x11errors_per_second\x182 \x01(\x01R\x0ferrorsPerSecond\x12^\n" +
-	"\x10extended_metrics\x18< \x03(\v23.startupmonkey.MetricsSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x12B\n" +
-	"\x06labels\x18= \x03(\v2*.startupmonkey.MetricsSnapshot.LabelsEntryR\x06labels\x1aB\n" +
+	"databaseId\x12#\n" +
+	"\rdatabase_type\x18\x02 \x01(\tR\fdatabaseType\x12\x1c\n" +
+	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\x12!\n" +
+	"\fhealth_score\x18\n" +
+	" \x01(\x01R\vhealthScore\x12+\n" +
+	"\x11connection_health\x18\v \x01(\x01R\x10connectionHealth\x12!\n" +
+	"\fquery_health\x18\f \x01(\x01R\vqueryHealth\x12%\n" +
+	"\x0estorage_health\x18\r \x01(\x01R\rstorageHealth\x12!\n" +
+	"\fcache_health\x18\x0e \x01(\x01R\vcacheHealth\x12+\n" +
+	"\x11available_metrics\x18\x14 \x03(\tR\x10availableMetrics\x12?\n" +
+	"\fmeasurements\x18\x1e \x01(\v2\x1b.startupmonkey.MeasurementsR\fmeasurements\x12]\n" +
+	"\x10extended_metrics\x18( \x03(\v22.startupmonkey.MetricSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x1aB\n" +
 	"\x14ExtendedMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\x1a9\n" +
-	"\vLabelsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"f\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"\x97\t\n" +
+	"\fMeasurements\x122\n" +
+	"\x12active_connections\x18\x01 \x01(\x05H\x00R\x11activeConnections\x88\x01\x01\x12.\n" +
+	"\x10idle_connections\x18\x02 \x01(\x05H\x01R\x0fidleConnections\x88\x01\x01\x12,\n" +
+	"\x0fmax_connections\x18\x03 \x01(\x05H\x02R\x0emaxConnections\x88\x01\x01\x124\n" +
+	"\x13waiting_connections\x18\x04 \x01(\x05H\x03R\x12waitingConnections\x88\x01\x01\x124\n" +
+	"\x14avg_query_latency_ms\x18\n" +
+	" \x01(\x01H\x04R\x11avgQueryLatencyMs\x88\x01\x01\x124\n" +
+	"\x14p50_query_latency_ms\x18\v \x01(\x01H\x05R\x11p50QueryLatencyMs\x88\x01\x01\x124\n" +
+	"\x14p95_query_latency_ms\x18\f \x01(\x01H\x06R\x11p95QueryLatencyMs\x88\x01\x01\x124\n" +
+	"\x14p99_query_latency_ms\x18\r \x01(\x01H\aR\x11p99QueryLatencyMs\x88\x01\x01\x12-\n" +
+	"\x10slow_query_count\x18\x0e \x01(\x05H\bR\x0eslowQueryCount\x88\x01\x01\x12.\n" +
+	"\x10sequential_scans\x18\x0f \x01(\x05H\tR\x0fsequentialScans\x88\x01\x01\x121\n" +
+	"\x12used_storage_bytes\x18\x14 \x01(\x03H\n" +
+	"R\x10usedStorageBytes\x88\x01\x01\x123\n" +
+	"\x13total_storage_bytes\x18\x15 \x01(\x03H\vR\x11totalStorageBytes\x88\x01\x01\x121\n" +
+	"\x12free_storage_bytes\x18\x16 \x01(\x03H\fR\x10freeStorageBytes\x88\x01\x01\x12)\n" +
+	"\x0ecache_hit_rate\x18\x1e \x01(\x01H\rR\fcacheHitRate\x88\x01\x01\x12+\n" +
+	"\x0fcache_hit_count\x18\x1f \x01(\x03H\x0eR\rcacheHitCount\x88\x01\x01\x12-\n" +
+	"\x10cache_miss_count\x18  \x01(\x03H\x0fR\x0ecacheMissCount\x88\x01\x01B\x15\n" +
+	"\x13_active_connectionsB\x13\n" +
+	"\x11_idle_connectionsB\x12\n" +
+	"\x10_max_connectionsB\x16\n" +
+	"\x14_waiting_connectionsB\x17\n" +
+	"\x15_avg_query_latency_msB\x17\n" +
+	"\x15_p50_query_latency_msB\x17\n" +
+	"\x15_p95_query_latency_msB\x17\n" +
+	"\x15_p99_query_latency_msB\x13\n" +
+	"\x11_slow_query_countB\x13\n" +
+	"\x11_sequential_scansB\x15\n" +
+	"\x13_used_storage_bytesB\x16\n" +
+	"\x14_total_storage_bytesB\x15\n" +
+	"\x13_free_storage_bytesB\x11\n" +
+	"\x0f_cache_hit_rateB\x12\n" +
+	"\x10_cache_hit_countB\x13\n" +
+	"\x11_cache_miss_count\"f\n" +
 	"\x0fRegistrationAck\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1f\n" +
@@ -487,10 +605,10 @@ const file_metrics_proto_rawDesc = "" +
 	"\n" +
 	"MetricsAck\x12#\n" +
 	"\rtotal_metrics\x18\x01 \x01(\x03R\ftotalMetrics\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status2\xaf\x01\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status2\xae\x01\n" +
 	"\x0eMetricsService\x12O\n" +
-	"\x10RegisterDatabase\x12\x1b.startupmonkey.DatabaseInfo\x1a\x1e.startupmonkey.RegistrationAck\x12L\n" +
-	"\rStreamMetrics\x12\x1e.startupmonkey.MetricsSnapshot\x1a\x19.startupmonkey.MetricsAck(\x01B3Z1github.com/EricMurray-e-m-dev/startupmonkey/protob\x06proto3"
+	"\x10RegisterDatabase\x12\x1b.startupmonkey.DatabaseInfo\x1a\x1e.startupmonkey.RegistrationAck\x12K\n" +
+	"\rStreamMetrics\x12\x1d.startupmonkey.MetricSnapshot\x1a\x19.startupmonkey.MetricsAck(\x01B3Z1github.com/EricMurray-e-m-dev/startupmonkey/protob\x06proto3"
 
 var (
 	file_metrics_proto_rawDescOnce sync.Once
@@ -507,19 +625,19 @@ func file_metrics_proto_rawDescGZIP() []byte {
 var file_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_metrics_proto_goTypes = []any{
 	(*DatabaseInfo)(nil),    // 0: startupmonkey.DatabaseInfo
-	(*MetricsSnapshot)(nil), // 1: startupmonkey.MetricsSnapshot
-	(*RegistrationAck)(nil), // 2: startupmonkey.RegistrationAck
-	(*MetricsAck)(nil),      // 3: startupmonkey.MetricsAck
-	nil,                     // 4: startupmonkey.MetricsSnapshot.ExtendedMetricsEntry
-	nil,                     // 5: startupmonkey.MetricsSnapshot.LabelsEntry
+	(*MetricSnapshot)(nil),  // 1: startupmonkey.MetricSnapshot
+	(*Measurements)(nil),    // 2: startupmonkey.Measurements
+	(*RegistrationAck)(nil), // 3: startupmonkey.RegistrationAck
+	(*MetricsAck)(nil),      // 4: startupmonkey.MetricsAck
+	nil,                     // 5: startupmonkey.MetricSnapshot.ExtendedMetricsEntry
 }
 var file_metrics_proto_depIdxs = []int32{
-	4, // 0: startupmonkey.MetricsSnapshot.extended_metrics:type_name -> startupmonkey.MetricsSnapshot.ExtendedMetricsEntry
-	5, // 1: startupmonkey.MetricsSnapshot.labels:type_name -> startupmonkey.MetricsSnapshot.LabelsEntry
+	2, // 0: startupmonkey.MetricSnapshot.measurements:type_name -> startupmonkey.Measurements
+	5, // 1: startupmonkey.MetricSnapshot.extended_metrics:type_name -> startupmonkey.MetricSnapshot.ExtendedMetricsEntry
 	0, // 2: startupmonkey.MetricsService.RegisterDatabase:input_type -> startupmonkey.DatabaseInfo
-	1, // 3: startupmonkey.MetricsService.StreamMetrics:input_type -> startupmonkey.MetricsSnapshot
-	2, // 4: startupmonkey.MetricsService.RegisterDatabase:output_type -> startupmonkey.RegistrationAck
-	3, // 5: startupmonkey.MetricsService.StreamMetrics:output_type -> startupmonkey.MetricsAck
+	1, // 3: startupmonkey.MetricsService.StreamMetrics:input_type -> startupmonkey.MetricSnapshot
+	3, // 4: startupmonkey.MetricsService.RegisterDatabase:output_type -> startupmonkey.RegistrationAck
+	4, // 5: startupmonkey.MetricsService.StreamMetrics:output_type -> startupmonkey.MetricsAck
 	4, // [4:6] is the sub-list for method output_type
 	2, // [2:4] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -532,6 +650,7 @@ func file_metrics_proto_init() {
 	if File_metrics_proto != nil {
 		return
 	}
+	file_metrics_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

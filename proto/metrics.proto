@@ -1,78 +1,91 @@
 syntax = "proto3";
-
 package startupmonkey;
-
 option go_package = "github.com/EricMurray-e-m-dev/startupmonkey/proto";
 
-// Metrics Service handles metric collection & DB registering
+// MetricsService handles metric collection and database registration
 service MetricsService {
-    // Collector registers DB when it starts
+    // Collector registers database when it starts
     rpc RegisterDatabase (DatabaseInfo) returns (RegistrationAck);
-
-    // Collector streams metrics continously
-    rpc StreamMetrics (stream MetricsSnapshot) returns (MetricsAck);
+    
+    // Collector streams metrics continuously
+    rpc StreamMetrics (stream MetricSnapshot) returns (MetricsAck);
 }
 
 // DatabaseInfo contains metadata about the database
 message DatabaseInfo {
-    // Database Identity: 1-9
-    string database_id = 1;                             // Database ID
-    string database_name = 2;                           // Database name
-    string database_type = 3;                           // DB Type
-    string version = 4;                                 // Version
-    string host = 5;                                    // Host DB - Multi DB setup
-
-    // Config: 10-19
-    int32 max_connections = 10;                         // Max connections
-    bool connection_pooling_enabled = 11;               // Is Pooling active
-}
-
-// MetricsSnapshot is a point in time snapshot of state
-message MetricsSnapshot {
-    // Metadata: 1-9
-    string database_id = 1;                             // Source database
-    int64 timestamp = 2;                                // Timestamp
-    string database_type = 3;                           // DB Type - "postgresql", "mongodb", "sqlite"...
-
-    // System Metrics: 10-19
-    double cpu_percent = 10;                            // Measure system CPU usage
-    double memory_percent = 11;                         // Measure memory usage
-    double disk_io_read_mb_per_sec = 12;                // Read stats per sec
-    double disk_io_write_mb_per_sec = 13;               // Write stats per sec
-
-    // Connection Metrics: 20-29
-    int32 active_connections = 20;                      // Total connections established to DB
-    int32 idle_connections = 21;                        // Idling connections
-    int32 max_connections = 22;                         // Connections limit
-    double connection_wait_time_ms = 23;                // Avg time waiting for connection (0 = no wait)
+    // Database Identity
+    string database_id = 1;
+    string database_name = 2;
+    string database_type = 3;
+    string version = 4;
+    string host = 5;
     
-    // Query Performance: 30-39
-    double query_latency_p50_ms = 30;                   // 50pct Queries faster than this
-    double query_latency_p95_ms = 31;                   // 95pct Queries faster than this
-    double query_latency_p99_ms = 32;                   // 99pct Queries faster than this
-    double queries_per_second = 33;                     // Throughput
-
-    // Cache Metrics: 40-49
-    double cache_hit_rate = 40;                         // Cache ratio 0.00 - 1.00
-    double cache_size_mb = 41;                          // Cache size
-
-    // Errors: 50-59
-    double errors_per_second = 50;                      // Error rate
-
-    // Extensible Metrics: 60-99
-    map<string, double> extended_metrics = 60;          // DB specific metrics
-    map<string, string> labels = 61;                    // Non-numeric metrics
+    // Config
+    int32 max_connections = 10;
+    bool connection_pooling_enabled = 11;
 }
 
-// Acknowledge DB Registration
+// MetricSnapshot is the normalized metric data sent to Analyser
+// Contains health scores (0.0-1.0) and raw measurements
+message MetricSnapshot {
+    // === Metadata ===
+    string database_id = 1;
+    string database_type = 2;
+    int64 timestamp = 3;
+
+    // === Normalized Health Scores (0.0 - 1.0) ===
+    double health_score = 10;
+    double connection_health = 11;
+    double query_health = 12;
+    double storage_health = 13;
+    double cache_health = 14;
+
+    // === Context ===
+    repeated string available_metrics = 20;
+
+    // === Raw Measurements (for Analyser to inspect) ===
+    Measurements measurements = 30;
+
+    // === Optional: Pass-through ===
+    map<string, double> extended_metrics = 40;
+}
+
+// Measurements contains raw values for Analyser to detect anomalies
+message Measurements {
+    // Connections
+    optional int32 active_connections = 1;
+    optional int32 idle_connections = 2;
+    optional int32 max_connections = 3;
+    optional int32 waiting_connections = 4;
+    
+    // Queries
+    optional double avg_query_latency_ms = 10;
+    optional double p50_query_latency_ms = 11;
+    optional double p95_query_latency_ms = 12;
+    optional double p99_query_latency_ms = 13;
+    optional int32 slow_query_count = 14;
+    optional int32 sequential_scans = 15;
+    
+    // Storage
+    optional int64 used_storage_bytes = 20;
+    optional int64 total_storage_bytes = 21;
+    optional int64 free_storage_bytes = 22;
+    
+    // Cache
+    optional double cache_hit_rate = 30;
+    optional int64 cache_hit_count = 31;
+    optional int64 cache_miss_count = 32;
+}
+
+// Acknowledge database registration
 message RegistrationAck {
-    bool success = 1;                                   // Register succeeded (true) or failed (false)
-    string message = 2;                                 // Context message
-    string assigned_id = 3;                             // Analyser ID assigned to metric
+    bool success = 1;
+    string message = 2;
+    string assigned_id = 3;
 }
 
-// Acknowledge Metrics Received
+// Acknowledge metrics received
 message MetricsAck {
-    int64 total_metrics = 1;                            // Total amount of metric received
-    string status = 2;                                  // "healthy", "behind", "error"
+    int64 total_metrics = 1;
+    string status = 2;
 }
