@@ -9,14 +9,15 @@ import (
 
 func TestNewPostgresAdapter(t *testing.T) {
 	connString := "postgres://test@localhost/testdb"
+	databaseID := "test-db-1"
 
-	adapter := adapter.NewPostgresAdapter(connString)
+	adapter := adapter.NewPostgresAdapter(connString, databaseID)
 
 	assert.NotNil(t, adapter)
 }
 
 func TestPostgresAdapter_HealthCheck_NotConnected(t *testing.T) {
-	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb")
+	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb", "test-db-1")
 
 	err := pgAdapter.HealthCheck()
 
@@ -25,7 +26,7 @@ func TestPostgresAdapter_HealthCheck_NotConnected(t *testing.T) {
 }
 
 func TestPostgresAdapter_Close_SafeMultipleCalls(t *testing.T) {
-	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb")
+	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb", "test-db-1")
 
 	err := pgAdapter.Close()
 	assert.NoError(t, err)
@@ -35,7 +36,7 @@ func TestPostgresAdapter_Close_SafeMultipleCalls(t *testing.T) {
 }
 
 func TestPostgresAdapter_CollectMetrics_NotConnected(t *testing.T) {
-	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb")
+	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb", "test-db-1")
 
 	metrics, err := pgAdapter.CollectMetrics()
 

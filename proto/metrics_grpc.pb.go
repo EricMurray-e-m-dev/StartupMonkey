@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MetricsService_RegisterDatabase_FullMethodName = "/startupmonkey.MetricsService/RegisterDatabase"
-	MetricsService_StreamMetrics_FullMethodName    = "/startupmonkey.MetricsService/StreamMetrics"
+	MetricsService_RegisterDatabase_FullMethodName = "/proto.MetricsService/RegisterDatabase"
+	MetricsService_StreamMetrics_FullMethodName    = "/proto.MetricsService/StreamMetrics"
 )
 
 // MetricsServiceClient is the client API for MetricsService service.
@@ -142,7 +142,7 @@ type MetricsService_StreamMetricsServer = grpc.ClientStreamingServer[MetricSnaps
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MetricsService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "startupmonkey.MetricsService",
+	ServiceName: "proto.MetricsService",
 	HandlerType: (*MetricsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

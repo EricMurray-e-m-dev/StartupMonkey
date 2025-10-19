@@ -8,13 +8,15 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 type Orchestrator struct {
-	config  *config.Config
-	adapter adapter.MetricAdapter
-	client  *grpcclient.MetricsClient
+	config     *config.Config
+	adapter    adapter.MetricAdapter
+	normaliser normaliser.Normaliser
+	client     *grpcclient.MetricsClient
 }
 
 func NewOrchestrator(cfg *config.Config) *Orchestrator {
@@ -27,7 +29,7 @@ func (o *Orchestrator) Start() error {
 	log.Printf("Starting Collector Orchestrator...")
 
 	var err error
-	o.adapter, err = adapter.NewAdapter(o.config.DBAdapter, o.config.DBConnectionString)
+	o.adapter, err = adapter.NewAdapter(o.config.DBAdapter, o.config.DBConnectionString, o.config.DatabaseID)
 	if err != nil {
 		return err
 	}
@@ -42,6 +44,9 @@ func (o *Orchestrator) Start() error {
 		return err
 	}
 	log.Printf("Database healthy.")
+
+	o.normaliser = normaliser.NewNormaliser(o.config.DBAdapter)
+	log.Printf("Normaliser created for %s", o.config.DBAdapter)
 
 	o.client = grpcclient.NewMetricsClient(o.config.AnalyserAddress)
 	if err := o.client.Connect(); err != nil {
@@ -85,23 +90,18 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Metrics collected: %d active connections, %.2f%% cache hit rate", rawMetrics.ActiveConnections, rawMetrics.CacheHitRate*100)
-
-	snapshot := &pb.MetricsSnapshot{
-		DatabaseId:        o.config.DatabaseID,
-		Timestamp:         rawMetrics.Timestamp,
-		DatabaseType:      rawMetrics.DatabaseType,
-		CpuPercent:        rawMetrics.CPUPercent,
-		MemoryPercent:     rawMetrics.MemoryPercent,
-		ActiveConnections: rawMetrics.ActiveConnections,
-		IdleConnections:   rawMetrics.IdleConnections,
-		MaxConnections:    rawMetrics.MaxConnections,
-		CacheHitRate:      rawMetrics.CacheHitRate,
-		ExtendedMetrics:   rawMetrics.ExtendedMetrics,
+	log.Printf("Normalising metrics...")
+	normalised, err := o.normaliser.Normalise(rawMetrics)
+	if err != nil {
+		return err
 	}
 
+	log.Printf("Metrics normalised - Health Score: %.2f, Available: %v", normalised.HealthScore, normalised.AvailableMetrics)
+
+	snapshot := o.toProtobuf(normalised)
+
 	log.Printf("Sending metrics to analyser....")
-	ack, err := o.client.StreamMetrics(ctx, []*pb.MetricsSnapshot{snapshot})
+	ack, err := o.client.StreamMetrics(ctx, []*pb.MetricSnapshot{snapshot})
 	if err != nil {
 		return err
 	}
@@ -131,4 +131,55 @@ func (o *Orchestrator) Stop() error {
 	log.Printf("Orchestator stopped")
 	return nil
 
+}
+
+func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSnapshot {
+	snapshot := &pb.MetricSnapshot{
+		// Metadata
+		DatabaseId:   n.DatabaseID,
+		DatabaseType: n.DatabaseType,
+		Timestamp:    n.Timestamp,
+
+		// Health scores
+		HealthScore:      n.HealthScore,
+		ConnectionHealth: n.ConnectionHealth,
+		QueryHealth:      n.QueryHealth,
+		StorageHealth:    n.StorageHealth,
+		CacheHealth:      n.CacheHealth,
+
+		// Context
+		AvailableMetrics: n.AvailableMetrics,
+
+		// Extended metrics
+		ExtendedMetrics: n.ExtendedMetrics,
+
+		// Measurements
+		Measurements: &pb.Measurements{
+			// Connections
+			ActiveConnections:  n.Measurements.ActiveConnections,
+			IdleConnections:    n.Measurements.IdleConnections,
+			MaxConnections:     n.Measurements.MaxConnections,
+			WaitingConnections: n.Measurements.WaitingConnections,
+
+			// Queries
+			AvgQueryLatencyMs: n.Measurements.AvgQueryLatencyMs,
+			P50QueryLatencyMs: n.Measurements.P50QueryLatencyMs,
+			P95QueryLatencyMs: n.Measurements.P95QueryLatencyMs,
+			P99QueryLatencyMs: n.Measurements.P99QueryLatencyMs,
+			SlowQueryCount:    n.Measurements.SlowQueryCount,
+			SequentialScans:   n.Measurements.SequentialScans,
+
+			// Storage
+			UsedStorageBytes:  n.Measurements.UsedStorageBytes,
+			TotalStorageBytes: n.Measurements.TotalStorageBytes,
+			FreeStorageBytes:  n.Measurements.FreeStorageBytes,
+
+			// Cache
+			CacheHitRate:   n.Measurements.CacheHitRate,
+			CacheHitCount:  n.Measurements.CacheHitCount,
+			CacheMissCount: n.Measurements.CacheMissCount,
+		},
+	}
+
+	return snapshot
 }

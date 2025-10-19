@@ -534,7 +534,7 @@ var File_metrics_proto protoreflect.FileDescriptor
 
 const file_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\rmetrics.proto\x12\rstartupmonkey\"\x8e\x02\n" +
+	"\rmetrics.proto\x12\x05proto\"\x8e\x02\n" +
 	"\fDatabaseInfo\x12\x1f\n" +
 	"\vdatabase_id\x18\x01 \x01(\tR\n" +
 	"databaseId\x12#\n" +
@@ -544,7 +544,7 @@ const file_metrics_proto_rawDesc = "" +
 	"\x04host\x18\x05 \x01(\tR\x04host\x12'\n" +
 	"\x0fmax_connections\x18\n" +
 	" \x01(\x05R\x0emaxConnections\x12<\n" +
-	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xc2\x04\n" +
+	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xb2\x04\n" +
 	"\x0eMetricSnapshot\x12\x1f\n" +
 	"\vdatabase_id\x18\x01 \x01(\tR\n" +
 	"databaseId\x12#\n" +
@@ -556,9 +556,9 @@ const file_metrics_proto_rawDesc = "" +
 	"\fquery_health\x18\f \x01(\x01R\vqueryHealth\x12%\n" +
 	"\x0estorage_health\x18\r \x01(\x01R\rstorageHealth\x12!\n" +
 	"\fcache_health\x18\x0e \x01(\x01R\vcacheHealth\x12+\n" +
-	"\x11available_metrics\x18\x14 \x03(\tR\x10availableMetrics\x12?\n" +
-	"\fmeasurements\x18\x1e \x01(\v2\x1b.startupmonkey.MeasurementsR\fmeasurements\x12]\n" +
-	"\x10extended_metrics\x18( \x03(\v22.startupmonkey.MetricSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x1aB\n" +
+	"\x11available_metrics\x18\x14 \x03(\tR\x10availableMetrics\x127\n" +
+	"\fmeasurements\x18\x1e \x01(\v2\x13.proto.MeasurementsR\fmeasurements\x12U\n" +
+	"\x10extended_metrics\x18( \x03(\v2*.proto.MetricSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x1aB\n" +
 	"\x14ExtendedMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"\x97\t\n" +
@@ -605,10 +605,10 @@ const file_metrics_proto_rawDesc = "" +
 	"\n" +
 	"MetricsAck\x12#\n" +
 	"\rtotal_metrics\x18\x01 \x01(\x03R\ftotalMetrics\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status2\xae\x01\n" +
-	"\x0eMetricsService\x12O\n" +
-	"\x10RegisterDatabase\x12\x1b.startupmonkey.DatabaseInfo\x1a\x1e.startupmonkey.RegistrationAck\x12K\n" +
-	"\rStreamMetrics\x12\x1d.startupmonkey.MetricSnapshot\x1a\x19.startupmonkey.MetricsAck(\x01B3Z1github.com/EricMurray-e-m-dev/startupmonkey/protob\x06proto3"
+	"\x06status\x18\x02 \x01(\tR\x06status2\x8e\x01\n" +
+	"\x0eMetricsService\x12?\n" +
+	"\x10RegisterDatabase\x12\x13.proto.DatabaseInfo\x1a\x16.proto.RegistrationAck\x12;\n" +
+	"\rStreamMetrics\x12\x15.proto.MetricSnapshot\x1a\x11.proto.MetricsAck(\x01B3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
 
 var (
 	file_metrics_proto_rawDescOnce sync.Once
@@ -624,20 +624,20 @@ func file_metrics_proto_rawDescGZIP() []byte {
 
 var file_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_metrics_proto_goTypes = []any{
-	(*DatabaseInfo)(nil),    // 0: startupmonkey.DatabaseInfo
-	(*MetricSnapshot)(nil),  // 1: startupmonkey.MetricSnapshot
-	(*Measurements)(nil),    // 2: startupmonkey.Measurements
-	(*RegistrationAck)(nil), // 3: startupmonkey.RegistrationAck
-	(*MetricsAck)(nil),      // 4: startupmonkey.MetricsAck
-	nil,                     // 5: startupmonkey.MetricSnapshot.ExtendedMetricsEntry
+	(*DatabaseInfo)(nil),    // 0: proto.DatabaseInfo
+	(*MetricSnapshot)(nil),  // 1: proto.MetricSnapshot
+	(*Measurements)(nil),    // 2: proto.Measurements
+	(*RegistrationAck)(nil), // 3: proto.RegistrationAck
+	(*MetricsAck)(nil),      // 4: proto.MetricsAck
+	nil,                     // 5: proto.MetricSnapshot.ExtendedMetricsEntry
 }
 var file_metrics_proto_depIdxs = []int32{
-	2, // 0: startupmonkey.MetricSnapshot.measurements:type_name -> startupmonkey.Measurements
-	5, // 1: startupmonkey.MetricSnapshot.extended_metrics:type_name -> startupmonkey.MetricSnapshot.ExtendedMetricsEntry
-	0, // 2: startupmonkey.MetricsService.RegisterDatabase:input_type -> startupmonkey.DatabaseInfo
-	1, // 3: startupmonkey.MetricsService.StreamMetrics:input_type -> startupmonkey.MetricSnapshot
-	3, // 4: startupmonkey.MetricsService.RegisterDatabase:output_type -> startupmonkey.RegistrationAck
-	4, // 5: startupmonkey.MetricsService.StreamMetrics:output_type -> startupmonkey.MetricsAck
+	2, // 0: proto.MetricSnapshot.measurements:type_name -> proto.Measurements
+	5, // 1: proto.MetricSnapshot.extended_metrics:type_name -> proto.MetricSnapshot.ExtendedMetricsEntry
+	0, // 2: proto.MetricsService.RegisterDatabase:input_type -> proto.DatabaseInfo
+	1, // 3: proto.MetricsService.StreamMetrics:input_type -> proto.MetricSnapshot
+	3, // 4: proto.MetricsService.RegisterDatabase:output_type -> proto.RegistrationAck
+	4, // 5: proto.MetricsService.StreamMetrics:output_type -> proto.MetricsAck
 	4, // [4:6] is the sub-list for method output_type
 	2, // [2:4] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
