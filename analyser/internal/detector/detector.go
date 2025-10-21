@@ -1,6 +1,5 @@
 package detector
 
-/*
 import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/models"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
@@ -13,4 +12,3 @@ type Detector interface {
 
 	Category() models.DetectionCategory
 }
-*/
