@@ -8,7 +8,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/normaliser"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
