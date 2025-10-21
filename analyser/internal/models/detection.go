@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // DetectionCategories for grouping similar issues
 type DetectionCategory string
 
@@ -39,4 +41,20 @@ type Detection struct {
 	// For executor in future
 	ActionType     string                 `json:"action_type,omitempty"`
 	ActionMetadata map[string]interface{} `json:"action_metadata,omitempty"`
+}
+
+func NewDetection(detectorName string, category DetectionCategory, databaseId string) *Detection {
+	return &Detection{
+		ID:             generateDetectionID(detectorName, time.Now().Unix()),
+		DetectorName:   detectorName,
+		Category:       category,
+		DatabaseID:     databaseId,
+		Timestamp:      time.Now().Unix(),
+		Evidence:       make(map[string]interface{}),
+		ActionMetadata: make(map[string]interface{}),
+	}
+}
+
+func generateDetectionID(detectorName string, timestamp int64) string {
+	return detectorName + "-" + string(rune(timestamp))
 }
