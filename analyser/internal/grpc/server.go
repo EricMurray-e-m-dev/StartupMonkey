@@ -77,6 +77,19 @@ func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServ
 				log.Printf("    P95 Query Latency: %.2fms", *snapshot.Measurements.P95QueryLatencyMs)
 			}
 		}
+
+		normalised := s.toNormalisedMetrics(snapshot)
+
+		detections := s.engine.RunDetectors(normalised)
+
+		if len(detections) > 0 {
+			log.Printf("Found %d detection(s):", len(detections))
+			for _, detection := range detections {
+				log.Printf("	[%s] %s", detection.Severity, detection.Title)
+				log.Printf("	%s", detection.Description)
+				log.Printf("	Recommendation: %s", detection.Recommendation)
+			}
+		}
 	}
 }
 
