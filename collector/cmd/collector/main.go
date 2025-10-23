@@ -27,7 +27,7 @@ func main() {
 	orch := orchestrator.NewOrchestrator(cfg)
 
 	if err := orch.Start(); err != nil {
-		log.Fatalf("Failed to start orchestrator")
+		log.Fatalf("Failed to start orchestrator: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
