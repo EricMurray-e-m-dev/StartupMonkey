@@ -5,15 +5,20 @@ import (
 	"io"
 	"log"
 
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 type MetricsServer struct {
 	pb.UnimplementedMetricsServiceServer
+	engine *engine.Engine
 }
 
-func NewMetricsServer() *MetricsServer {
-	return &MetricsServer{}
+func NewMetricsServer(eng *engine.Engine) *MetricsServer {
+	return &MetricsServer{
+		engine: eng,
+	}
 }
 
 func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServer) error {
@@ -72,6 +77,19 @@ func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServ
 				log.Printf("    P95 Query Latency: %.2fms", *snapshot.Measurements.P95QueryLatencyMs)
 			}
 		}
+
+		normalised := s.toNormalisedMetrics(snapshot)
+
+		detections := s.engine.RunDetectors(normalised)
+
+		if len(detections) > 0 {
+			log.Printf("Found %d detection(s):", len(detections))
+			for _, detection := range detections {
+				log.Printf("	[%s] %s", detection.Severity, detection.Title)
+				log.Printf("	%s", detection.Description)
+				log.Printf("	Recommendation: %s", detection.Recommendation)
+			}
+		}
 	}
 }
 
@@ -83,4 +101,49 @@ func (s *MetricsServer) RegisterDatabase(ctx context.Context, info *pb.DatabaseI
 		Message:    "Database registered successfully",
 		AssignedId: info.DatabaseId,
 	}, nil
+}
+
+func (s *MetricsServer) toNormalisedMetrics(snapshot *pb.MetricSnapshot) *normaliser.NormalisedMetrics {
+	normalised := &normaliser.NormalisedMetrics{
+		DatabaseID:   snapshot.DatabaseId,
+		DatabaseType: snapshot.DatabaseType,
+		Timestamp:    snapshot.Timestamp,
+
+		HealthScore:      snapshot.HealthScore,
+		ConnectionHealth: snapshot.ConnectionHealth,
+		QueryHealth:      snapshot.QueryHealth,
+		StorageHealth:    snapshot.StorageHealth,
+		CacheHealth:      snapshot.CacheHealth,
+
+		AvailableMetrics: snapshot.AvailableMetrics,
+		ExtendedMetrics:  snapshot.ExtendedMetrics,
+
+		Measurements: normaliser.Measurements{},
+	}
+
+	if snapshot.Measurements != nil {
+		normalised.Measurements = normaliser.Measurements{
+			ActiveConnections:  snapshot.Measurements.ActiveConnections,
+			IdleConnections:    snapshot.Measurements.IdleConnections,
+			MaxConnections:     snapshot.Measurements.MaxConnections,
+			WaitingConnections: snapshot.Measurements.WaitingConnections,
+
+			AvgQueryLatencyMs: snapshot.Measurements.AvgQueryLatencyMs,
+			P50QueryLatencyMs: snapshot.Measurements.P50QueryLatencyMs,
+			P95QueryLatencyMs: snapshot.Measurements.P95QueryLatencyMs,
+			P99QueryLatencyMs: snapshot.Measurements.P99QueryLatencyMs,
+			SlowQueryCount:    snapshot.Measurements.SlowQueryCount,
+			SequentialScans:   snapshot.Measurements.SequentialScans,
+
+			UsedStorageBytes:  snapshot.Measurements.UsedStorageBytes,
+			TotalStorageBytes: snapshot.Measurements.TotalStorageBytes,
+			FreeStorageBytes:  snapshot.Measurements.FreeStorageBytes,
+
+			CacheHitRate:   snapshot.Measurements.CacheHitRate,
+			CacheHitCount:  snapshot.Measurements.CacheHitCount,
+			CacheMissCount: snapshot.Measurements.CacheMissCount,
+		}
+	}
+
+	return normalised
 }
