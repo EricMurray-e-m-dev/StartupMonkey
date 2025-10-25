@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package executor;
+
+option go_package = "github.com/EricMurray-e-m-dev/StartupMonkey/proto";
+
+// ExecutorService handles action management and queries from Dashboard
+service ExecutorService {
+  // Health check
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+  
+  // Query action status (Dashboard uses this)
+  rpc GetActionStatus(ActionStatusRequest) returns (ActionStatusResponse);
+  
+  // List all pending actions (Dashboard uses this)
+  rpc ListPendingActions(ListRequest) returns (ActionList);
+}
+
+// Health check messages
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  int64 uptime_seconds = 2;
+}
+
+// Action status query
+message ActionStatusRequest {
+  string action_id = 1;
+}
+
+message ActionStatusResponse {
+  string action_id = 1;
+  string status = 2;  // "queued", "executing", "completed", "failed"
+  string message = 3;
+  string action_type = 4;
+  string database_id = 5;
+  int64 created_at = 6;
+  int64 completed_at = 7;
+}
+
+// List pending actions
+message ListRequest {
+  string status_filter = 1;  // Optional: "queued", "executing", etc.
+}
+
+message ActionList {
+  repeated ActionStatusResponse actions = 1;
+  int32 total_count = 2;
+}
