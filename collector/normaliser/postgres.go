@@ -24,7 +24,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		active := float64(*raw.Connections.Active)
 		max := float64(*raw.Connections.Max)
 
-		normalised.ConnectionHealth = 1.0 - (active - max)
+		normalised.ConnectionHealth = 1.0 - (active / max)
 
 		normalised.Measurements.ActiveConnections = raw.Connections.Active
 		normalised.Measurements.MaxConnections = raw.Connections.Max

@@ -6,6 +6,10 @@ services:
     container_name: startup_blog_db
     ports:
       - "5433:5432"
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=20"
     environment:
       POSTGRES_DB: startup_blog
       POSTGRES_USER: postgres
