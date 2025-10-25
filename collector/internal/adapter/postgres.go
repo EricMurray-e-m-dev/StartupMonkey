@@ -88,13 +88,14 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 		//Hit/Miss nil
 	}
 
-	// === Query Metrics (Future) ===
-	// TODO: Implement when we add pg_stat_statements support
-	// metrics.Queries = &QueryMetrics{
-	//     AvgLatencyMs: &avgLatency,
-	//     P95LatencyMs: &p95Latency,
-	//     SequentialScans: &seqScans,
-	// }
+	seqScans, err := p.getSequentialScans(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metrics.Queries = &QueryMetrics{
+		SequentialScans: &seqScans,
+	}
 
 	return metrics, nil
 
@@ -198,4 +199,20 @@ func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) 
 
 	hitRate := float64(blkReads) / float64(blksHit)
 	return hitRate, nil
+}
+
+func (p *PostgresAdapter) getSequentialScans(ctx context.Context) (int32, error) {
+	var seqScans int64
+	query := `
+        SELECT COALESCE(SUM(seq_scan), 0)
+        FROM pg_stat_user_tables
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+    `
+
+	err := p.pool.QueryRow(ctx, query).Scan(&seqScans)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get sequential scans: %w", err)
+	}
+
+	return int32(seqScans), nil
 }
