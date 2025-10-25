@@ -67,6 +67,6 @@ func main() {
 
 	log.Printf("Executor service ready")
 	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to server gRPC: %v, err")
+		log.Fatalf("Failed to server gRPC: %v", err)
 	}
 }
