@@ -36,10 +36,7 @@ func main() {
 		log.Fatalf("Failed to start subscriber: %v", err)
 	}
 
-	grpcPort := os.Getenv("GRPC_PORT")
-	if grpcPort == "" {
-		grpcPort = "50052"
-	}
+	grpcPort := "50052"
 
 	listener, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
