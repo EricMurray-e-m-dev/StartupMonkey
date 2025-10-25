@@ -24,7 +24,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		active := float64(*raw.Connections.Active)
 		max := float64(*raw.Connections.Max)
 
-		normalised.ConnectionHealth = 1.0 - (active - max)
+		normalised.ConnectionHealth = 1.0 - (active / max)
 
 		normalised.Measurements.ActiveConnections = raw.Connections.Active
 		normalised.Measurements.MaxConnections = raw.Connections.Max
@@ -39,6 +39,10 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 
 	// === QUERY HEALTH ===
 	if raw.Queries != nil {
+		// Always map sequential scans regardless of latency
+		if raw.Queries.SequentialScans != nil {
+			normalised.Measurements.SequentialScans = raw.Queries.SequentialScans
+		}
 
 		var latency float64
 		if raw.Queries.P95LatencyMs != nil {
@@ -52,14 +56,10 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 			// Health Score: 1.0 = 0ms | 0.0 = 1000ms+
 			normalised.QueryHealth = math.Max(0, 1.0-(latency/1000.0))
 
-			// Store Measurements
+			// Store latency measurements
 			normalised.Measurements.AvgQueryLatencyMs = raw.Queries.AvgLatencyMs
 			normalised.Measurements.P50QueryLatencyMs = raw.Queries.P50LatencyMs
 			normalised.Measurements.P99QueryLatencyMs = raw.Queries.P99LatencyMs
-
-			if raw.Queries.SequentialScans != nil {
-				normalised.Measurements.SequentialScans = raw.Queries.SequentialScans
-			}
 
 			if raw.Queries.SlowQueries != nil {
 				slowCount := int32(len(raw.Queries.SlowQueries))
@@ -69,6 +69,11 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 			availableMetrics = append(availableMetrics, "query_latency")
 		} else {
 			normalised.QueryHealth = 1.0
+		}
+
+		// If we have sequential scans, mark queries as available
+		if raw.Queries.SequentialScans != nil {
+			availableMetrics = append(availableMetrics, "queries")
 		}
 	} else {
 		normalised.QueryHealth = 1.0
