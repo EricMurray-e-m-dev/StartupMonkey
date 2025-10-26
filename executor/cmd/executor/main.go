@@ -12,6 +12,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/eventbus"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/health"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
@@ -48,6 +49,7 @@ func main() {
 	pb.RegisterExecutorServiceServer(grpcServer, executorServer)
 
 	log.Printf("Executor gRPC server listening on :%s", grpcPort)
+	health.StartHealthCheckServer("8082")
 
 	// Handle shutdown on signal
 	go func() {

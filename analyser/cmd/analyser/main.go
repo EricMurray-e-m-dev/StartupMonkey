@@ -7,6 +7,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/detector"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/health"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -37,6 +38,7 @@ func main() {
 	reflection.Register(grpcServer)
 
 	log.Printf("Analyser listening on 50051")
+	health.StartHealthCheckServer("8081")
 
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
