@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/health"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/orchestrator"
 )
 
@@ -35,6 +36,8 @@ func main() {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	health.StartHealthCheckServer("8080")
 
 	go func() {
 		if err := orch.Run(ctx); err != nil && err != context.Canceled {
