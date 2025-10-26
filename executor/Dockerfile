@@ -13,12 +13,11 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-
 # Copy source code
 COPY . .
 
 # Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o analyser ./cmd/analyser
+RUN CGO_ENABLED=0 GOOS=linux go build -o executor ./cmd/executor
 
 # Runtime
 FROM alpine:3.20
@@ -34,7 +33,7 @@ RUN addgroup -g 1000 appuser && \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/analyser .
+COPY --from=builder /app/executor .
 
 # Change ownership
 RUN chown -R appuser:appuser /app
@@ -42,8 +41,8 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# Expose for future health check
-EXPOSE 50051 8081
+# Expose gRPC and health check ports
+EXPOSE 50052 8082
 
 # Run
-CMD [ "./analyser" ]
+CMD [ "./executor" ]
