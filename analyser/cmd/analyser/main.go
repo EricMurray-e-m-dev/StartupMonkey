@@ -3,9 +3,11 @@ package main
 import (
 	"log"
 	"net"
+	"os"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/detector"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/health"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
@@ -25,7 +27,18 @@ func main() {
 
 	log.Printf("Detection engine initialised with %d detectors", len(detectionEngine.GetRegisteredDetectors()))
 
-	metricServer := grpcserver.NewMetricsServer(detectionEngine)
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		natsURL = "http://localhost:4222"
+	}
+
+	publisher, err := eventbus.NewPublisher(natsURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	defer publisher.Close()
+
+	metricServer := grpcserver.NewMetricsServer(detectionEngine, publisher)
 
 	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
