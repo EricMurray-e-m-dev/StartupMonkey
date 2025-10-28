@@ -1,4 +1,4 @@
-# Sprint Retrospective Template
+# Sprint Retrospective
 
 **Sprint:** 001
 **Dates:** Oct 10 - Oct 17

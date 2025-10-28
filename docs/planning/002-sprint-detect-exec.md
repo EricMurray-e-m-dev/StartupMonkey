@@ -1,7 +1,7 @@
-# Sprint 002: Detection & Execution
+# Sprint 002: Detection & Action Pipeline
 
 ## Primary Objective
-Build out rules based issue detection, implement action to fix
+Build out rules based issue detection, implement action pipeline to queue actions
 
 ## Objectives
 1. Create detection engine in Analyser
