@@ -6,18 +6,21 @@ import (
 	"log"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 type MetricsServer struct {
 	pb.UnimplementedMetricsServiceServer
-	engine *engine.Engine
+	engine    *engine.Engine
+	publisher *eventbus.Publisher
 }
 
-func NewMetricsServer(eng *engine.Engine) *MetricsServer {
+func NewMetricsServer(eng *engine.Engine, pub *eventbus.Publisher) *MetricsServer {
 	return &MetricsServer{
-		engine: eng,
+		engine:    eng,
+		publisher: pub,
 	}
 }
 
@@ -83,12 +86,21 @@ func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServ
 		detections := s.engine.RunDetectors(normalised)
 
 		if len(detections) > 0 {
-			log.Printf("Found %d detection(s):", len(detections))
+			log.Printf("Found %d issues in database: %s", len(detections), snapshot.DatabaseId)
+
 			for _, detection := range detections {
-				log.Printf("	[%s] %s", detection.Severity, detection.Title)
-				log.Printf("	%s", detection.Description)
-				log.Printf("	Recommendation: %s", detection.Recommendation)
+				log.Printf("\t[%s] %s", detection.Severity, detection.Title)
+				log.Printf("\t%s", detection.Description)
+				log.Printf("\tRecommendation: %s", detection.Recommendation)
+
+				if err := s.publisher.PublishDetection(detection); err != nil {
+					log.Printf("\tFailed to publish detection event: %v", err)
+				} else {
+					log.Printf("\tPublished to event bus")
+				}
 			}
+		} else {
+			log.Printf("No issues detected in database: %s", snapshot.DatabaseId)
 		}
 	}
 }
