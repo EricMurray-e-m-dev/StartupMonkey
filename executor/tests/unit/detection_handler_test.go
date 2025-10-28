@@ -21,7 +21,7 @@ func TestDetectionHandler_HandleDetection(t *testing.T) {
 		Title:        "Connection pool at 95%",
 		Description:  "Pool exhausted",
 		ActionType:   "deploy_connection_pooler",
-		Timestamp:    time.Now(),
+		Timestamp:    time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -44,7 +44,7 @@ func TestDetectionHandler_GetActionStatus_Success(t *testing.T) {
 		DetectionID: "det123",
 		ActionType:  "create_index",
 		DatabaseID:  "test-db",
-		Timestamp:   time.Now(),
+		Timestamp:   time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -75,13 +75,13 @@ func TestDetectionHandler_ListPendingActions_NoFilter(t *testing.T) {
 	detection1 := &models.Detection{
 		DetectionID: "det-1",
 		ActionType:  "create_index",
-		Timestamp:   time.Now(),
+		Timestamp:   time.Now().Unix(),
 	}
 
 	detection2 := &models.Detection{
 		DetectionID: "det-2",
 		ActionType:  "deploy_pgbouncer",
-		Timestamp:   time.Now(),
+		Timestamp:   time.Now().Unix(),
 	}
 
 	_, err := h.HandleDetection(detection1)
@@ -102,7 +102,7 @@ func TestDetectionHandler_ListPendingActions_WithFilter(t *testing.T) {
 	detection := &models.Detection{
 		DetectionID: "det-1",
 		ActionType:  "create_index",
-		Timestamp:   time.Now(),
+		Timestamp:   time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -134,7 +134,7 @@ func TestDetectionHandler_ConcurrentHandling(t *testing.T) {
 			detection := &models.Detection{
 				DetectionID: "det-concurrent",
 				ActionType:  "create_index",
-				Timestamp:   time.Now(),
+				Timestamp:   time.Now().Unix(),
 			}
 
 			_, err := h.HandleDetection(detection)
