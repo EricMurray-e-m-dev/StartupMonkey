@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"github.com/stretchr/testify/assert"
@@ -12,14 +13,16 @@ import (
 
 func TestNewMetricsServer(t *testing.T) {
 	detectionEngine := engine.NewEngine()
-	server := grpcserver.NewMetricsServer(detectionEngine)
+	publisher, _ := eventbus.NewPublisher("test")
+	server := grpcserver.NewMetricsServer(detectionEngine, publisher)
 
 	assert.NotNil(t, server)
 }
 
 func TestRegisterDatabase(t *testing.T) {
 	detectionEngine := engine.NewEngine()
-	server := grpcserver.NewMetricsServer(detectionEngine)
+	publisher, _ := eventbus.NewPublisher("test")
+	server := grpcserver.NewMetricsServer(detectionEngine, publisher)
 	ctx := context.Background()
 
 	info := &pb.DatabaseInfo{
