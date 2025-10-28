@@ -10,6 +10,7 @@ on:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - uses: actions/checkout@v4
@@ -17,40 +18,46 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-
+      
       - name: Debug port usage
         run: |
-            echo "=== Checking port 5432 ==="
-            sudo lsof -i :5432 || echo "Port 5432 is free"
-            echo "=== Checking port 50051 ==="
-            sudo lsof -i :50051 || echo "Port 50051 is free"
-            echo "=== All listening ports ==="
-            sudo netstat -tulpn | grep LISTEN || true
+          echo "=== Checking common ports ==="
+          sudo lsof -i :5432 || echo "Port 5432 is free"
+          sudo lsof -i :4222 || echo "Port 4222 is free (NATS)"
+          sudo lsof -i :50051 || echo "Port 50051 is free"
+          sudo lsof -i :50052 || echo "Port 50052 is free"
+          echo "=== All listening ports ==="
+          sudo netstat -tulpn | grep LISTEN || true
       
-      - name: Stop all running containers and clean up
+      - name: Clean Docker environment
         run: |
           docker ps -aq | xargs -r docker stop || true
           docker ps -aq | xargs -r docker rm -f || true
           docker network prune -f || true
           docker volume prune -f || true
       
-      - name: Start Docker services
-        run: docker compose up -d --build
-      
-      - name: Wait for services to be ready
-        run: sleep 30
-      
       - name: Run integration tests
         run: |
           cd tests/integration
-          go test -v -timeout 5m
+          go test -v -timeout 10m  # Per-test timeout (allows for slow CI runners)
+        env:
+          DOCKER_BUILDKIT: 1
       
-      - name: Show logs on failure
+      - name: Show service logs on failure
         if: failure()
-        run: docker compose logs
+        run: |
+          echo "=== Showing logs for all test containers ==="
+          docker ps -a
+          for container in $(docker ps -a --format '{{.Names}}' | grep startupmonkey-test); do
+            echo "=== Logs for $container ==="
+            docker logs $container 2>&1 || true
+          done
       
-      - name: Stop Docker services
+      - name: Cleanup
         if: always()
         run: |
+          # Clean up any test containers
+          docker ps -a --format '{{.Names}}' | grep startupmonkey-test | xargs -r docker rm -f || true
           docker compose down -v || true
-          docker ps -aq | xargs -r docker rm -f || true
+          docker network prune -f || true
+          docker volume prune -f || true

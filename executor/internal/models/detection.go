@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type Detection struct {
 	DetectionID  string
 	DetectorName string
@@ -17,5 +15,5 @@ type Detection struct {
 	ActionMetaData map[string]interface{}
 	Evidence       map[string]interface{}
 
-	Timestamp time.Time
+	Timestamp int64
 }
