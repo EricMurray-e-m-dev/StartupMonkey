@@ -58,5 +58,5 @@ export default function DetectionsPage() {
                 </Alert>
             </div>
         </div>
-    )
+    );
 }

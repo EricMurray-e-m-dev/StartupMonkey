@@ -78,5 +78,5 @@ export default function MetricsPage() {
                 </Card>                                 
             </div>
         </div>
-    )
+    );
 }
