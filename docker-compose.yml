@@ -94,6 +94,31 @@ services:
       - startupmonkey
     restart: unless-stopped
 
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - EXECUTOR_GRPC_URL=executor:50052
+      - NATS_URL=nats://nats:4222
+    ports:
+      - "0:3000"
+    depends_on:
+      nats:
+        condition: service_started
+      executor:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
 networks:
   startupmonkey:
     driver: bridge
