@@ -11,9 +11,24 @@ type ActionResult struct {
 	Status    string
 	Message   string
 	CreatedAt time.Time
+	Started   *time.Time
 	Completed *time.Time
 
-	// TODO: Execution details, rollback etc
+	ExecutionTimeMs int64
+	Changes         map[string]interface{}
+	Error           string
+
+	CanRollback   bool
+	Rolledback    bool
+	RollbackError string
+}
+
+type ActionMetadata struct {
+	ActionID     string
+	ActionType   string
+	DatabaseID   string
+	DatabaseType string
+	CreatedAt    time.Time
 }
 
 const (
