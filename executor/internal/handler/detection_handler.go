@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/actions"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/database"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
 )
 
@@ -13,11 +16,17 @@ type DetectionHandler struct {
 	// store in memory for now
 	actions map[string]*models.ActionResult
 	mu      sync.RWMutex
+
+	//TODO: Change to env
+	dbConnections map[string]string
 }
 
 func NewDetectionHandler() *DetectionHandler {
 	return &DetectionHandler{
 		actions: map[string]*models.ActionResult{},
+		dbConnections: map[string]string{
+			"docker-test-db": "postgres://postgres:postgres@postgres:5432/testdb?sslmode=disable", // hardcode for now
+		},
 	}
 }
 
@@ -26,17 +35,24 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 	log.Printf("	Detector: %s", detection.DetectorName)
 	log.Printf("	Action Type: %s", detection.ActionType)
 	log.Printf("	Database: %s", detection.DatabaseID)
-	log.Printf("	Recommendation: %s", detection.Recommendation) // TODO: Remove in future avoid verbosity in logs
+
+	actionID := generateActionID()
+
+	action, err := h.createAction(detection, actionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create action: %w", err)
+	}
+
+	go h.executeAction(action, detection)
 
 	result := &models.ActionResult{
-		ActionID:    generateActionID(),
+		ActionID:    actionID,
 		DetectionID: detection.DetectionID,
 		ActionType:  detection.ActionType,
 		DatabaseID:  detection.DatabaseID,
 		Status:      models.StatusQueued,
 		Message:     fmt.Sprintf("Action queued: %s", detection.ActionType),
 		CreatedAt:   time.Now(),
-		Completed:   nil,
 	}
 
 	// Keep in memory for now
@@ -45,6 +61,79 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 	log.Printf("Action queued: %s (ID: %s)", detection.ActionType, result.ActionID)
 
 	return result, nil
+}
+
+func (h *DetectionHandler) createAction(detection *models.Detection, actionID string) (actions.Action, error) {
+	connString, exists := h.dbConnections[detection.DatabaseID]
+	if !exists {
+		return nil, fmt.Errorf("no connection strings for database: %s", detection.DatabaseID)
+	}
+
+	ctx := context.Background()
+	// TODO: replace with factory in future
+	adapter, err := database.NewPostgresAdapter(ctx, connString, detection.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database adapter: %w", err)
+	}
+
+	metadata := &models.ActionMetadata{
+		ActionID:     actionID,
+		ActionType:   detection.ActionType,
+		DatabaseID:   detection.DatabaseID,
+		DatabaseType: "postgres", // TODO: get from detection
+		CreatedAt:    time.Now(),
+	}
+
+	switch detection.ActionType {
+	case "create_index":
+		tableName, ok := detection.ActionMetaData["table_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing table_name in detection metadata")
+		}
+
+		columnName, ok := detection.ActionMetaData["column_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing column_name in detection metadata")
+		}
+
+		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
+
+	// TODO: Add more actions here "deploy_pgbouncer" etc
+	default:
+		return nil, fmt.Errorf("action type unknown: %s", detection.ActionType)
+	}
+}
+
+func (h *DetectionHandler) executeAction(action actions.Action, detection *models.Detection) {
+	ctx := context.Background()
+	metadata := action.GetMetadata()
+
+	log.Printf("\tExecuting Action: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
+
+	result, err := action.Execute(ctx)
+	if err != nil {
+		log.Printf("Action execution failed: %v", err)
+		result = &models.ActionResult{
+			ActionID:    metadata.ActionID,
+			DetectionID: detection.DetectionID,
+			ActionType:  metadata.ActionType,
+			DatabaseID:  metadata.DatabaseID,
+			Status:      models.StatusFailed,
+			Message:     "Execution error",
+			Error:       err.Error(),
+			CreatedAt:   metadata.CreatedAt,
+		}
+	}
+
+	h.storeAction(result)
+
+	if result.Status == models.StatusCompleted {
+		log.Printf("\tAction Completed: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
+		log.Printf("\tChanges: %v", result.Changes)
+	} else {
+		log.Printf("\tAction Failed: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
+		log.Printf("\tError: %s", result.Error)
+	}
 }
 
 func (h *DetectionHandler) GetActionStatus(actionID string) (*models.ActionResult, error) {
