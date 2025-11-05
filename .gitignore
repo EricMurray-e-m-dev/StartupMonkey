@@ -49,3 +49,5 @@ Thumbs.db
 *.tmp
 *.lock
 .env
+
+/.dummys/
