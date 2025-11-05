@@ -66,6 +66,7 @@ func (s *Subscriber) handleMessage(msg *nats.Msg) {
 	result, err := s.handler.HandleDetection(&detection)
 	if err != nil {
 		log.Printf("Failed to handle detection: %v", err)
+		return
 	}
 
 	log.Printf("Detection processed successfully (Action ID: %s)", result.ActionID)
