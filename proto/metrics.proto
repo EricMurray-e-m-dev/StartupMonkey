@@ -50,6 +50,7 @@ message MetricSnapshot {
 
     // === Optional: Pass-through ===
     map<string, double> extended_metrics = 40;
+    map<string, string> labels = 50;
 }
 
 // Measurements contains raw values for Analyser to detect anomalies

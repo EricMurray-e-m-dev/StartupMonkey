@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.32.1
-// source: metrics.proto
+// source: proto/metrics.proto
 
 package proto
 
@@ -39,7 +39,7 @@ type DatabaseInfo struct {
 
 func (x *DatabaseInfo) Reset() {
 	*x = DatabaseInfo{}
-	mi := &file_metrics_proto_msgTypes[0]
+	mi := &file_proto_metrics_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -51,7 +51,7 @@ func (x *DatabaseInfo) String() string {
 func (*DatabaseInfo) ProtoMessage() {}
 
 func (x *DatabaseInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[0]
+	mi := &file_proto_metrics_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -64,7 +64,7 @@ func (x *DatabaseInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseInfo.ProtoReflect.Descriptor instead.
 func (*DatabaseInfo) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{0}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *DatabaseInfo) GetDatabaseId() string {
@@ -136,13 +136,14 @@ type MetricSnapshot struct {
 	Measurements *Measurements `protobuf:"bytes,30,opt,name=measurements,proto3" json:"measurements,omitempty"`
 	// === Optional: Pass-through ===
 	ExtendedMetrics map[string]float64 `protobuf:"bytes,40,rep,name=extended_metrics,json=extendedMetrics,proto3" json:"extended_metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"`
+	Labels          map[string]string  `protobuf:"bytes,50,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *MetricSnapshot) Reset() {
 	*x = MetricSnapshot{}
-	mi := &file_metrics_proto_msgTypes[1]
+	mi := &file_proto_metrics_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -154,7 +155,7 @@ func (x *MetricSnapshot) String() string {
 func (*MetricSnapshot) ProtoMessage() {}
 
 func (x *MetricSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[1]
+	mi := &file_proto_metrics_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -167,7 +168,7 @@ func (x *MetricSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricSnapshot.ProtoReflect.Descriptor instead.
 func (*MetricSnapshot) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{1}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *MetricSnapshot) GetDatabaseId() string {
@@ -247,6 +248,13 @@ func (x *MetricSnapshot) GetExtendedMetrics() map[string]float64 {
 	return nil
 }
 
+func (x *MetricSnapshot) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
 // Measurements contains raw values for Analyser to detect anomalies
 type Measurements struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -276,7 +284,7 @@ type Measurements struct {
 
 func (x *Measurements) Reset() {
 	*x = Measurements{}
-	mi := &file_metrics_proto_msgTypes[2]
+	mi := &file_proto_metrics_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -288,7 +296,7 @@ func (x *Measurements) String() string {
 func (*Measurements) ProtoMessage() {}
 
 func (x *Measurements) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[2]
+	mi := &file_proto_metrics_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,7 +309,7 @@ func (x *Measurements) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Measurements.ProtoReflect.Descriptor instead.
 func (*Measurements) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{2}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Measurements) GetActiveConnections() int32 {
@@ -428,7 +436,7 @@ type RegistrationAck struct {
 
 func (x *RegistrationAck) Reset() {
 	*x = RegistrationAck{}
-	mi := &file_metrics_proto_msgTypes[3]
+	mi := &file_proto_metrics_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -440,7 +448,7 @@ func (x *RegistrationAck) String() string {
 func (*RegistrationAck) ProtoMessage() {}
 
 func (x *RegistrationAck) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[3]
+	mi := &file_proto_metrics_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,7 +461,7 @@ func (x *RegistrationAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegistrationAck.ProtoReflect.Descriptor instead.
 func (*RegistrationAck) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{3}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RegistrationAck) GetSuccess() bool {
@@ -488,7 +496,7 @@ type MetricsAck struct {
 
 func (x *MetricsAck) Reset() {
 	*x = MetricsAck{}
-	mi := &file_metrics_proto_msgTypes[4]
+	mi := &file_proto_metrics_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -500,7 +508,7 @@ func (x *MetricsAck) String() string {
 func (*MetricsAck) ProtoMessage() {}
 
 func (x *MetricsAck) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[4]
+	mi := &file_proto_metrics_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -513,7 +521,7 @@ func (x *MetricsAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsAck.ProtoReflect.Descriptor instead.
 func (*MetricsAck) Descriptor() ([]byte, []int) {
-	return file_metrics_proto_rawDescGZIP(), []int{4}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MetricsAck) GetTotalMetrics() int64 {
@@ -530,11 +538,11 @@ func (x *MetricsAck) GetStatus() string {
 	return ""
 }
 
-var File_metrics_proto protoreflect.FileDescriptor
+var File_proto_metrics_proto protoreflect.FileDescriptor
 
-const file_metrics_proto_rawDesc = "" +
+const file_proto_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\rmetrics.proto\x12\x05proto\"\x8e\x02\n" +
+	"\x13proto/metrics.proto\x12\x05proto\"\x8e\x02\n" +
 	"\fDatabaseInfo\x12\x1f\n" +
 	"\vdatabase_id\x18\x01 \x01(\tR\n" +
 	"databaseId\x12#\n" +
@@ -544,7 +552,7 @@ const file_metrics_proto_rawDesc = "" +
 	"\x04host\x18\x05 \x01(\tR\x04host\x12'\n" +
 	"\x0fmax_connections\x18\n" +
 	" \x01(\x05R\x0emaxConnections\x12<\n" +
-	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xb2\x04\n" +
+	"\x1aconnection_pooling_enabled\x18\v \x01(\bR\x18connectionPoolingEnabled\"\xa8\x05\n" +
 	"\x0eMetricSnapshot\x12\x1f\n" +
 	"\vdatabase_id\x18\x01 \x01(\tR\n" +
 	"databaseId\x12#\n" +
@@ -558,10 +566,14 @@ const file_metrics_proto_rawDesc = "" +
 	"\fcache_health\x18\x0e \x01(\x01R\vcacheHealth\x12+\n" +
 	"\x11available_metrics\x18\x14 \x03(\tR\x10availableMetrics\x127\n" +
 	"\fmeasurements\x18\x1e \x01(\v2\x13.proto.MeasurementsR\fmeasurements\x12U\n" +
-	"\x10extended_metrics\x18( \x03(\v2*.proto.MetricSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x1aB\n" +
+	"\x10extended_metrics\x18( \x03(\v2*.proto.MetricSnapshot.ExtendedMetricsEntryR\x0fextendedMetrics\x129\n" +
+	"\x06labels\x182 \x03(\v2!.proto.MetricSnapshot.LabelsEntryR\x06labels\x1aB\n" +
 	"\x14ExtendedMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"\x97\t\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x97\t\n" +
 	"\fMeasurements\x122\n" +
 	"\x12active_connections\x18\x01 \x01(\x05H\x00R\x11activeConnections\x88\x01\x01\x12.\n" +
 	"\x10idle_connections\x18\x02 \x01(\x05H\x01R\x0fidleConnections\x88\x01\x01\x12,\n" +
@@ -611,61 +623,63 @@ const file_metrics_proto_rawDesc = "" +
 	"\rStreamMetrics\x12\x15.proto.MetricSnapshot\x1a\x11.proto.MetricsAck(\x01B3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
 
 var (
-	file_metrics_proto_rawDescOnce sync.Once
-	file_metrics_proto_rawDescData []byte
+	file_proto_metrics_proto_rawDescOnce sync.Once
+	file_proto_metrics_proto_rawDescData []byte
 )
 
-func file_metrics_proto_rawDescGZIP() []byte {
-	file_metrics_proto_rawDescOnce.Do(func() {
-		file_metrics_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_metrics_proto_rawDesc), len(file_metrics_proto_rawDesc)))
+func file_proto_metrics_proto_rawDescGZIP() []byte {
+	file_proto_metrics_proto_rawDescOnce.Do(func() {
+		file_proto_metrics_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_metrics_proto_rawDesc), len(file_proto_metrics_proto_rawDesc)))
 	})
-	return file_metrics_proto_rawDescData
+	return file_proto_metrics_proto_rawDescData
 }
 
-var file_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_metrics_proto_goTypes = []any{
+var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_proto_metrics_proto_goTypes = []any{
 	(*DatabaseInfo)(nil),    // 0: proto.DatabaseInfo
 	(*MetricSnapshot)(nil),  // 1: proto.MetricSnapshot
 	(*Measurements)(nil),    // 2: proto.Measurements
 	(*RegistrationAck)(nil), // 3: proto.RegistrationAck
 	(*MetricsAck)(nil),      // 4: proto.MetricsAck
 	nil,                     // 5: proto.MetricSnapshot.ExtendedMetricsEntry
+	nil,                     // 6: proto.MetricSnapshot.LabelsEntry
 }
-var file_metrics_proto_depIdxs = []int32{
+var file_proto_metrics_proto_depIdxs = []int32{
 	2, // 0: proto.MetricSnapshot.measurements:type_name -> proto.Measurements
 	5, // 1: proto.MetricSnapshot.extended_metrics:type_name -> proto.MetricSnapshot.ExtendedMetricsEntry
-	0, // 2: proto.MetricsService.RegisterDatabase:input_type -> proto.DatabaseInfo
-	1, // 3: proto.MetricsService.StreamMetrics:input_type -> proto.MetricSnapshot
-	3, // 4: proto.MetricsService.RegisterDatabase:output_type -> proto.RegistrationAck
-	4, // 5: proto.MetricsService.StreamMetrics:output_type -> proto.MetricsAck
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	6, // 2: proto.MetricSnapshot.labels:type_name -> proto.MetricSnapshot.LabelsEntry
+	0, // 3: proto.MetricsService.RegisterDatabase:input_type -> proto.DatabaseInfo
+	1, // 4: proto.MetricsService.StreamMetrics:input_type -> proto.MetricSnapshot
+	3, // 5: proto.MetricsService.RegisterDatabase:output_type -> proto.RegistrationAck
+	4, // 6: proto.MetricsService.StreamMetrics:output_type -> proto.MetricsAck
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_metrics_proto_init() }
-func file_metrics_proto_init() {
-	if File_metrics_proto != nil {
+func init() { file_proto_metrics_proto_init() }
+func file_proto_metrics_proto_init() {
+	if File_proto_metrics_proto != nil {
 		return
 	}
-	file_metrics_proto_msgTypes[2].OneofWrappers = []any{}
+	file_proto_metrics_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_metrics_proto_rawDesc), len(file_metrics_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_metrics_proto_rawDesc), len(file_proto_metrics_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_metrics_proto_goTypes,
-		DependencyIndexes: file_metrics_proto_depIdxs,
-		MessageInfos:      file_metrics_proto_msgTypes,
+		GoTypes:           file_proto_metrics_proto_goTypes,
+		DependencyIndexes: file_proto_metrics_proto_depIdxs,
+		MessageInfos:      file_proto_metrics_proto_msgTypes,
 	}.Build()
-	File_metrics_proto = out.File
-	file_metrics_proto_goTypes = nil
-	file_metrics_proto_depIdxs = nil
+	File_proto_metrics_proto = out.File
+	file_proto_metrics_proto_goTypes = nil
+	file_proto_metrics_proto_depIdxs = nil
 }
