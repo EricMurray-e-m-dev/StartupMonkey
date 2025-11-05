@@ -14,6 +14,14 @@ type PostgresAdapter struct {
 	pool             *pgxpool.Pool
 }
 
+// Postgres-specific metrics
+type TabelScanStat struct {
+	TableName  string
+	SeqScans   int64
+	SeqTupRead int64
+	IdxScans   int64
+}
+
 func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
 	return &PostgresAdapter{
 		connectionString: connectionString,
@@ -95,6 +103,22 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 
 	metrics.Queries = &QueryMetrics{
 		SequentialScans: &seqScans,
+	}
+
+	tableStats, err := p.getTableScans(ctx)
+	if err != nil {
+		fmt.Printf("failed to get table stats: %v\n", err)
+	} else {
+		for _, table := range tableStats {
+			prefix := fmt.Sprintf("pg.table.%s", table.TableName)
+			metrics.ExtendedMetrics[prefix+".seq_scans"] = float64(table.SeqScans)
+			metrics.ExtendedMetrics[prefix+".seq_tup_reads"] = float64(table.SeqTupRead)
+			metrics.ExtendedMetrics[prefix+".idx_scans"] = float64(table.IdxScans)
+		}
+	}
+
+	if len(tableStats) > 0 {
+		metrics.Labels["pg.worst_seq_scan_table"] = tableStats[0].TableName
 	}
 
 	return metrics, nil
@@ -215,4 +239,36 @@ func (p *PostgresAdapter) getSequentialScans(ctx context.Context) (int32, error)
 	}
 
 	return int32(seqScans), nil
+}
+
+func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TabelScanStat, error) {
+	query := `
+        SELECT 
+            relname,
+            seq_scan,
+            seq_tup_read,
+            idx_scan
+        FROM pg_stat_user_tables
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+        AND seq_scan > 0
+        ORDER BY seq_scan DESC
+        LIMIT 10
+    `
+
+	rows, err := p.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []TabelScanStat
+	for rows.Next() {
+		var s TabelScanStat
+		if err := rows.Scan(&s.TableName, &s.SeqScans, &s.SeqTupRead, &s.IdxScans); err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }

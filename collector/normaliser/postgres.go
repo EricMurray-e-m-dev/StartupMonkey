@@ -131,5 +131,9 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.ExtendedMetrics = raw.ExtendedMetrics
 	}
 
+	if raw.Labels != nil {
+		normalised.Labels = raw.Labels
+	}
+
 	return normalised, nil
 }

@@ -19,6 +19,7 @@ type NormalisedMetrics struct {
 	Measurements Measurements
 
 	ExtendedMetrics map[string]float64
+	Labels          map[string]string
 }
 
 type Measurements struct {
