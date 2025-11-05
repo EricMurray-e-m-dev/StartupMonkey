@@ -15,6 +15,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		Timestamp:       raw.Timestamp,
 		Measurements:    Measurements{},
 		ExtendedMetrics: make(map[string]float64),
+		Labels:          make(map[string]string),
 	}
 
 	var availableMetrics []string

@@ -152,6 +152,7 @@ func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSna
 
 		// Extended metrics
 		ExtendedMetrics: n.ExtendedMetrics,
+		Labels:          n.Labels,
 
 		// Measurements
 		Measurements: &pb.Measurements{

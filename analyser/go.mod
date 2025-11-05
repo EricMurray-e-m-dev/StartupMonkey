@@ -3,8 +3,8 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/analyser
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251021183526-f92fadc6882b
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e
+	github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105194820-05968f71ae60
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105194820-05968f71ae60
 	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
