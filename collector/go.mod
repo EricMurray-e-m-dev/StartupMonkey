@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/collector
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251019185316-8f88e955d50e
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105205209-b684628bfd44
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.8.1

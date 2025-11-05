@@ -108,18 +108,20 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	tableStats, err := p.getTableScans(ctx)
 	if err != nil {
 		fmt.Printf("failed to get table stats: %v\n", err)
-	} else {
+	} else if len(tableStats) > 0 {
 		for _, table := range tableStats {
 			prefix := fmt.Sprintf("pg.table.%s", table.TableName)
 			metrics.ExtendedMetrics[prefix+".seq_scans"] = float64(table.SeqScans)
-			metrics.ExtendedMetrics[prefix+".seq_tup_reads"] = float64(table.SeqTupRead)
+			metrics.ExtendedMetrics[prefix+".seq_tup_read"] = float64(table.SeqTupRead)
 			metrics.ExtendedMetrics[prefix+".idx_scans"] = float64(table.IdxScans)
+
+			metrics.Labels["pg.worst_seq_scan_table"] = tableStats[0].TableName
 		}
 	}
 
-	if len(tableStats) > 0 {
-		metrics.Labels["pg.worst_seq_scan_table"] = tableStats[0].TableName
-	}
+	//TODO: Remove after debugging
+	fmt.Printf("\tDEBUG Collector RawMetrics.Labels: %+v\n", metrics.Labels)
+	fmt.Printf("\tDEBUG Collector ExtendedMetrics keys: %v\n", len(metrics.ExtendedMetrics))
 
 	return metrics, nil
 
