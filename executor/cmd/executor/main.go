@@ -24,7 +24,7 @@ func main() {
 
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
-		natsURL = "http://localhost:4222"
+		natsURL = "nats://localhost:4222"
 	}
 
 	subscriber, err := eventbus.NewSubscriber(natsURL, detectionHandler)
