@@ -16,6 +16,14 @@ func TestMissingIndexDetector_FiresWhenAboveThreshold(t *testing.T) {
 	snapshot := &normaliser.NormalisedMetrics{
 		DatabaseID:   "test-db",
 		DatabaseType: "postgres",
+		Labels: map[string]string{
+			"pg.worst_seq_scan_table":     "users",
+			"pg.recommended_index_column": "email",
+		},
+		ExtendedMetrics: map[string]float64{
+			"pg.table.users.seq_scans":    15,
+			"pg.table.users.seq_tup_read": 2000,
+		},
 		Measurements: normaliser.Measurements{
 			SequentialScans: &seqScans,
 		},
@@ -31,10 +39,18 @@ func TestMissingIndexDetector_FiresWhenAboveThreshold(t *testing.T) {
 func TestMissingIndexDetector_NoDetectionWhenBelowThreshold(t *testing.T) {
 	det := detector.NewMissingIndexDetector()
 
-	seqScans := int32(5)
+	seqScans := int32(0)
 	snapshot := &normaliser.NormalisedMetrics{
 		DatabaseID:   "test-db",
 		DatabaseType: "postgres",
+		Labels: map[string]string{
+			"pg.worst_seq_scan_table":     "users",
+			"pg.recommended_index_column": "email",
+		},
+		ExtendedMetrics: map[string]float64{
+			"pg.table.users.seq_scans":    0,
+			"pg.table.users.seq_tup_read": 0,
+		},
 		Measurements: normaliser.Measurements{
 			SequentialScans: &seqScans,
 		},
@@ -64,10 +80,18 @@ func TestMissingIndexDetector_NoDetectionWhenDataMissing(t *testing.T) {
 func TestMissingIndexDetector_ExactlyAtThreshold(t *testing.T) {
 	det := detector.NewMissingIndexDetector()
 
-	seqScans := int32(10)
+	seqScans := int32(1)
 	snapshot := &normaliser.NormalisedMetrics{
 		DatabaseID:   "test-db",
 		DatabaseType: "postgres",
+		Labels: map[string]string{
+			"pg.worst_seq_scan_table":     "users",
+			"pg.recommended_index_column": "email",
+		},
+		ExtendedMetrics: map[string]float64{
+			"pg.table.users.seq_scans":    1,
+			"pg.table.users.seq_tup_read": 200,
+		},
 		Measurements: normaliser.Measurements{
 			SequentialScans: &seqScans,
 		},
@@ -86,6 +110,14 @@ func TestMissingIndexDetector_CustomThreshold(t *testing.T) {
 	snapshot := &normaliser.NormalisedMetrics{
 		DatabaseID:   "test-db",
 		DatabaseType: "postgres",
+		Labels: map[string]string{
+			"pg.worst_seq_scan_table":     "users",
+			"pg.recommended_index_column": "email",
+		},
+		ExtendedMetrics: map[string]float64{
+			"pg.table.users.seq_scans":    10,
+			"pg.table.users.seq_tup_read": 2000,
+		},
 		Measurements: normaliser.Measurements{
 			SequentialScans: &seqScans,
 		},
@@ -103,6 +135,14 @@ func TestMissingIndexDetector_RecommendationContent(t *testing.T) {
 	snapshot := &normaliser.NormalisedMetrics{
 		DatabaseID:   "test-db",
 		DatabaseType: "postgres",
+		Labels: map[string]string{
+			"pg.worst_seq_scan_table":     "users",
+			"pg.recommended_index_column": "email",
+		},
+		ExtendedMetrics: map[string]float64{
+			"pg.table.users.seq_scans":    20,
+			"pg.table.users.seq_tup_read": 2000,
+		},
 		Measurements: normaliser.Measurements{
 			SequentialScans: &seqScans,
 		},
