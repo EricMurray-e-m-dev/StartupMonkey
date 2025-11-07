@@ -129,6 +129,7 @@ func (s *MetricsServer) toNormalisedMetrics(snapshot *pb.MetricSnapshot) *normal
 
 		AvailableMetrics: snapshot.AvailableMetrics,
 		ExtendedMetrics:  snapshot.ExtendedMetrics,
+		Labels:           snapshot.Labels,
 
 		Measurements: normaliser.Measurements{},
 	}

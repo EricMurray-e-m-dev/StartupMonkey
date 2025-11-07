@@ -1,7 +1,9 @@
-github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105194820-05968f71ae60 h1:gK11ZLJKzmsa2CFf0Q7ipg0z5qiucrtjIDQuJOOxEsE=
-github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105194820-05968f71ae60/go.mod h1:GCEcZpbyFYL8hnGNJ7O5mwehB4UlVmmNqkWpYKyayOA=
+github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105205209-b684628bfd44 h1:u/lnuo/oU2ERgZUugJ7tuF0Rkc6tSCvuFsE8nqv5awM=
+github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105205209-b684628bfd44/go.mod h1:GCEcZpbyFYL8hnGNJ7O5mwehB4UlVmmNqkWpYKyayOA=
 github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105194820-05968f71ae60 h1:+/265CU0+I1vXJXru/MY4/w5Ldsg3HoHpx/NQ/Ue5wM=
 github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105194820-05968f71ae60/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105205209-b684628bfd44 h1:uCaqfTBR7tAdLChAsV8Qk4rDc34ztMujLz6KVXa7TpI=
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105205209-b684628bfd44/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
