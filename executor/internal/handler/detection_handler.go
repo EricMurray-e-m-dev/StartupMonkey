@@ -102,7 +102,7 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 	// TODO: Add more actions here "deploy_pgbouncer" etc
 	default:
-		return nil, fmt.Errorf("action type unknown: %s", detection.ActionType)
+		return nil, nil
 	}
 }
 

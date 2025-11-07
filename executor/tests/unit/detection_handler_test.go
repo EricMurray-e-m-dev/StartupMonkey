@@ -1,6 +1,7 @@
 package unit
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -10,19 +11,24 @@ import (
 )
 
 func TestDetectionHandler_HandleDetection(t *testing.T) {
-	t.Skip("Skipping tests that require db connection for now")
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
+
 	h := handler.NewDetectionHandler()
 
 	detection := &models.Detection{
 		DetectionID:  "det-123",
-		DetectorName: "connection_pool_exhaustion",
-		Category:     "connection",
-		Severity:     "critical",
+		DetectorName: "missing_index_detector",
+		Category:     "performance",
+		Severity:     "warning",
 		DatabaseID:   "test-db",
-		Title:        "Connection pool at 95%",
-		Description:  "Pool exhausted",
-		ActionType:   "deploy_connection_pooler",
-		Timestamp:    time.Now().Unix(),
+		Title:        "Missing index on users(id)",
+		Description:  "Sequential scans detected on 'users' table due to missing index.",
+		ActionType:   "create_index",
+		ActionMetaData: map[string]interface{}{
+			"table_name":  "users",
+			"column_name": "id",
+		},
+		Timestamp: time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -31,7 +37,7 @@ func TestDetectionHandler_HandleDetection(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.NotEmpty(t, result.ActionID)
 	assert.Equal(t, "det-123", result.DetectionID)
-	assert.Equal(t, "deploy_connection_pooler", result.ActionType)
+	assert.Equal(t, "create_index", result.ActionType)
 	assert.Equal(t, "test-db", result.DatabaseID)
 	assert.Equal(t, models.StatusQueued, result.Status)
 	assert.NotZero(t, result.CreatedAt)
@@ -39,14 +45,18 @@ func TestDetectionHandler_HandleDetection(t *testing.T) {
 }
 
 func TestDetectionHandler_GetActionStatus_Success(t *testing.T) {
-	t.Skip("Skipping tests that require db connection for now")
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	detection := &models.Detection{
 		DetectionID: "det123",
 		ActionType:  "create_index",
-		DatabaseID:  "test-db",
-		Timestamp:   time.Now().Unix(),
+		ActionMetaData: map[string]interface{}{
+			"table_name":  "users",
+			"column_name": "id",
+		},
+		DatabaseID: "test-db",
+		Timestamp:  time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -62,6 +72,7 @@ func TestDetectionHandler_GetActionStatus_Success(t *testing.T) {
 }
 
 func TestDetectionHandler_GetActionStatus_NotFound(t *testing.T) {
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	retrieved, err := h.GetActionStatus("fake-action-id")
@@ -72,13 +83,17 @@ func TestDetectionHandler_GetActionStatus_NotFound(t *testing.T) {
 }
 
 func TestDetectionHandler_ListPendingActions_NoFilter(t *testing.T) {
-	t.Skip("Skipping tests that require db connection for now")
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	detection1 := &models.Detection{
 		DetectionID: "det-1",
 		ActionType:  "create_index",
-		Timestamp:   time.Now().Unix(),
+		ActionMetaData: map[string]interface{}{
+			"table_name":  "users",
+			"column_name": "id",
+		},
+		Timestamp: time.Now().Unix(),
 	}
 
 	detection2 := &models.Detection{
@@ -100,13 +115,17 @@ func TestDetectionHandler_ListPendingActions_NoFilter(t *testing.T) {
 }
 
 func TestDetectionHandler_ListPendingActions_WithFilter(t *testing.T) {
-	t.Skip("Skipping tests that require db connection for now")
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	detection := &models.Detection{
 		DetectionID: "det-1",
 		ActionType:  "create_index",
-		Timestamp:   time.Now().Unix(),
+		ActionMetaData: map[string]interface{}{
+			"table_name":  "users",
+			"column_name": "id",
+		},
+		Timestamp: time.Now().Unix(),
 	}
 
 	result, err := h.HandleDetection(detection)
@@ -120,6 +139,7 @@ func TestDetectionHandler_ListPendingActions_WithFilter(t *testing.T) {
 }
 
 func TestDetectionHandler_ListPendingActions_EmptyList(t *testing.T) {
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	actions, err := h.ListPendingActions("")
@@ -129,7 +149,7 @@ func TestDetectionHandler_ListPendingActions_EmptyList(t *testing.T) {
 }
 
 func TestDetectionHandler_ConcurrentHandling(t *testing.T) {
-	t.Skip("Skipping tests that require db connection for now")
+	os.Setenv("DB_CONNECTION_STRING", "postgresql://ericmurray@localhost:5432/bad_performance_test")
 	h := handler.NewDetectionHandler()
 
 	done := make(chan bool)
@@ -139,7 +159,11 @@ func TestDetectionHandler_ConcurrentHandling(t *testing.T) {
 			detection := &models.Detection{
 				DetectionID: "det-concurrent",
 				ActionType:  "create_index",
-				Timestamp:   time.Now().Unix(),
+				ActionMetaData: map[string]interface{}{
+					"table_name":  "users",
+					"column_name": "id",
+				},
+				Timestamp: time.Now().Unix(),
 			}
 
 			_, err := h.HandleDetection(detection)
