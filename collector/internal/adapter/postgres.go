@@ -3,7 +3,10 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"log"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -109,19 +112,24 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	if err != nil {
 		fmt.Printf("failed to get table stats: %v\n", err)
 	} else if len(tableStats) > 0 {
+		worstTable := tableStats[0]
+
 		for _, table := range tableStats {
 			prefix := fmt.Sprintf("pg.table.%s", table.TableName)
 			metrics.ExtendedMetrics[prefix+".seq_scans"] = float64(table.SeqScans)
 			metrics.ExtendedMetrics[prefix+".seq_tup_read"] = float64(table.SeqTupRead)
 			metrics.ExtendedMetrics[prefix+".idx_scans"] = float64(table.IdxScans)
+		}
 
-			metrics.Labels["pg.worst_seq_scan_table"] = tableStats[0].TableName
+		metrics.Labels["pg.worst_seq_scan_table"] = worstTable.TableName
+
+		recommendedColumns, err := p.analyseSlowQueries(ctx, worstTable.TableName)
+		if err != nil {
+			fmt.Printf("warning: could not analyse queries: %v\n", err)
+		} else if len(recommendedColumns) > 0 {
+			metrics.Labels["pg.recommended_index_column"] = recommendedColumns[0]
 		}
 	}
-
-	//TODO: Remove after debugging
-	fmt.Printf("\tDEBUG Collector RawMetrics.Labels: %+v\n", metrics.Labels)
-	fmt.Printf("\tDEBUG Collector ExtendedMetrics keys: %v\n", len(metrics.ExtendedMetrics))
 
 	return metrics, nil
 
@@ -273,4 +281,91 @@ func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TabelScanStat, e
 	}
 
 	return stats, nil
+}
+
+func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName string) ([]string, error) {
+	//log.Printf("Analysing Queries from table %s", tableName)
+	query := `
+		SELECT 
+			query,
+			calls,
+			mean_exec_time,
+			total_exec_time
+		FROM pg_stat_statements
+		WHERE query ILIKE $1
+		AND calls > 1
+		ORDER BY mean_exec_time DESC
+		LIMIT 10
+	`
+
+	pattern := fmt.Sprintf("%%FROM %s%%", tableName)
+	//log.Printf("search pattern: %s", pattern)
+
+	rows, err := p.pool.Query(ctx, query, pattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pg_stat_statements: %w", err)
+	}
+	defer rows.Close()
+
+	columnFrequency := make(map[string]int)
+	rowCount := 0
+
+	for rows.Next() {
+		rowCount++
+		var sqlQuery string
+		var calls int64
+		var meanExecTime, totalExecTime float64
+
+		if err := rows.Scan(&sqlQuery, &calls, &meanExecTime, &totalExecTime); err != nil {
+			continue
+		}
+
+		log.Printf("found query (calls = %d): %s\n", calls, sqlQuery)
+
+		columns := extractFilteredColumns(sqlQuery)
+		//log.Printf("Extracted columns: %v\n", columns)
+
+		for _, col := range columns {
+			columnFrequency[col] += int(calls)
+		}
+	}
+
+	//log.Printf("processed %d queries", rowCount)
+	//log.Printf("column freq: %v'\n", columnFrequency)
+
+	var recommendedColumns []string
+	for col := range columnFrequency {
+		recommendedColumns = append(recommendedColumns, col)
+	}
+
+	//log.Printf("recommended cols: %v\n", recommendedColumns)
+
+	return recommendedColumns, nil
+}
+
+func extractFilteredColumns(query string) []string {
+	var columns []string
+
+	patterns := []string{
+		`WHERE\s+(\w+)\s*=`,
+		`WHERE\s+(\w+)\s+IN`,
+		`WHERE\s+(\w+)\s*[><]`,
+		`AND\s+(\w+)\s*=`,
+		`AND\s+(\w+)\s+IN`,
+		`AND\s+(\w+)\s*[><]`,
+	}
+
+	queryUpper := strings.ToUpper(query)
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindAllStringSubmatch(queryUpper, -1)
+		for _, match := range matches {
+			if len(match) > 1 {
+				columns = append(columns, strings.ToLower(match[1]))
+			}
+		}
+	}
+
+	return columns
 }
