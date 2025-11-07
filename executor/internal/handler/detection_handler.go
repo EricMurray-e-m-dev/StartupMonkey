@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/actions"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/database"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
+	"github.com/joho/godotenv"
 )
 
 type DetectionHandler struct {
@@ -17,16 +20,20 @@ type DetectionHandler struct {
 	actions map[string]*models.ActionResult
 	mu      sync.RWMutex
 
-	//TODO: Change to env
-	dbConnections map[string]string
+	dbConnection string
 }
 
 func NewDetectionHandler() *DetectionHandler {
+	envPath := filepath.Join("..", ".env")
+	_ = godotenv.Load(envPath)
+
+	dbConnection := os.Getenv("DB_CONNECTION_STRING")
+	if dbConnection == "" {
+		log.Fatalf("No DB connection string in config")
+	}
 	return &DetectionHandler{
-		actions: map[string]*models.ActionResult{},
-		dbConnections: map[string]string{
-			"docker-test-db": "postgres://postgres:postgres@postgres:5432/testdb?sslmode=disable", // hardcode for now
-		},
+		actions:      map[string]*models.ActionResult{},
+		dbConnection: dbConnection,
 	}
 }
 
@@ -64,14 +71,9 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 }
 
 func (h *DetectionHandler) createAction(detection *models.Detection, actionID string) (actions.Action, error) {
-	connString, exists := h.dbConnections[detection.DatabaseID]
-	if !exists {
-		return nil, fmt.Errorf("no connection strings for database: %s", detection.DatabaseID)
-	}
-
 	ctx := context.Background()
 	// TODO: replace with factory in future
-	adapter, err := database.NewPostgresAdapter(ctx, connString, detection.DatabaseID)
+	adapter, err := database.NewPostgresAdapter(ctx, h.dbConnection, detection.DatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database adapter: %w", err)
 	}
