@@ -10,7 +10,7 @@ interface Metrics {
     StorageHealth: number;
     CacheHealth: number;
     AvailableMetrics: string[];
-    Measurements: any;
+    Measurements: Record<string, number | null>;
     ExtendedMetrics: Record<string, number>;
     Labels: Record<string, string>;
 }
@@ -34,11 +34,11 @@ export function useMetrics(interval: number = 5000) {
                 setMetrics(data);
 
                 if (isFirstLoad.current) {
+                    setError(null);
                     setLoading(false);
                     isFirstLoad.current = false;
                 }
 
-                if (error) setError(null);
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : 'Unknown Error';
 
