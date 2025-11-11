@@ -1,19 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-interface Metrics {
-    DatabaseID: string;
-    DatabaseType: string;
-    Timestamp: number;
-    HealthScore: number;
-    ConnectionHealth: number;
-    QueryHealth: number;
-    StorageHealth: number;
-    CacheHealth: number;
-    AvailableMetrics: string[];
-    Measurements: Record<string, number | null>;
-    ExtendedMetrics: Record<string, number>;
-    Labels: Record<string, string>;
-}
+import { Metrics } from "@/types/metrics";
 
 export function useMetrics(interval: number = 5000) {
     const [metrics, setMetrics] = useState<Metrics | null>(null);
