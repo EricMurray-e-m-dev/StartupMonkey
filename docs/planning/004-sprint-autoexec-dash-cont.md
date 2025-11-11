@@ -1,18 +1,15 @@
-# Sprint 003: Autonomous Execution + Dashboard
+# Sprint 004: Autonomous Execution + Dashboard
 
 ## Primary Objective
-Create action deployments and execute automatically. Start building out Dashboard for UX Display
+Continue on issues from sprint 003. Some major hurdles taken out of the way should be able to flush out the rest of the issues relatively quickly.
 
 ## Objectives
-1. Create action deployments (Create Index Concurrently, Deploy PgBouncer etc.)
-2. Build out Dashboard to show some real time metrics
+1. Create more action deployments (Deploy PgBouncer, Redis Container)
+2. Build out Dashboard more, display live detections(Analyser) & Action Queue(Executor)
 3. E2E New test, new full E2E with deployed action
 
 | Issue | Task |
 |-------|------|
-| #43 | Dashboard Foundation |
-| #44 | Real-time metrics display |
-| #45 | Show live detections |
 | #46 | Action queue visualisation |
 | #47 | Implement Create Index action |
 | #48 | Add Redis Container for caching |
@@ -23,12 +20,9 @@ Create action deployments and execute automatically. Start building out Dashboar
 
 
 ## Success Criteria
-- [ ] Dashboard setup & accessible
-- [ ] Executor, deploying Create Index Concurrently
 - [ ] Executor deploying caching/PgBouncer for connections
 - [ ] Dashboard displaying live data, metrics, actions, etc.
 - [ ] E2E Integration Test passing
-
 
 
 ## Risks
