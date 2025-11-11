@@ -19,13 +19,19 @@ import (
 func main() {
 	log.Printf("Starting Executor Service")
 
-	detectionHandler := handler.NewDetectionHandler()
-	log.Printf("Detection Handler intialised")
-
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
 		natsURL = "nats://localhost:4222"
 	}
+
+	natsPublisher, err := eventbus.NewPublisher(natsURL)
+	if err != nil {
+		log.Fatalf("Failed to create NATS publisher: %v", err)
+	}
+	defer natsPublisher.Close()
+
+	detectionHandler := handler.NewDetectionHandler(natsPublisher)
+	log.Printf("Detection Handler intialised")
 
 	subscriber, err := eventbus.NewSubscriber(natsURL, detectionHandler)
 	if err != nil {
