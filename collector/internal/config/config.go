@@ -16,6 +16,7 @@ type Config struct {
 	DatabaseName       string
 	AnalyserAddress    string
 	CollectionInterval time.Duration
+	NatsURL            string
 }
 
 func Load() (*Config, error) {
@@ -29,6 +30,7 @@ func Load() (*Config, error) {
 		DatabaseID:         os.Getenv("DATABASE_ID"),
 		DatabaseName:       os.Getenv("DATABASE_NAME"),
 		AnalyserAddress:    os.Getenv("ANALYSER_ADDRESS"),
+		NatsURL:            os.Getenv("NATS_URL"),
 	}
 
 	intervalStr := os.Getenv("COLLECTION_INTERVAL")

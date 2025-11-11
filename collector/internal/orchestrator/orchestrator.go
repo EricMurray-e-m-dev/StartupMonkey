@@ -7,16 +7,18 @@ import (
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/eventbus"
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 type Orchestrator struct {
-	config     *config.Config
-	adapter    adapter.MetricAdapter
-	normaliser normaliser.Normaliser
-	client     *grpcclient.MetricsClient
+	config        *config.Config
+	adapter       adapter.MetricAdapter
+	normaliser    normaliser.Normaliser
+	client        *grpcclient.MetricsClient
+	natsPublisher *eventbus.Publisher
 }
 
 func NewOrchestrator(cfg *config.Config) *Orchestrator {
@@ -53,6 +55,13 @@ func (o *Orchestrator) Start() error {
 		return err
 	}
 	log.Printf("Connected to Analyser at %s", o.config.AnalyserAddress)
+
+	if o.config.NatsURL != "" {
+		o.natsPublisher, err = eventbus.NewPublisher(o.config.NatsURL)
+		if err != nil {
+			log.Printf("Warning: failed to connect to NATS, Dashboard UI live metrics will be unavailable")
+		}
+	}
 
 	return nil
 }
@@ -107,6 +116,13 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 	}
 
 	log.Printf("Metrics sent successfully. Ack: %d metrics, status: %s", ack.TotalMetrics, ack.Status)
+
+	if o.natsPublisher != nil {
+		err := o.natsPublisher.PublishMetrics(normalised)
+		if err != nil {
+			log.Printf("Warning: failed to publish metrics to nats")
+		}
+	}
 	log.Printf("--- Collection Cycle Complete ---")
 
 	return nil
@@ -120,6 +136,10 @@ func (o *Orchestrator) Stop() error {
 		if err := o.client.Close(); err != nil {
 			log.Printf("Error closing gRPC Client: %v", err)
 		}
+	}
+
+	if o.natsPublisher != nil {
+		o.natsPublisher.Close()
 	}
 
 	if o.adapter != nil {
