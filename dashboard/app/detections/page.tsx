@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, AlertTriangle, Info, CheckCircle } from "lucide-react";
 import { useDetections } from "@/hooks/useDetections";
+import { Detection } from "@/types/detection";
 
 export default function DetectionsPage() {
     const { detections, loading } = useDetections(5000);
@@ -105,7 +106,7 @@ function SummaryCard({
 }
 
 // Detection Card Component
-function DetectionCard({ detection }: { detection: any }) {
+function DetectionCard({ detection }: { detection: Detection }) {
     const severityConfig = {
         critical: {
             variant: 'destructive' as const,
