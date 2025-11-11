@@ -5,18 +5,21 @@ import (
 	"log"
 	"time"
 
-	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
 	"github.com/nats-io/nats.go"
 )
 
+type DetectionProcessor interface {
+	HandleDetection(detection *models.Detection) (*models.ActionResult, error)
+}
+
 type Subscriber struct {
 	conn         *nats.Conn
 	subscription *nats.Subscription
-	handler      *handler.DetectionHandler
+	processor    DetectionProcessor
 }
 
-func NewSubscriber(natsURL string, h *handler.DetectionHandler) (*Subscriber, error) {
+func NewSubscriber(natsURL string, processor DetectionProcessor) (*Subscriber, error) {
 	conn, err := nats.Connect(natsURL,
 		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(10),
@@ -30,8 +33,8 @@ func NewSubscriber(natsURL string, h *handler.DetectionHandler) (*Subscriber, er
 	log.Printf("Connected to NATS at %s", natsURL)
 
 	return &Subscriber{
-		conn:    conn,
-		handler: h,
+		conn:      conn,
+		processor: processor,
 	}, nil
 
 }
@@ -63,7 +66,7 @@ func (s *Subscriber) handleMessage(msg *nats.Msg) {
 		return
 	}
 
-	result, err := s.handler.HandleDetection(&detection)
+	result, err := s.processor.HandleDetection(&detection)
 	if err != nil {
 		log.Printf("Failed to handle detection: %v", err)
 		return

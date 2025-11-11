@@ -11,19 +11,20 @@ import (
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/actions"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/database"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/eventbus"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
 	"github.com/joho/godotenv"
 )
 
 type DetectionHandler struct {
 	// store in memory for now
-	actions map[string]*models.ActionResult
-	mu      sync.RWMutex
-
-	dbConnection string
+	actions       map[string]*models.ActionResult
+	mu            sync.RWMutex
+	dbConnection  string
+	natsPublisher *eventbus.Publisher
 }
 
-func NewDetectionHandler() *DetectionHandler {
+func NewDetectionHandler(natsPublisher *eventbus.Publisher) *DetectionHandler {
 	envPath := filepath.Join("..", ".env")
 	_ = godotenv.Load(envPath)
 
@@ -32,8 +33,9 @@ func NewDetectionHandler() *DetectionHandler {
 		log.Fatalf("No DB connection string in config")
 	}
 	return &DetectionHandler{
-		actions:      map[string]*models.ActionResult{},
-		dbConnection: dbConnection,
+		actions:       map[string]*models.ActionResult{},
+		dbConnection:  dbConnection,
+		natsPublisher: natsPublisher,
 	}
 }
 
@@ -47,7 +49,8 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 	action, err := h.createAction(detection, actionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create action: %w", err)
+		log.Printf("failed to create action: %v", err)
+		return nil, err
 	}
 
 	go h.executeAction(action, detection)
@@ -64,6 +67,12 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 	// Keep in memory for now
 	h.storeAction(result)
+
+	if h.natsPublisher != nil {
+		if err := h.natsPublisher.PublishActionStatus(result); err != nil {
+			log.Printf("Warning: failed to publish action status to event bus: %v", err)
+		}
+	}
 
 	log.Printf("Action queued: %s (ID: %s)", detection.ActionType, result.ActionID)
 
@@ -102,15 +111,34 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 	// TODO: Add more actions here "deploy_pgbouncer" etc
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("action type not implemented yet: %s", detection.ActionType)
 	}
 }
 
 func (h *DetectionHandler) executeAction(action actions.Action, detection *models.Detection) {
+	if action == nil {
+		log.Printf("Warning: executeAction called with nil action for detection %s", detection.DetectionID)
+		return
+	}
+
 	ctx := context.Background()
 	metadata := action.GetMetadata()
 
 	log.Printf("\tExecuting Action: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
+
+	executingResult := &models.ActionResult{
+		ActionID:    metadata.ActionID,
+		DetectionID: detection.DetectionID,
+		ActionType:  metadata.ActionType,
+		DatabaseID:  metadata.DatabaseID,
+		Status:      models.StatusExecuting,
+		Message:     "Action executing",
+		CreatedAt:   metadata.CreatedAt,
+	}
+	h.storeAction(executingResult)
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(executingResult)
+	}
 
 	result, err := action.Execute(ctx)
 	if err != nil {
@@ -128,6 +156,12 @@ func (h *DetectionHandler) executeAction(action actions.Action, detection *model
 	}
 
 	h.storeAction(result)
+
+	if h.natsPublisher != nil {
+		if err := h.natsPublisher.PublishActionStatus(result); err != nil {
+			log.Printf("Warning: failed to publish action status to event bus: %v", err)
+		}
+	}
 
 	if result.Status == models.StatusCompleted {
 		log.Printf("\tAction Completed: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
