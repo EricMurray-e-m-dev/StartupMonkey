@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, Clock, Loader2, XCircle, Wrench } from "lucide-react";
 import { useActions } from "@/hooks/useActions";
+import { ActionResult } from "@/types/actions";
 
 export default function ActionsPage() {
     const { actions, loading } = useActions(5000);
@@ -87,8 +88,7 @@ export default function ActionsPage() {
 function SummaryCard({ 
     title, 
     value, 
-    icon, 
-    variant 
+    icon
 }: { 
     title: string; 
     value: number; 
@@ -109,7 +109,7 @@ function SummaryCard({
 }
 
 // Action Card Component
-function ActionCard({ action }: { action: any }) {
+function ActionCard({ action }: { action: ActionResult }) {
     const statusConfig = {
         queued: {
             variant: 'secondary' as const,
@@ -149,7 +149,7 @@ function ActionCard({ action }: { action: any }) {
                                 Action ID: {action.action_id}
                             </CardDescription>
                             <CardDescription className="mt-1">
-                                {new Date(action.created_at * 1000).toLocaleString()}
+                                {new Date(Number(action.created_at) * 1000).toLocaleString()}
                             </CardDescription>
                         </div>
                     </div>
