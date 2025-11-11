@@ -49,7 +49,8 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 	action, err := h.createAction(detection, actionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create action: %w", err)
+		log.Printf("failed to create action: %v", err)
+		return nil, err
 	}
 
 	go h.executeAction(action, detection)
@@ -110,11 +111,16 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 	// TODO: Add more actions here "deploy_pgbouncer" etc
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("action type not implemented yet: %s", detection.ActionType)
 	}
 }
 
 func (h *DetectionHandler) executeAction(action actions.Action, detection *models.Detection) {
+	if action == nil {
+		log.Printf("Warning: executeAction called with nil action for detection %s", detection.DetectionID)
+		return
+	}
+
 	ctx := context.Background()
 	metadata := action.GetMetadata()
 

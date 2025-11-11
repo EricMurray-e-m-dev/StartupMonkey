@@ -23,7 +23,7 @@ func NewPublisher(natsURL string) (*Publisher, error) {
 		return nil, err
 	}
 
-	log.Printf("Executor Pub connected to NATS: ", natsURL)
+	log.Printf("Executor Pub connected to NATS: %s", natsURL)
 
 	return &Publisher{
 		conn: conn,
