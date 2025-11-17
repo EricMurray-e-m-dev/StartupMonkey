@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { connect, StringCodec } = require('nats');
 const express = require('express');
 const metricsStore = require('../stores/metricsStore');
