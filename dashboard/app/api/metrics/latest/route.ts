@@ -1,33 +1,20 @@
 import { NextResponse } from "next/server";
-import { connect } from "nats";
 
 export const dynamic = 'force-dynamic';
 
+const COLLECTOR_URL = 'http://localhost:3001';
+
 export async function GET() {
     try {
-        // TODO: replace hardcoded url
-        const nc = await connect({servers: 'nats://localhost:4222'});
-
-        const sub = nc.subscribe('metrics', { max: 1 }); // One snapshot at a time
-
-        const done = (async() => {
-            for await (const msg of sub) {
-                const data  = JSON.parse(new TextDecoder().decode(msg.data));
-                await nc.close();
-                return data;
-            }
-        })();
-
-        const timeout = new Promise(resolve =>
-            setTimeout(() => resolve(null), 10000)
-        );
-
-        const metrics = await Promise.race([done, timeout]);
-
-        return NextResponse.json(metrics ?? {});
-
+        const response = await fetch(`${COLLECTOR_URL}/metrics/latest`, {
+            cache: 'no-store'
+        });
+        
+        const data = await response.json();
+        console.log('metrics from collector:', data ? 'got data' : 'null');
+        return NextResponse.json(data || {});
     } catch (error) {
-        console.error("failed to fetch metrics from NATS:", error)
-        return NextResponse.json({})
+        console.error("Failed to fetch from collector:", error);
+        return NextResponse.json({});
     }
 }
