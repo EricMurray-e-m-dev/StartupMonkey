@@ -22,4 +22,4 @@ class ActionsStore {
     }
 }
 
-modules.export = new ActionsStore();
+module.exports = new ActionsStore();

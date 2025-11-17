@@ -19,4 +19,4 @@ class DetectionsStore {
     }
 }
 
-modules.export = new DetectionsStore();
+module.exports = new DetectionsStore();

@@ -24,4 +24,4 @@ class MetricsStore {
     }
 }
 
-modules.export = new MetricsStore();
+module.exports = new MetricsStore();
