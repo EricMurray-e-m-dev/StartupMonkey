@@ -4,7 +4,8 @@ go 1.25.1
 
 require (
 	github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105205209-b684628bfd44
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105205209-b684628bfd44
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251118132548-f225f4f2b54b
+	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0

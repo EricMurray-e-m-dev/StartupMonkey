@@ -2,26 +2,79 @@ package grpcserver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/models"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 type MetricsServer struct {
 	pb.UnimplementedMetricsServiceServer
-	engine    *engine.Engine
-	publisher *eventbus.Publisher
+	engine          *engine.Engine
+	publisher       *eventbus.Publisher
+	knowledgeClient *KnowledgeClient
 }
 
-func NewMetricsServer(eng *engine.Engine, pub *eventbus.Publisher) *MetricsServer {
+func NewMetricsServer(eng *engine.Engine, pub *eventbus.Publisher, kc *KnowledgeClient) *MetricsServer {
 	return &MetricsServer{
-		engine:    eng,
-		publisher: pub,
+		engine:          eng,
+		publisher:       pub,
+		knowledgeClient: kc,
 	}
+}
+
+// generateDetectionKey creates a unique key for deduplication
+func (s *MetricsServer) generateDetectionKey(detection *models.Detection) string {
+	// Base format: database:detector_name:issue_identifier
+
+	// Try to extract issue identifier from ActionMetadata first (most specific)
+	issueIdentifier := s.extractIssueIdentifier(detection)
+
+	return fmt.Sprintf("%s:%s:%s",
+		detection.DatabaseID,
+		detection.DetectorName,
+		issueIdentifier,
+	)
+}
+
+// extractIssueIdentifier gets the unique part from detection metadata
+func (s *MetricsServer) extractIssueIdentifier(detection *models.Detection) string {
+	// Priority 1: Check ActionMetadata for specific identifiers
+	if detection.ActionMetadata != nil {
+		// For index-related issues (table.column)
+		if table, hasTable := detection.ActionMetadata["table_name"].(string); hasTable {
+			if column, hasColumn := detection.ActionMetadata["column_name"].(string); hasColumn {
+				return fmt.Sprintf("%s.%s", table, column)
+			}
+			return table // Just table name
+		}
+
+		// For other specific identifiers in metadata
+		if identifier, ok := detection.ActionMetadata["identifier"].(string); ok {
+			return identifier
+		}
+	}
+
+	// Priority 2: Check Evidence for identifiers
+	if detection.Evidence != nil {
+		if identifier, ok := detection.Evidence["identifier"].(string); ok {
+			return identifier
+		}
+
+		// For query-specific issues
+		if queryHash, ok := detection.Evidence["query_hash"].(string); ok {
+			return queryHash
+		}
+	}
+
+	// Priority 3: Use category as fallback (for system-wide issues)
+	// Examples: cache_hit_rate, connection_exhaustion, storage_full
+	return string(detection.Category)
 }
 
 func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServer) error {
@@ -88,17 +141,40 @@ func (s *MetricsServer) StreamMetrics(stream pb.MetricsService_StreamMetricsServ
 		if len(detections) > 0 {
 			log.Printf("Found %d issues in database: %s", len(detections), snapshot.DatabaseId)
 
+			publishedCount := 0
+			skippedCount := 0
+
 			for _, detection := range detections {
+				key := s.generateDetectionKey(detection)
+				detection.Key = key
+
+				ctx := context.Background()
+				isActive, err := s.knowledgeClient.IsDetectionActive(ctx, key)
+				if err != nil {
+					log.Printf("Warning: failed to check brain: %v (publishing anyways)", err)
+				} else if isActive {
+					log.Printf("Detection already active, skipping: %s (key: %s)", detection.Title, key)
+					skippedCount++
+					continue
+				}
+
 				log.Printf("\t[%s] %s", detection.Severity, detection.Title)
 				log.Printf("\t%s", detection.Description)
 				log.Printf("\tRecommendation: %s", detection.Recommendation)
+
+				if err := s.knowledgeClient.RegisterDetection(ctx, detection); err != nil {
+					log.Printf("Warning: failed to register with brain: %v", err)
+				}
 
 				if err := s.publisher.PublishDetection(detection); err != nil {
 					log.Printf("\tFailed to publish detection event: %v", err)
 				} else {
 					log.Printf("\tPublished to event bus")
+					publishedCount++
 				}
 			}
+
+			log.Printf("Detection Summary: %d published, %d skipped", publishedCount, skippedCount)
 		} else {
 			log.Printf("No issues detected in database: %s", snapshot.DatabaseId)
 		}
