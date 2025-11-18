@@ -24,6 +24,7 @@ const (
 // Detection holds info on a detected issue
 type Detection struct {
 	ID           string            `json:"id"`
+	Key          string            `json:"key"`
 	DetectorName string            `json:"detector_name"` // Detector that found the issue
 	Category     DetectionCategory `json:"category"`
 	Severity     DetectionSeverity `json:"severity"`
@@ -38,7 +39,6 @@ type Detection struct {
 
 	Recommendation string `json:"recommendation"`
 
-	// For executor in future
 	ActionType     string                 `json:"action_type,omitempty"`
 	ActionMetadata map[string]interface{} `json:"action_metadata,omitempty"`
 }
