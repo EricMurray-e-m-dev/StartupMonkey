@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package knowledge;
+
+option go_package = "github.com/EricMurray-e-m-dev/StartupMonkey/proto";
+
+// Knowledge Service - State management for MAPE-K system
+service KnowledgeService {
+  // Detection operations
+  rpc RegisterDetection(RegisterDetectionRequest) returns (DetectionResponse);
+  rpc IsDetectionActive(DetectionKeyRequest) returns (DetectionStatusResponse);
+  rpc GetActiveDetections(DatabaseFilterRequest) returns (DetectionListResponse);
+  rpc MarkDetectionResolved(ResolveDetectionRequest) returns (Response);
+  
+  // Action operations (placeholder for Issue #58)
+  rpc RegisterAction(RegisterActionRequest) returns (ActionResponse);
+  rpc UpdateActionStatus(UpdateActionRequest) returns (Response);
+  rpc GetPendingActions(DatabaseFilterRequest) returns (ActionListResponse);
+}
+
+// Detection messages
+message RegisterDetectionRequest {
+  string id = 1;
+  string key = 2;
+  string severity = 3;
+  string category = 4;
+  string database_id = 5;
+  double value = 6;
+  int64 created_at = 7;
+}
+
+message DetectionKeyRequest {
+  string key = 1;
+}
+
+message DetectionStatusResponse {
+  bool is_active = 1;
+  string detection_id = 2;
+}
+
+message DatabaseFilterRequest {
+  string database_id = 1;
+}
+
+message DetectionResponse {
+  bool success = 1;
+  string message = 2;
+  string detection_id = 3;
+}
+
+message DetectionListResponse {
+  repeated Detection detections = 1;
+}
+
+message Detection {
+  string id = 1;
+  string key = 2;
+  string state = 3;
+  string severity = 4;
+  string category = 5;
+  string database_id = 6;
+  double value = 7;
+  string action_id = 8;
+  string resolved_by = 9;
+  int64 created_at = 10;
+  int64 last_seen = 11;
+}
+
+message ResolveDetectionRequest {
+  string detection_id = 1;
+  string solution = 2;
+}
+
+// Action messages (stubs for now)
+message RegisterActionRequest {
+  string id = 1;
+  string detection_id = 2;
+  string action_type = 3;
+  string database_id = 4;
+  int64 created_at = 5;
+}
+
+message ActionResponse {
+  bool success = 1;
+  string message = 2;
+  string action_id = 3;
+}
+
+message UpdateActionRequest {
+  string action_id = 1;
+  string status = 2;
+  string message = 3;
+  string error = 4;
+  int64 timestamp = 5;
+}
+
+message ActionListResponse {
+  repeated Action actions = 1;
+}
+
+message Action {
+  string id = 1;
+  string detection_id = 2;
+  string action_type = 3;
+  string database_id = 4;
+  string status = 5;
+  int64 created_at = 6;
+}
+
+// Generic response
+message Response {
+  bool success = 1;
+  string message = 2;
+}
