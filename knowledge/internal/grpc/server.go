@@ -126,24 +126,77 @@ func (s *KnowledgeServer) MarkDetectionResolved(ctx context.Context, req *pb.Res
 	}, nil
 }
 
-// Stub implementations for Action methods (Issue #58)
+// ===== [ACTIONS OPERATIONS] =====
+
 func (s *KnowledgeServer) RegisterAction(ctx context.Context, req *pb.RegisterActionRequest) (*pb.ActionResponse, error) {
+	action := &models.Action{
+		ID:          req.Id,
+		DetectionID: req.DetectionId,
+		ActionType:  req.ActionType,
+		DatabaseID:  req.DatabaseId,
+		Status:      models.StatusQueued,
+		Message:     "Action queued",
+		CreatedAt:   time.Unix(req.CreatedAt, 0),
+	}
+
+	if err := s.redisClient.RegisterAction(ctx, action); err != nil {
+		log.Printf("Failed to register action: %v", err)
+		return &pb.ActionResponse{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	log.Printf("Action registered: %s (type: %s, detection: %s)", action.ID, action.ActionType, action.DetectionID)
+
 	return &pb.ActionResponse{
 		Success:  true,
-		Message:  "Action registration not yet implemented",
-		ActionId: req.Id,
+		Message:  "Action successfully registered",
+		ActionId: action.ID,
 	}, nil
 }
 
 func (s *KnowledgeServer) UpdateActionStatus(ctx context.Context, req *pb.UpdateActionRequest) (*pb.Response, error) {
+	if err := s.redisClient.UpdateActionStatus(ctx, req.ActionId, models.ActionStatus(req.Status), req.Message, req.Error); err != nil {
+		log.Printf("Failed to update action status: %v", err)
+		return &pb.Response{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	log.Printf("Action status updated %s => %s", req.ActionId, req.Status)
+
 	return &pb.Response{
 		Success: true,
-		Message: "Action update not yet implemented",
+		Message: "Action status updated successfully",
 	}, nil
 }
 
 func (s *KnowledgeServer) GetPendingActions(ctx context.Context, req *pb.DatabaseFilterRequest) (*pb.ActionListResponse, error) {
+	actions, err := s.redisClient.GetPendingActions(ctx, req.DatabaseId)
+	if err != nil {
+		log.Printf("Failed to get pending actions: %v", err)
+		return &pb.ActionListResponse{
+			Actions: []*pb.Action{},
+		}, err
+	}
+
+	pbActions := make([]*pb.Action, 0, len(actions))
+	for _, a := range actions {
+		pbActions = append(pbActions, &pb.Action{
+			Id:          a.ID,
+			DetectionId: a.DetectionID,
+			ActionType:  a.ActionType,
+			DatabaseId:  a.DatabaseID,
+			Status:      string(a.Status),
+			CreatedAt:   a.CreatedAt.Unix(),
+		})
+	}
+
+	log.Printf("Retrieved %d pending actions for database: %s", len(actions), req.DatabaseId)
+
 	return &pb.ActionListResponse{
-		Actions: []*pb.Action{},
+		Actions: pbActions,
 	}, nil
 }
