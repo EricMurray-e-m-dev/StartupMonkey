@@ -62,6 +62,10 @@ func main() {
 	}
 	defer subscriber.Close()
 
+	if err := subscriber.Start(); err != nil {
+		log.Fatalf("Failed to start NATS subscriber: %v", err)
+	}
+
 	metricServer := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient)
 
 	listener, err := net.Listen("tcp", ":50051")
