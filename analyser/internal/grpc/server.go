@@ -8,6 +8,7 @@ import (
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/knowledge"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/models"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
@@ -17,10 +18,10 @@ type MetricsServer struct {
 	pb.UnimplementedMetricsServiceServer
 	engine          *engine.Engine
 	publisher       *eventbus.Publisher
-	knowledgeClient *KnowledgeClient
+	knowledgeClient *knowledge.KnowledgeClient
 }
 
-func NewMetricsServer(eng *engine.Engine, pub *eventbus.Publisher, kc *KnowledgeClient) *MetricsServer {
+func NewMetricsServer(eng *engine.Engine, pub *eventbus.Publisher, kc *knowledge.KnowledgeClient) *MetricsServer {
 	return &MetricsServer{
 		engine:          eng,
 		publisher:       pub,

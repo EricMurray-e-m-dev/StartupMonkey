@@ -1,5 +1,3 @@
-github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251117204628-e49fb3047c5a h1:l1F/g2NFJ9c2oErs1Raxdo6N9O3fw2v5H3ex7gi8hv4=
-github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251117204628-e49fb3047c5a/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
