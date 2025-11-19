@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/detector"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/engine"
@@ -11,12 +12,16 @@ import (
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/health"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	log.Printf("Starting Analyser service...")
+
+	envPath := filepath.Join("..", "..", ".env")
+	_ = godotenv.Load(envPath)
 
 	detectionEngine := engine.NewEngine()
 
@@ -37,8 +42,20 @@ func main() {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	defer publisher.Close()
+	log.Printf("Connected to NATS at %s", natsURL)
 
-	metricServer := grpcserver.NewMetricsServer(detectionEngine, publisher)
+	knowledgeAddr := os.Getenv("KNOWLEDGE_ADDRESS")
+	if knowledgeAddr == "" {
+		knowledgeAddr = "localhost:50053"
+	}
+
+	knowledgeClient, err := grpcserver.NewKnowledgeClient(knowledgeAddr)
+	if err != nil {
+		log.Fatalf("Failed to connect to brain: %v", err)
+	}
+	defer knowledgeClient.Close()
+
+	metricServer := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient)
 
 	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
