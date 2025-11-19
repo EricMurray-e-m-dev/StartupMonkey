@@ -1,4 +1,4 @@
-package grpcserver
+package knowledge
 
 import (
 	"context"
@@ -57,6 +57,21 @@ func (k *KnowledgeClient) RegisterDetection(ctx context.Context, detection *mode
 	if err != nil {
 		return fmt.Errorf("failed to register detection with Knowledge: %w", err)
 	}
+
+	return nil
+}
+
+func (k *KnowledgeClient) MarkDetectionResolved(ctx context.Context, detectionID string, solution string) error {
+	_, err := k.client.MarkDetectionResolved(ctx, &pb.ResolveDetectionRequest{
+		DetectionId: detectionID,
+		Solution:    solution,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to mark detection resolved: %w", err)
+	}
+
+	log.Printf("Detection marked as resolved in Knowledge: %s (solution: %s)", detectionID, solution)
 
 	return nil
 }

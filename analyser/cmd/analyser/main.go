@@ -11,6 +11,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/health"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/knowledge"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -49,11 +50,21 @@ func main() {
 		knowledgeAddr = "localhost:50053"
 	}
 
-	knowledgeClient, err := grpcserver.NewKnowledgeClient(knowledgeAddr)
+	knowledgeClient, err := knowledge.NewKnowledgeClient(knowledgeAddr)
 	if err != nil {
 		log.Fatalf("Failed to connect to brain: %v", err)
 	}
 	defer knowledgeClient.Close()
+
+	subscriber, err := eventbus.NewSubscriber(natsURL, knowledgeClient)
+	if err != nil {
+		log.Fatalf("failed to create NATS subscriber: %v", err)
+	}
+	defer subscriber.Close()
+
+	if err := subscriber.Start(); err != nil {
+		log.Fatalf("Failed to start NATS subscriber: %v", err)
+	}
 
 	metricServer := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient)
 
