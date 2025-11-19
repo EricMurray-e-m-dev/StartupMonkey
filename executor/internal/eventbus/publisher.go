@@ -78,7 +78,7 @@ func (p *Publisher) PublishActionCompleted(result *models.ActionResult, detectio
 		return fmt.Errorf("failed to published data to actions.completed: %w", err)
 	}
 
-	log.Printf("Published completed action: %s -> %s", result.ActionID, &solution)
+	log.Printf("Published completed action: %s -> %s", result.ActionID, solution)
 
 	return nil
 }
