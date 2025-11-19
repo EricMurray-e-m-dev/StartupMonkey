@@ -161,6 +161,12 @@ func (h *DetectionHandler) executeAction(action actions.Action, detection *model
 		if err := h.natsPublisher.PublishActionStatus(result); err != nil {
 			log.Printf("Warning: failed to publish action status to event bus: %v", err)
 		}
+
+		if result.Status == models.StatusCompleted {
+			if err := h.natsPublisher.PublishActionCompleted(result, detection); err != nil {
+				log.Printf("Warning: failed to publish action completion: %v", err)
+			}
+		}
 	}
 
 	if result.Status == models.StatusCompleted {
