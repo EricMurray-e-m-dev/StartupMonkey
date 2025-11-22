@@ -12,19 +12,21 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/actions"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/database"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/eventbus"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/knowledge"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
+	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"github.com/joho/godotenv"
 )
 
 type DetectionHandler struct {
-	// store in memory for now
-	actions       map[string]*models.ActionResult
-	mu            sync.RWMutex
-	dbConnection  string
-	natsPublisher *eventbus.Publisher
+	actions         map[string]*models.ActionResult
+	mu              sync.RWMutex
+	dbConnection    string
+	natsPublisher   *eventbus.Publisher
+	knowledgeClient *knowledge.Client
 }
 
-func NewDetectionHandler(natsPublisher *eventbus.Publisher) *DetectionHandler {
+func NewDetectionHandler(natsPublisher *eventbus.Publisher, knowledgeClient *knowledge.Client) *DetectionHandler {
 	envPath := filepath.Join("..", ".env")
 	_ = godotenv.Load(envPath)
 
@@ -33,9 +35,10 @@ func NewDetectionHandler(natsPublisher *eventbus.Publisher) *DetectionHandler {
 		log.Fatalf("No DB connection string in config")
 	}
 	return &DetectionHandler{
-		actions:       map[string]*models.ActionResult{},
-		dbConnection:  dbConnection,
-		natsPublisher: natsPublisher,
+		actions:         map[string]*models.ActionResult{},
+		dbConnection:    dbConnection,
+		natsPublisher:   natsPublisher,
+		knowledgeClient: knowledgeClient,
 	}
 }
 
@@ -45,6 +48,17 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 	log.Printf("	Action Type: %s", detection.ActionType)
 	log.Printf("	Database: %s", detection.DatabaseID)
 
+	ctx := context.Background()
+
+	if h.knowledgeClient != nil {
+		if isDuplicate, err := h.checkForDuplicateActions(ctx, detection); err != nil {
+			log.Printf("warning failed to check duplicate actions: %v", err)
+		} else if isDuplicate {
+			log.Printf("Action already pending for detection, skipping")
+			return nil, nil
+		}
+	}
+
 	actionID := generateActionID()
 
 	action, err := h.createAction(detection, actionID)
@@ -52,8 +66,6 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 		log.Printf("failed to create action: %v", err)
 		return nil, err
 	}
-
-	go h.executeAction(action, detection)
 
 	result := &models.ActionResult{
 		ActionID:    actionID,
@@ -65,7 +77,14 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 		CreatedAt:   time.Now(),
 	}
 
-	// Keep in memory for now
+	if h.knowledgeClient != nil {
+		if err := h.registerActionWithKnowledge(ctx, detection, result); err != nil {
+			log.Printf("warning failed to register action with knowledge: %v", err)
+		} else {
+			log.Printf("Action registered with knowledge")
+		}
+	}
+
 	h.storeAction(result)
 
 	if h.natsPublisher != nil {
@@ -75,6 +94,8 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 	}
 
 	log.Printf("Action queued: %s (ID: %s)", detection.ActionType, result.ActionID)
+
+	go h.executeAction(action, detection)
 
 	return result, nil
 }
@@ -109,7 +130,14 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
 
-	// TODO: Add more actions here "deploy_pgbouncer" etc
+	case "increase_cache_size", "deploy_pgbouncer", "deploy_redis", "optimise_queries":
+		return actions.NewFutureFixAction(
+			actionID,
+			detection.ActionType,
+			detection.DatabaseID,
+			fmt.Sprintf("Action '%s' is not yet implemented. This action has been queued for future implementation.", detection.ActionType),
+		), nil
+
 	default:
 		return nil, fmt.Errorf("action type not implemented yet: %s", detection.ActionType)
 	}
@@ -136,9 +164,12 @@ func (h *DetectionHandler) executeAction(action actions.Action, detection *model
 		CreatedAt:   metadata.CreatedAt,
 	}
 	h.storeAction(executingResult)
+
 	if h.natsPublisher != nil {
 		h.natsPublisher.PublishActionStatus(executingResult)
 	}
+
+	h.updateActionStatusInKnowledge(ctx, executingResult)
 
 	result, err := action.Execute(ctx)
 	if err != nil {
@@ -157,6 +188,8 @@ func (h *DetectionHandler) executeAction(action actions.Action, detection *model
 
 	h.storeAction(result)
 
+	h.updateActionStatusInKnowledge(ctx, result)
+
 	if h.natsPublisher != nil {
 		if err := h.natsPublisher.PublishActionStatus(result); err != nil {
 			log.Printf("Warning: failed to publish action status to event bus: %v", err)
@@ -169,10 +202,14 @@ func (h *DetectionHandler) executeAction(action actions.Action, detection *model
 		}
 	}
 
-	if result.Status == models.StatusCompleted {
+	switch result.Status {
+	case models.StatusCompleted:
 		log.Printf("\tAction Completed: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
 		log.Printf("\tChanges: %v", result.Changes)
-	} else {
+	case models.StatusPendingImplementation:
+		log.Printf("\t⏸Action Pending Implementation: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
+		log.Printf("\tReason: %s", result.Message)
+	default:
 		log.Printf("\tAction Failed: %s (ID: %s)", metadata.ActionType, metadata.ActionID)
 		log.Printf("\tError: %s", result.Error)
 	}
@@ -217,4 +254,49 @@ func (h *DetectionHandler) storeAction(action *models.ActionResult) {
 
 func generateActionID() string {
 	return fmt.Sprintf("action-%d", time.Now().UnixNano())
+}
+
+func (h *DetectionHandler) checkForDuplicateActions(ctx context.Context, detection *models.Detection) (bool, error) {
+	pendingActions, err := h.knowledgeClient.GetPendingActions(ctx, detection.DatabaseID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, pending := range pendingActions {
+		if pending.DetectionId == detection.DetectionID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (h *DetectionHandler) registerActionWithKnowledge(ctx context.Context, detection *models.Detection, result *models.ActionResult) error {
+	return h.knowledgeClient.RegisterAction(ctx, &pb.RegisterActionRequest{
+		Id:          result.ActionID,
+		DetectionId: detection.DetectionID,
+		ActionType:  result.ActionType,
+		DatabaseId:  result.DatabaseID,
+		CreatedAt:   result.CreatedAt.Unix(),
+	})
+}
+
+func (h *DetectionHandler) updateActionStatusInKnowledge(ctx context.Context, result *models.ActionResult) {
+	if h.knowledgeClient == nil {
+		return
+	}
+
+	err := h.knowledgeClient.UpdateActionStatus(ctx, &pb.UpdateActionRequest{
+		ActionId:  result.ActionID,
+		Status:    string(result.Status),
+		Message:   result.Message,
+		Error:     result.Error,
+		Timestamp: time.Now().Unix(),
+	})
+
+	if err != nil {
+		log.Printf("warning failed to update action in knowledge: %v", err)
+	} else {
+		log.Printf("Action updated in knowledge: %s -> %s", result.ActionID, result.Status)
+	}
 }
