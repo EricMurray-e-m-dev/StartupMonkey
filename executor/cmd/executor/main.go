@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -13,11 +14,15 @@ import (
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/health"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/knowledge"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	log.Printf("Starting Executor Service")
+	envPath := filepath.Join("..", "..", ".env")
+	_ = godotenv.Load(envPath)
 
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
@@ -30,7 +35,18 @@ func main() {
 	}
 	defer natsPublisher.Close()
 
-	detectionHandler := handler.NewDetectionHandler(natsPublisher)
+	knowledgeAddr := os.Getenv("KNOWLEDGE_ADDRESS")
+	if knowledgeAddr == "" {
+		knowledgeAddr = "localhost:50053"
+	}
+
+	knowledgeClient, err := knowledge.NewClient(knowledgeAddr)
+	if err != nil {
+		log.Fatalf("failed to connect to knowledge service: %v", err)
+	}
+	defer knowledgeClient.Close()
+
+	detectionHandler := handler.NewDetectionHandler(natsPublisher, knowledgeClient)
 	log.Printf("Detection Handler intialised")
 
 	subscriber, err := eventbus.NewSubscriber(natsURL, detectionHandler)

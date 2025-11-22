@@ -32,8 +32,9 @@ type ActionMetadata struct {
 }
 
 const (
-	StatusQueued    = "queued"
-	StatusExecuting = "executing"
-	StatusCompleted = "completed"
-	StatusFailed    = "failed"
+	StatusQueued                = "queued"
+	StatusExecuting             = "executing"
+	StatusCompleted             = "completed"
+	StatusFailed                = "failed"
+	StatusPendingImplementation = "pending_implementation"
 )
