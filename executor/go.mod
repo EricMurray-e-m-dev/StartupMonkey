@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/executor
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251025161758-d19af2182140
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251119195123-bd068d786602
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/nats-io/nats.go v1.47.0
 	google.golang.org/grpc v1.76.0
