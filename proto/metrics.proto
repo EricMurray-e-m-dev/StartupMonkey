@@ -51,6 +51,10 @@ message MetricSnapshot {
     // === Optional: Pass-through ===
     map<string, double> extended_metrics = 40;
     map<string, string> labels = 50;
+
+    // === Delta Fields ===
+    map<string, double> metric_deltas = 60;
+    optional double time_delta_seconds = 61;
 }
 
 // Measurements contains raw values for Analyser to detect anomalies
