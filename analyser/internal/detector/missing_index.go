@@ -8,12 +8,14 @@ import (
 )
 
 type MissingIndexDetector struct {
-	sequentialScanThreshold int32
+	sequentialScanThreshold      int32
+	sequentialScanDeltaThreshold float64
 }
 
 func NewMissingIndexDetector() *MissingIndexDetector {
 	return &MissingIndexDetector{
-		sequentialScanThreshold: 1,
+		sequentialScanThreshold:      1,
+		sequentialScanDeltaThreshold: 10.0,
 	}
 }
 
@@ -32,8 +34,16 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 
 	seqScans := snapshot.Measurements.SequentialScans
 
-	if *seqScans <= d.sequentialScanThreshold {
-		return nil
+	if snapshot.MetricDeltas != nil {
+		if delta, exists := snapshot.MetricDeltas["sequential_scans"]; exists {
+			if delta <= d.sequentialScanDeltaThreshold {
+				return nil
+			}
+		}
+	} else {
+		if *seqScans <= d.sequentialScanThreshold {
+			return nil
+		}
 	}
 
 	worstTable, found := snapshot.Labels["pg.worst_seq_scan_table"]
@@ -72,6 +82,15 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 		"query_health":     snapshot.QueryHealth,
 	}
 
+	if snapshot.MetricDeltas != nil {
+		if delta, exists := snapshot.MetricDeltas["sequential_scans"]; exists {
+			detection.Evidence["sequential_scans_delta"] = delta
+		}
+		if snapshot.TimeDeltaSeconds > 0 {
+			detection.Evidence["time_delta_seconds"] = snapshot.TimeDeltaSeconds
+		}
+	}
+
 	detection.Recommendation = fmt.Sprintf(
 		"Create an index on %s.%s to optimize query performance. "+
 			"This column was identified through query analysis. "+
@@ -91,4 +110,8 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 
 func (d *MissingIndexDetector) SetThreshold(threshold int32) {
 	d.sequentialScanThreshold = threshold
+}
+
+func (d *MissingIndexDetector) SetDeltaThreshold(threshold float64) {
+	d.sequentialScanDeltaThreshold = threshold
 }

@@ -231,7 +231,7 @@ func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) 
 		return 0, nil
 	}
 
-	hitRate := float64(blkReads) / float64(blksHit)
+	hitRate := float64(blksHit) / float64(total)
 	return hitRate, nil
 }
 

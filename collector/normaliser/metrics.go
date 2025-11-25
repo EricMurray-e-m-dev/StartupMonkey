@@ -18,6 +18,10 @@ type NormalisedMetrics struct {
 	// Raw measurements
 	Measurements Measurements
 
+	// Deltas
+	MetricDeltas     map[string]float64
+	TimeDeltaSeconds float64
+
 	ExtendedMetrics map[string]float64
 	Labels          map[string]string
 }

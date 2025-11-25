@@ -9,7 +9,7 @@ type Normaliser interface {
 func NewNormaliser(databaseType string) Normaliser {
 	switch databaseType {
 	case "postgres", "postgresql":
-		return &PostgresNormaliser{}
+		return NewPostgresNormaliser()
 	default:
 		return nil
 	}

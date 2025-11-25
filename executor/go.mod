@@ -27,3 +27,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
+
+replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto

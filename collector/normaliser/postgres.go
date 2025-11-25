@@ -6,16 +6,26 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 )
 
-type PostgresNormaliser struct{}
+type PostgresNormaliser struct {
+	previousMetrics map[string]*NormalisedMetrics
+}
+
+func NewPostgresNormaliser() *PostgresNormaliser {
+	return &PostgresNormaliser{
+		previousMetrics: make(map[string]*NormalisedMetrics),
+	}
+}
 
 func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetrics, error) {
 	normalised := &NormalisedMetrics{
-		DatabaseID:      raw.DatabaseID,
-		DatabaseType:    raw.DatabaseType,
-		Timestamp:       raw.Timestamp,
-		Measurements:    Measurements{},
-		ExtendedMetrics: make(map[string]float64),
-		Labels:          make(map[string]string),
+		DatabaseID:       raw.DatabaseID,
+		DatabaseType:     raw.DatabaseType,
+		Timestamp:        raw.Timestamp,
+		Measurements:     Measurements{},
+		MetricDeltas:     map[string]float64{},
+		TimeDeltaSeconds: 0,
+		ExtendedMetrics:  make(map[string]float64),
+		Labels:           make(map[string]string),
 	}
 
 	var availableMetrics []string
@@ -136,5 +146,76 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.Labels = raw.Labels
 	}
 
+	n.calculateDeltas(normalised)
+
+	n.previousMetrics[normalised.DatabaseID] = normalised
+
 	return normalised, nil
+}
+
+func (n *PostgresNormaliser) calculateDeltas(current *NormalisedMetrics) {
+	previous, exists := n.previousMetrics[current.DatabaseID]
+
+	if !exists {
+		// First time collection
+		current.TimeDeltaSeconds = 0
+		current.MetricDeltas = make(map[string]float64)
+		return
+	}
+
+	timeDelta := float64(current.Timestamp - previous.Timestamp)
+	if timeDelta <= 0 {
+		current.TimeDeltaSeconds = 0
+		return
+	}
+	current.TimeDeltaSeconds = timeDelta
+
+	if current.Measurements.SequentialScans != nil && previous.Measurements.SequentialScans != nil {
+		currentVal := float64(*current.Measurements.SequentialScans)
+		previousVal := float64(*current.Measurements.SequentialScans)
+		delta := currentVal - previousVal
+
+		if delta < 0 {
+			delta = 0
+		}
+
+		current.MetricDeltas["sequential_scans"] = delta
+	}
+
+	if current.Measurements.SlowQueryCount != nil && previous.Measurements.SlowQueryCount != nil {
+		currentVal := float64(*current.Measurements.SlowQueryCount)
+		previousVal := float64(*previous.Measurements.SlowQueryCount)
+		delta := currentVal - previousVal
+
+		if delta < 0 {
+			delta = 0
+		}
+
+		current.MetricDeltas["slow_query_count"] = delta
+	}
+
+	if current.Measurements.SlowQueryCount != nil && previous.Measurements.SlowQueryCount != nil {
+		currentVal := float64(*current.Measurements.SlowQueryCount)
+		previousVal := float64(*previous.Measurements.SlowQueryCount)
+		delta := currentVal - previousVal
+
+		if delta < 0 {
+			delta = 0
+		}
+
+		current.MetricDeltas["slow_query_count"] = delta
+	}
+
+	if current.Measurements.CacheMissCount != nil && previous.Measurements.CacheMissCount != nil {
+		currentVal := float64(*current.Measurements.CacheMissCount)
+		previousVal := float64(*previous.Measurements.CacheMissCount)
+		delta := currentVal - previousVal
+
+		if delta < 0 {
+			delta = 0
+		}
+
+		current.MetricDeltas["cache_miss_count"] = delta
+	}
+
 }
