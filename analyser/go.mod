@@ -31,4 +31,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto
+replace (
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto
+	github.com/EricMurray-e-m-dev/StartupMonkey/collector => ../collector
+)

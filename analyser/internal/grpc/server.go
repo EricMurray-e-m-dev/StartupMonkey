@@ -208,7 +208,14 @@ func (s *MetricsServer) toNormalisedMetrics(snapshot *pb.MetricSnapshot) *normal
 		ExtendedMetrics:  snapshot.ExtendedMetrics,
 		Labels:           snapshot.Labels,
 
+		MetricDeltas:     snapshot.MetricDeltas,
+		TimeDeltaSeconds: 0,
+
 		Measurements: normaliser.Measurements{},
+	}
+
+	if snapshot.TimeDeltaSeconds != nil {
+		normalised.TimeDeltaSeconds = *snapshot.TimeDeltaSeconds
 	}
 
 	if snapshot.Measurements != nil {
