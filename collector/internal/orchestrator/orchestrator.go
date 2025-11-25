@@ -170,6 +170,9 @@ func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSna
 		// Context
 		AvailableMetrics: n.AvailableMetrics,
 
+		MetricDeltas:     n.MetricDeltas,
+		TimeDeltaSeconds: &n.TimeDeltaSeconds,
+
 		// Extended metrics
 		ExtendedMetrics: n.ExtendedMetrics,
 		Labels:          n.Labels,
