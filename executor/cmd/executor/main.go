@@ -14,6 +14,7 @@ import (
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/health"
+	httpserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/http"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/knowledge"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"github.com/joho/godotenv"
@@ -48,6 +49,13 @@ func main() {
 
 	detectionHandler := handler.NewDetectionHandler(natsPublisher, knowledgeClient)
 	log.Printf("Detection Handler intialised")
+
+	httpSrv := httpserver.NewServer(detectionHandler)
+	go func() {
+		if err := httpSrv.Start(":8084"); err != nil {
+			log.Fatalf("HTTP Server failed: %v", err)
+		}
+	}()
 
 	subscriber, err := eventbus.NewSubscriber(natsURL, detectionHandler)
 	if err != nil {

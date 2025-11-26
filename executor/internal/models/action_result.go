@@ -37,4 +37,5 @@ const (
 	StatusCompleted             = "completed"
 	StatusFailed                = "failed"
 	StatusPendingImplementation = "pending_implementation"
+	StatusRolledBack            = "rolled_back"
 )

@@ -20,6 +20,7 @@ import (
 
 type DetectionHandler struct {
 	actions         map[string]*models.ActionResult
+	actionObjects   map[string]actions.Action
 	mu              sync.RWMutex
 	dbConnection    string
 	natsPublisher   *eventbus.Publisher
@@ -36,6 +37,7 @@ func NewDetectionHandler(natsPublisher *eventbus.Publisher, knowledgeClient *kno
 	}
 	return &DetectionHandler{
 		actions:         map[string]*models.ActionResult{},
+		actionObjects:   map[string]actions.Action{},
 		dbConnection:    dbConnection,
 		natsPublisher:   natsPublisher,
 		knowledgeClient: knowledgeClient,
@@ -66,6 +68,8 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 		log.Printf("failed to create action: %v", err)
 		return nil, err
 	}
+
+	h.storeActionObject(actionID, action)
 
 	result := &models.ActionResult{
 		ActionID:    actionID,
@@ -245,6 +249,49 @@ func (h *DetectionHandler) ListPendingActions(statusFilter string) ([]*models.Ac
 	return results, nil
 }
 
+func (h *DetectionHandler) RollbackAction(actionID string) (*models.ActionResult, error) {
+	result, err := h.GetActionStatus(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("action not found: %w", err)
+	}
+
+	if !result.CanRollback {
+		return nil, fmt.Errorf("action does not support rollback")
+	}
+
+	if result.Status != models.StatusCompleted {
+		return nil, fmt.Errorf("can only rollback completed actions, current status: %s", result.Status)
+	}
+
+	action, err := h.getActionObject(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("action object not found: %w", err)
+	}
+
+	ctx := context.Background()
+	err = action.Rollback(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("rollback failed: %w", err)
+	}
+
+	result.Status = models.StatusRolledBack
+	result.Rolledback = true
+	result.Message = "Action rolled back successfully"
+	h.storeAction(result)
+
+	if h.knowledgeClient != nil {
+		h.updateActionStatusInKnowledge(ctx, result)
+	}
+
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(result)
+	}
+
+	log.Printf("Action rolled back: %s", actionID)
+
+	return result, nil
+}
+
 func (h *DetectionHandler) storeAction(action *models.ActionResult) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -299,4 +346,22 @@ func (h *DetectionHandler) updateActionStatusInKnowledge(ctx context.Context, re
 	} else {
 		log.Printf("Action updated in knowledge: %s -> %s", result.ActionID, result.Status)
 	}
+}
+
+func (h *DetectionHandler) storeActionObject(actionID string, action actions.Action) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.actionObjects[actionID] = action
+}
+
+func (h *DetectionHandler) getActionObject(actionID string) (actions.Action, error) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	action, exists := h.actionObjects[actionID]
+	if !exists {
+		return nil, fmt.Errorf("action object does not exists: %s", actionID)
+	}
+
+	return action, nil
 }
