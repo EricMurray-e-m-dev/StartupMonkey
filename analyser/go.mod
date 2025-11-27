@@ -3,8 +3,8 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/analyser
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251105205209-b684628bfd44
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251118132548-f225f4f2b54b
+	github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251127093529-f85c41ea1483
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251127093529-f85c41ea1483
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.11.1
@@ -29,9 +29,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
-
-replace (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto
-	github.com/EricMurray-e-m-dev/StartupMonkey/collector => ../collector
 )

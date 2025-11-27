@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/knowledge
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251117204628-e49fb3047c5a
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251127093529-f85c41ea1483
 	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.16.0
 	google.golang.org/grpc v1.76.0
@@ -18,5 +18,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
-
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto
