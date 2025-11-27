@@ -3,9 +3,12 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Clock, Loader2, XCircle, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { useActions } from "@/hooks/useActions";
 import { ActionResult } from "@/types/actions";
+import { useState } from "react";
 
 export default function ActionsPage() {
     const { actions, loading } = useActions(5000);
@@ -20,11 +23,12 @@ export default function ActionsPage() {
         );
     }
 
-    // Calculate stats
-    const queuedCount = actions.filter(a => a.status === 'queued').length;
-    const executingCount = actions.filter(a => a.status === 'executing').length;
-    const completedCount = actions.filter(a => a.status === 'completed').length;
-    const failedCount = actions.filter(a => a.status === 'failed').length;
+    // Calculate stats (exclude rolled_back actions)
+    const activeActions = actions.filter(a => a.status !== 'rolled_back');
+    const queuedCount = activeActions.filter(a => a.status === 'queued').length;
+    const executingCount = activeActions.filter(a => a.status === 'executing').length;
+    const completedCount = activeActions.filter(a => a.status === 'completed').length;
+    const failedCount = activeActions.filter(a => a.status === 'failed').length;
 
     return (
         <div className="space-y-6">
@@ -110,6 +114,41 @@ function SummaryCard({
 
 // Action Card Component
 function ActionCard({ action }: { action: ActionResult }) {
+    const [isRollingBack, setIsRollingBack] = useState(false);
+
+    const handleRollback = async () => {
+        setIsRollingBack(true);
+    
+        try {
+            const response = await fetch('/api/actions/rollback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action_id: action.action_id }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Rollback failed');
+            }
+
+            const result = await response.json();
+            toast.success('Action rolled back successfully', {
+                description: `${action.action_type} has been reverted`,
+            });
+
+            console.log("Rollback result: " + result);
+        } catch (error) {
+            console.error("Rollback error: " + error);
+            toast.error('Rollback failed', {
+                description: error instanceof Error ? error.message : 'Unknown Error',
+            });
+        } finally {
+            setIsRollingBack(false);
+        }
+    }
+
     const statusConfig = {
         queued: {
             variant: 'secondary' as const,
@@ -130,6 +169,11 @@ function ActionCard({ action }: { action: ActionResult }) {
             variant: 'destructive' as const,
             icon: <XCircle className="h-5 w-5 text-red-600" />,
             bgClass: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900'
+        },
+        rolled_back: { 
+            variant: 'secondary' as const,
+            icon: <Undo2 className="h-5 w-5 text-purple-600" />,
+            bgClass: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900'
         }
     };
 
@@ -153,9 +197,26 @@ function ActionCard({ action }: { action: ActionResult }) {
                             </CardDescription>
                         </div>
                     </div>
-                    <Badge variant={config.variant}>
-                        {action.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        <Badge variant={config.variant}>
+                            {action.status}
+                        </Badge>
+                        {action.status === 'completed' && action.can_rollback && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRollback}
+                                disabled={isRollingBack}
+                            >
+                                {isRollingBack ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Undo2 className="h-4 w-4" />
+                                )}
+                                <span className="ml-2">Rollback</span>
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
