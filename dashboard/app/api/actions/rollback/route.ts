@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-const EXECUTOR_URL = 'http://localhost:8084';   // TODO Change from hardcoded later
+const EXECUTOR_URL = process.env.EXECUTOR_HTTP_URL || 'http://localhost:8084';
 
 export async function POST(request: NextRequest) {
     try {
