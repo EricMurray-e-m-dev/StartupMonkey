@@ -8,7 +8,7 @@ import { AlertCircle, Database, Activity, TrendingUp } from "lucide-react";
 import { useMetrics } from '@/hooks/useMetrics';
 
 export default function MetricsPage() {
-    const { metrics, loading, error } = useMetrics(5000); // Poll every 5s
+    const { metrics, loading, error } = useMetrics(5000);
 
     if (loading) {
         return (
@@ -43,21 +43,21 @@ export default function MetricsPage() {
     }
 
     // Calculate percentages
-    const connectionPercent = Math.round(metrics.ConnectionHealth * 100);
-    const queryPercent = Math.round(metrics.QueryHealth * 100);
-    const cachePercent = Math.round(metrics.CacheHealth * 100);
-    const storagePercent = Math.round(metrics.StorageHealth * 100);
-    const overallPercent = Math.round(metrics.HealthScore * 100);
+    const connectionPercent = Math.round(metrics.connection_health * 100);
+    const queryPercent = Math.round(metrics.query_health * 100);
+    const cachePercent = Math.round(metrics.cache_health * 100);
+    const storagePercent = Math.round(metrics.storage_health * 100);
+    const overallPercent = Math.round(metrics.health_score * 100);
 
     // Get measurements
-    const measurements = metrics.Measurements;
-    const activeConns = measurements.ActiveConnections || 0;
-    const maxConns = measurements.MaxConnections || 100;
-    const seqScans = measurements.SequentialScans || 0;
-    const cacheHitRate = measurements.CacheHitRate || 0;
+    const measurements = metrics.measurements;
+    const activeConns = measurements.active_connections || 0;
+    const maxConns = measurements.max_connections || 100;
+    const seqScans = measurements.sequential_scans || 0;
+    const cacheHitRate = measurements.cache_hit_rate || 0;
 
     // Database size from extended metrics
-    const dbSizeMB = metrics.ExtendedMetrics?.['pg.database_size_mb']?.toFixed(2) || '0';
+    const dbSizeMB = metrics.extended_metrics?.['pg.database_size_mb']?.toFixed(2) || '0';
 
     return (
         <div className="space-y-6">
@@ -65,10 +65,10 @@ export default function MetricsPage() {
             <div>
                 <h1 className="text-3xl font-bold">Real-time Metrics</h1>
                 <p className="text-muted-foreground">
-                    Database: {metrics.DatabaseID} ({metrics.DatabaseType})
+                    Database: {metrics.database_id} ({metrics.database_type})
                 </p>
                 <p className="text-xs text-muted-foreground">
-                    Last updated: {new Date(metrics.Timestamp * 1000).toLocaleTimeString()}
+                    Last updated: {new Date(metrics.timestamp * 1000).toLocaleTimeString()}
                 </p>
             </div>
 
@@ -139,13 +139,13 @@ export default function MetricsPage() {
             </div>
 
             {/* Table Detection Info */}
-            {metrics.Labels?.['pg.worst_seq_scan_table'] && (
+            {metrics.labels?.['pg.worst_seq_scan_table'] && (
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                        High sequential scans detected on table <strong>{metrics.Labels['pg.worst_seq_scan_table']}</strong>.
-                        {metrics.Labels['pg.recommended_index_column'] && (
-                            <> Recommended index: <strong>{metrics.Labels['pg.recommended_index_column']}</strong></>
+                        High sequential scans detected on table <strong>{metrics.labels['pg.worst_seq_scan_table']}</strong>.
+                        {metrics.labels['pg.recommended_index_column'] && (
+                            <> Recommended index: <strong>{metrics.labels['pg.recommended_index_column']}</strong></>
                         )}
                     </AlertDescription>
                 </Alert>
@@ -166,7 +166,7 @@ export default function MetricsPage() {
     );
 }
 
-// Helper Components
+// Helper Components remain the same
 function HealthCard({ 
     title, 
     value, 

@@ -1,46 +1,45 @@
-import { useEffect, useRef, useState } from "react";
-import { Metrics } from "@/types/metrics";
+import { useState, useEffect } from 'react';
+import { Metrics } from '@/types/metrics';
 
-export function useMetrics(interval: number = 5000) {
+export function useMetrics(pollInterval: number = 5000) {
     const [metrics, setMetrics] = useState<Metrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const isFirstLoad = useRef(true);
 
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
-                const response = await fetch('/api/metrics/latest')
-
-                if (!response.ok) {
-                    throw new Error('failed to fetch metrics')
+                // Fetch from Dashboard's own API route (not directly from collector)
+                const res = await fetch('/api/metrics/latest');
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
                 }
 
-                const data = await response.json();
-                setMetrics(data);
-
-                if (isFirstLoad.current) {
+                const data = await res.json();
+                
+                // Only set metrics if data exists
+                if (data && Object.keys(data).length > 0) {
+                    setMetrics(data);
                     setError(null);
-                    setLoading(false);
-                    isFirstLoad.current = false;
                 }
-
+                
+                setLoading(false);
             } catch (err) {
-                const errMsg = err instanceof Error ? err.message : 'Unknown Error';
-
-                if (isFirstLoad.current) {
-                    setError(errMsg);
-                    setLoading(false);
-                }
+                console.error('Failed to fetch metrics:', err);
+                setError(err instanceof Error ? err.message : 'Unknown error');
+                setLoading(false);
             }
         };
 
+        // Fetch immediately
         fetchMetrics();
 
-        const intervalID = setInterval(fetchMetrics, interval);
+        // Then poll
+        const interval = setInterval(fetchMetrics, pollInterval);
 
-        return () => clearInterval(intervalID)
-    }, [interval]);
+        return () => clearInterval(interval);
+    }, [pollInterval]);
 
-    return { metrics, loading, error};
+    return { metrics, loading, error };
 }
