@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/executor
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251119195123-bd068d786602
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251127093529-f85c41ea1483
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/nats-io/nats.go v1.47.0
 	google.golang.org/grpc v1.76.0
@@ -27,5 +27,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
-
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto

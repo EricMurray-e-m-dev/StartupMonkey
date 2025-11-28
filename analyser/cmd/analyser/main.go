@@ -21,7 +21,7 @@ import (
 func main() {
 	log.Printf("Starting Analyser service...")
 
-	envPath := filepath.Join("..", "..", ".env")
+	envPath := filepath.Join("..", ".env")
 	_ = godotenv.Load(envPath)
 
 	detectionEngine := engine.NewEngine()

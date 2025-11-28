@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/collector
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251105205209-b684628bfd44
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251127093529-f85c41ea1483
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.47.0
@@ -31,5 +31,3 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/EricMurray-e-m-dev/StartupMonkey/proto => ../proto

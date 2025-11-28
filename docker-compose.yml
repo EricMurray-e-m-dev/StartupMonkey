@@ -1,10 +1,11 @@
 services:
+  # Infrastructure
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: testdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-testdb}
     ports:
       - "0:5432"
     healthcheck:
@@ -14,6 +15,23 @@ services:
       retries: 5
     networks:
       - startupmonkey
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    ports:
+      - "0:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - startupmonkey
+    volumes:
+      - redis_data:/data
 
   nats:
     image: nats:2.10-alpine
@@ -22,45 +40,25 @@ services:
     networks:
       - startupmonkey
 
-  analyser:
+  # Core Services
+  knowledge:
     build:
-      context: ./analyser
+      context: ./knowledge
       dockerfile: Dockerfile
     environment:
-      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     ports:
-      - "0:50051"   # gRPC
-      - "0:8081"    # Health check
+      - "0:50053"   # gRPC
+      - "0:8083"    # Health check
     depends_on:
-      nats:
-        condition: service_started
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8081/health"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8083/health"]
       interval: 10s
       timeout: 3s
-      retries: 3
-      start_period: 5s
-    networks:
-      - startupmonkey
-    restart: unless-stopped
-
-  executor:
-    build:
-      context: ./executor
-      dockerfile: Dockerfile
-    environment:
-      - NATS_URL=nats://nats:4222
-    ports:
-      - "0:50052"   # gRPC
-      - "0:8082"    # Health check
-    depends_on:
-      nats:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      retries: 5
       start_period: 5s
     networks:
       - startupmonkey
@@ -71,12 +69,13 @@ services:
       context: ./collector
       dockerfile: Dockerfile
     environment:
-      - DB_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/testdb?sslmode=disable
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-testdb}?sslmode=disable
       - DB_ADAPTER=postgres
-      - DATABASE_ID=docker-test-db
-      - DATABASE_NAME=testdb
+      - DATABASE_ID=${DATABASE_ID:-docker-test-db}
+      - DATABASE_NAME=${POSTGRES_DB:-testdb}
       - ANALYSER_ADDRESS=analyser:50051
-      - COLLECTION_INTERVAL=30s
+      - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-30s}
+      - NATS_URL=nats://nats:4222
     ports:
       - "0:8080"    # Health check
     depends_on:
@@ -88,8 +87,80 @@ services:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
       start_period: 10s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  analyser:
+    build:
+      context: ./analyser
+      dockerfile: Dockerfile
+    environment:
+      - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
+    ports:
+      - "0:50051"   # gRPC
+      - "0:8081"    # Health check
+    depends_on:
+      nats:
+        condition: service_started
+      knowledge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  executor:
+    build:
+      context: ./executor
+      dockerfile: Dockerfile
+    environment:
+      - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-testdb}?sslmode=disable
+    ports:
+      - "0:50052"   # gRPC
+      - "0:8082"    # Health check
+      - "0:8084"    # HTTP API (rollback)
+    depends_on:
+      nats:
+        condition: service_started
+      knowledge:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Dashboard Services
+  dashboard-collector:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.collector
+    environment:
+      - NATS_URL=nats://nats:4222
+    ports:
+      - "0:3001"
+    depends_on:
+      nats:
+        condition: service_started
     networks:
       - startupmonkey
     restart: unless-stopped
@@ -100,12 +171,12 @@ services:
       dockerfile: Dockerfile
     environment:
       - NODE_ENV=production
-      - EXECUTOR_GRPC_URL=executor:50052
-      - NATS_URL=nats://nats:4222
+      - NEXT_PUBLIC_COLLECTOR_URL=http://dashboard-collector:3001
+      - EXECUTOR_HTTP_URL=http://executor:8084
     ports:
-      - "0:3000"
+      - "3000:3000"   # Fixed port for easy access
     depends_on:
-      nats:
+      dashboard-collector:
         condition: service_started
       executor:
         condition: service_healthy
@@ -113,8 +184,8 @@ services:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 3s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 15s
     networks:
       - startupmonkey
     restart: unless-stopped
@@ -122,3 +193,7 @@ services:
 networks:
   startupmonkey:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

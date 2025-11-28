@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-const COLLECTOR_URL = 'http://localhost:3001';
+const COLLECTOR_URL = process.env.NEXT_PUBLIC_COLLECTOR_URL || 'http://localhost:3001';
 
 export async function GET() {
     try {
