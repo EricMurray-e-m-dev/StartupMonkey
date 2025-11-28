@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o collector ./cmd/collector
+RUN CGO_ENABLED=0 GOOS=linux go build -o knowledge ./cmd/knowledge
 
 # Runtime
 FROM alpine:3.20
@@ -33,7 +33,7 @@ RUN addgroup -g 1000 appuser && \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/collector .
+COPY --from=builder /app/knowledge .
 
 # Change ownership
 RUN chown -R appuser:appuser /app
@@ -41,8 +41,8 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# Expose for future health check
-EXPOSE 8080
+# Expose gRPC and health check ports
+EXPOSE 50053 8083
 
 # Run
-CMD [ "./collector" ]
+CMD [ "./knowledge" ]

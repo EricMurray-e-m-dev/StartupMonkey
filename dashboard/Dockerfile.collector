@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy collector script
+COPY lib/collector.js ./lib/
+
+# Copy stores directory
+COPY stores/ ./stores/
+
+EXPOSE 3001
+
+CMD ["node", "lib/collector.js"]

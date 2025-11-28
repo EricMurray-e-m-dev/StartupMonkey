@@ -41,8 +41,8 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# Expose gRPC and health check ports
-EXPOSE 50052 8082
+# Expose gRPC, health check, and HTTP API ports
+EXPOSE 50052 8082 8084
 
 # Run
 CMD [ "./executor" ]
