@@ -106,11 +106,6 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 func (h *DetectionHandler) createAction(detection *models.Detection, actionID string) (actions.Action, error) {
 	ctx := context.Background()
-	// TODO: replace with factory in future
-	adapter, err := database.NewPostgresAdapter(ctx, h.dbConnection, detection.DatabaseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create database adapter: %w", err)
-	}
 
 	metadata := &models.ActionMetadata{
 		ActionID:     actionID,
@@ -122,6 +117,12 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 	switch detection.ActionType {
 	case "create_index":
+		// TODO: replace with factory pattern when adding multi-database support
+		adapter, err := database.NewPostgresAdapter(ctx, h.dbConnection, detection.DatabaseID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database adapter: %w", err)
+		}
+
 		tableName, ok := detection.ActionMetaData["table_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing table_name in detection metadata")
@@ -134,7 +135,20 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
 
-	case "increase_cache_size", "deploy_pgbouncer", "deploy_redis", "optimise_queries":
+	case "deploy_pgbouncer":
+		action, err := actions.NewDeployPgBouncerAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			"postgres",
+			detection.ActionMetaData,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create PgBouncer action: %w", err)
+		}
+		return action, nil
+
+	case "increase_cache_size", "deploy_redis", "optimise_queries":
 		return actions.NewFutureFixAction(
 			actionID,
 			detection.ActionType,
