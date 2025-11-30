@@ -3,9 +3,15 @@ package actions
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/docker"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
+	dockertypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 )
 
 type DeployPgBouncerAction struct {
@@ -14,15 +20,24 @@ type DeployPgBouncerAction struct {
 	databaseID    string
 	databaseType  string
 	containerName string
+	containerID   string
 	deployed      bool
+
+	// Docker client
+	dockerClient *docker.Client
 
 	// Store deployment details for rollback
 	deploymentDetails map[string]interface{}
 }
 
-func NewDeployPgBouncerAction(detectionID, databaseID, databaseType string, params map[string]interface{}) *DeployPgBouncerAction {
+func NewDeployPgBouncerAction(actionID string, detectionID, databaseID, databaseType string, params map[string]interface{}) (*DeployPgBouncerAction, error) {
 	containerName := fmt.Sprintf("pgbouncer-%s", databaseID)
-	actionID := fmt.Sprintf("action-%s-%d", detectionID, time.Now().Unix())
+
+	// Create Docker client
+	dockerClient, err := docker.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+	}
 
 	return &DeployPgBouncerAction{
 		actionID:          actionID,
@@ -30,18 +45,145 @@ func NewDeployPgBouncerAction(detectionID, databaseID, databaseType string, para
 		databaseID:        databaseID,
 		databaseType:      databaseType,
 		containerName:     containerName,
+		dockerClient:      dockerClient,
 		deployed:          false,
 		deploymentDetails: make(map[string]interface{}),
-	}
+	}, nil
 }
 
 func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResult, error) {
 	startTime := time.Now()
 
-	// TODO: Implement Docker deployment
-	// 1. Generate pgbouncer.ini config
-	// 2. Create userlist.txt
-	// 3. Deploy container with Docker SDK
+	if a.actionID == "" {
+		return nil, fmt.Errorf("action ID not set")
+	}
+
+	// Parse PostgreSQL connection string
+	connStr := os.Getenv("DB_CONNECTION_STRING")
+	if connStr == "" {
+		return nil, fmt.Errorf("DB_CONNECTION_STRING not set")
+	}
+
+	// Simple inline parsing (no external function needed)
+	// Format: postgresql://user:password@host:port/dbname
+	connStr = strings.TrimPrefix(connStr, "postgresql://")
+	connStr = strings.TrimPrefix(connStr, "postgres://")
+
+	// Remove query params like ?sslmode=disable
+	if idx := strings.Index(connStr, "?"); idx != -1 {
+		connStr = connStr[:idx]
+	}
+
+	// Split user@host/db
+	parts := strings.Split(connStr, "@")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid connection string format")
+	}
+
+	userPass := strings.Split(parts[0], ":")
+	user := userPass[0]
+	password := ""
+	if len(userPass) == 2 {
+		password = userPass[1]
+	}
+
+	hostDB := strings.Split(parts[1], "/")
+	if len(hostDB) != 2 {
+		return nil, fmt.Errorf("invalid connection string format")
+	}
+
+	hostPort := strings.Split(hostDB[0], ":")
+	if len(hostPort) != 2 {
+		return nil, fmt.Errorf("invalid connection string format")
+	}
+
+	host := hostPort[0]
+	port := hostPort[1]
+	dbname := hostDB[1]
+
+	// Pool configuration (hardcoded defaults)
+	defaultPoolSize := 20
+	maxClientConn := 100
+	reservePoolSize := 5
+
+	// Pull PgBouncer image
+	log.Printf("Pulling PgBouncer image...")
+	if err := a.dockerClient.PullImage(ctx, "pgbouncer/pgbouncer:latest"); err != nil {
+		return nil, fmt.Errorf("failed to pull PgBouncer image: %w", err)
+	}
+
+	// Create container with environment variables
+	log.Printf("Creating PgBouncer container: %s", a.containerName)
+
+	portBindings := nat.PortMap{
+		"6432/tcp": []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: "6432",
+			},
+		},
+	}
+
+	env := []string{
+		fmt.Sprintf("DATABASES_HOST=%s", host),
+		fmt.Sprintf("DATABASES_PORT=%s", port),
+		fmt.Sprintf("DATABASES_USER=%s", user),
+		fmt.Sprintf("DATABASES_DBNAME=%s", dbname),
+		"PGBOUNCER_POOL_MODE=transaction",
+		fmt.Sprintf("PGBOUNCER_DEFAULT_POOL_SIZE=%d", defaultPoolSize),
+		fmt.Sprintf("PGBOUNCER_MAX_CLIENT_CONN=%d", maxClientConn),
+		fmt.Sprintf("PGBOUNCER_RESERVE_POOL_SIZE=%d", reservePoolSize),
+		"PGBOUNCER_AUTH_TYPE=trust",
+	}
+
+	if password != "" {
+		env = append(env, fmt.Sprintf("DATABASES_PASSWORD=%s", password))
+	}
+
+	containerConfig := &dockertypes.Config{
+		Image: "pgbouncer/pgbouncer:latest",
+		Env:   env,
+		ExposedPorts: nat.PortSet{
+			"6432/tcp": struct{}{},
+		},
+	}
+
+	hostConfig := &dockertypes.HostConfig{
+		PortBindings: portBindings,
+		RestartPolicy: dockertypes.RestartPolicy{
+			Name: "unless-stopped",
+		},
+	}
+
+	containerID, err := a.dockerClient.CreateContainer(ctx, containerConfig, hostConfig, a.containerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container: %w", err)
+	}
+
+	a.containerID = containerID
+	log.Printf("Container created: %s", containerID[:12])
+
+	// Start container
+	log.Printf("Starting PgBouncer container...")
+	if err := a.dockerClient.StartContainer(ctx, containerID); err != nil {
+		a.dockerClient.RemoveContainer(ctx, containerID)
+		return nil, fmt.Errorf("failed to start container: %w", err)
+	}
+
+	// Verify running
+	log.Printf("Verifying PgBouncer is running...")
+	time.Sleep(3 * time.Second)
+
+	isRunning, err := a.dockerClient.IsContainerRunning(ctx, containerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check container status: %w", err)
+	}
+
+	if !isRunning {
+		return nil, fmt.Errorf("container started but is not running - check logs with: docker logs %s", a.containerName)
+	}
+
+	log.Printf("✅ PgBouncer is running on port 6432")
 
 	endTime := time.Now()
 	executionTimeMs := endTime.Sub(startTime).Milliseconds()
@@ -58,9 +200,13 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 		Completed:       &endTime,
 		ExecutionTimeMs: executionTimeMs,
 		Changes: map[string]interface{}{
-			"container_name": a.containerName,
-			"pgbouncer_port": 6432,
-			"instruction":    "Update your app's DB_CONNECTION_STRING to use port 6432",
+			"container_name":    a.containerName,
+			"container_id":      containerID,
+			"pgbouncer_port":    6432,
+			"pool_size":         defaultPoolSize,
+			"max_client_conn":   maxClientConn,
+			"connection_string": fmt.Sprintf("postgresql://%s:****@%s:6432/%s", user, host, dbname),
+			"instruction":       "Update your app's DB_CONNECTION_STRING to use port 6432 instead of 5432",
 		},
 		CanRollback: true,
 		Rolledback:  false,
@@ -75,15 +221,47 @@ func (a *DeployPgBouncerAction) Rollback(ctx context.Context) error {
 		return fmt.Errorf("PgBouncer was not deployed, cannot rollback")
 	}
 
-	// TODO: Implement Docker container stop and remove
+	if a.containerID == "" {
+		return fmt.Errorf("container ID not found")
+	}
+
+	// Stop the container
+	if err := a.dockerClient.StopContainer(ctx, a.containerID); err != nil {
+		log.Printf("Warning: failed to stop container: %v", err)
+	}
+
+	// Remove the container
+	if err := a.dockerClient.RemoveContainer(ctx, a.containerID); err != nil {
+		return fmt.Errorf("failed to remove container: %w", err)
+	}
+
+	log.Printf("PgBouncer container removed: %s", a.containerName)
 
 	a.deployed = false
 	return nil
 }
 
 func (a *DeployPgBouncerAction) Validate(ctx context.Context) error {
-	// TODO: Check Docker is available and accessible
-	// TODO: Verify PostgreSQL connection details are available
+	// Check Docker is available
+	if err := a.dockerClient.IsAvailable(ctx); err != nil {
+		return fmt.Errorf("docker not available: %w", err)
+	}
+
+	// Check if container already exists
+	exists, existingID, err := a.dockerClient.ContainerExists(ctx, a.containerName)
+	if err != nil {
+		return fmt.Errorf("failed to check if container exists: %w", err)
+	}
+
+	if exists {
+		return fmt.Errorf("PgBouncer container '%s' already exists (ID: %s)", a.containerName, existingID)
+	}
+
+	// Check DB_CONNECTION_STRING is set
+	if os.Getenv("DB_CONNECTION_STRING") == "" {
+		return fmt.Errorf("DB_CONNECTION_STRING environment variable not set")
+	}
+
 	return nil
 }
 
