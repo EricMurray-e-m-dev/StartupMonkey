@@ -75,8 +75,7 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 		}
 
 		if isRunning {
-			// Already running - this is actually success!
-			log.Printf("✅ PgBouncer is already running on port 6432")
+			log.Printf("PgBouncer is already running on port 6432")
 
 			endTime := time.Now()
 			return &models.ActionResult{
