@@ -98,3 +98,12 @@ func (c *Client) Close() error {
 	}
 	return nil
 }
+
+func (c *Client) IsContainerRunning(ctx context.Context, containerID string) (bool, error) {
+	inspect, err := c.cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return false, fmt.Errorf("failed to inspect container: %w", err)
+	}
+
+	return inspect.State.Running, nil
+}
