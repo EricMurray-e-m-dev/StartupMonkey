@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.32.1
-// source: proto/knowledge.proto
+// source: knowledge.proto
 
 package proto
 
@@ -26,6 +26,12 @@ const (
 	KnowledgeService_RegisterAction_FullMethodName        = "/knowledge.KnowledgeService/RegisterAction"
 	KnowledgeService_UpdateActionStatus_FullMethodName    = "/knowledge.KnowledgeService/UpdateActionStatus"
 	KnowledgeService_GetPendingActions_FullMethodName     = "/knowledge.KnowledgeService/GetPendingActions"
+	KnowledgeService_RegisterDatabase_FullMethodName      = "/knowledge.KnowledgeService/RegisterDatabase"
+	KnowledgeService_GetDatabase_FullMethodName           = "/knowledge.KnowledgeService/GetDatabase"
+	KnowledgeService_ListDatabases_FullMethodName         = "/knowledge.KnowledgeService/ListDatabases"
+	KnowledgeService_UpdateDatabaseHealth_FullMethodName  = "/knowledge.KnowledgeService/UpdateDatabaseHealth"
+	KnowledgeService_UnregisterDatabase_FullMethodName    = "/knowledge.KnowledgeService/UnregisterDatabase"
+	KnowledgeService_GetSystemStats_FullMethodName        = "/knowledge.KnowledgeService/GetSystemStats"
 )
 
 // KnowledgeServiceClient is the client API for KnowledgeService service.
@@ -39,10 +45,18 @@ type KnowledgeServiceClient interface {
 	IsDetectionActive(ctx context.Context, in *DetectionKeyRequest, opts ...grpc.CallOption) (*DetectionStatusResponse, error)
 	GetActiveDetections(ctx context.Context, in *DatabaseFilterRequest, opts ...grpc.CallOption) (*DetectionListResponse, error)
 	MarkDetectionResolved(ctx context.Context, in *ResolveDetectionRequest, opts ...grpc.CallOption) (*Response, error)
-	// Action operations (placeholder for Issue #58)
+	// Action operations
 	RegisterAction(ctx context.Context, in *RegisterActionRequest, opts ...grpc.CallOption) (*ActionResponse, error)
 	UpdateActionStatus(ctx context.Context, in *UpdateActionRequest, opts ...grpc.CallOption) (*Response, error)
 	GetPendingActions(ctx context.Context, in *DatabaseFilterRequest, opts ...grpc.CallOption) (*ActionListResponse, error)
+	// Database operations
+	RegisterDatabase(ctx context.Context, in *RegisterDatabaseRequest, opts ...grpc.CallOption) (*DatabaseResponse, error)
+	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*GetDatabaseResponse, error)
+	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*DatabaseListResponse, error)
+	UpdateDatabaseHealth(ctx context.Context, in *UpdateDatabaseHealthRequest, opts ...grpc.CallOption) (*Response, error)
+	UnregisterDatabase(ctx context.Context, in *UnregisterDatabaseRequest, opts ...grpc.CallOption) (*Response, error)
+	// System statistics
+	GetSystemStats(ctx context.Context, in *GetSystemStatsRequest, opts ...grpc.CallOption) (*GetSystemStatsResponse, error)
 }
 
 type knowledgeServiceClient struct {
@@ -123,6 +137,66 @@ func (c *knowledgeServiceClient) GetPendingActions(ctx context.Context, in *Data
 	return out, nil
 }
 
+func (c *knowledgeServiceClient) RegisterDatabase(ctx context.Context, in *RegisterDatabaseRequest, opts ...grpc.CallOption) (*DatabaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DatabaseResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_RegisterDatabase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*GetDatabaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDatabaseResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_GetDatabase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*DatabaseListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DatabaseListResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_ListDatabases_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) UpdateDatabaseHealth(ctx context.Context, in *UpdateDatabaseHealthRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, KnowledgeService_UpdateDatabaseHealth_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) UnregisterDatabase(ctx context.Context, in *UnregisterDatabaseRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, KnowledgeService_UnregisterDatabase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) GetSystemStats(ctx context.Context, in *GetSystemStatsRequest, opts ...grpc.CallOption) (*GetSystemStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSystemStatsResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_GetSystemStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KnowledgeServiceServer is the server API for KnowledgeService service.
 // All implementations must embed UnimplementedKnowledgeServiceServer
 // for forward compatibility.
@@ -134,10 +208,18 @@ type KnowledgeServiceServer interface {
 	IsDetectionActive(context.Context, *DetectionKeyRequest) (*DetectionStatusResponse, error)
 	GetActiveDetections(context.Context, *DatabaseFilterRequest) (*DetectionListResponse, error)
 	MarkDetectionResolved(context.Context, *ResolveDetectionRequest) (*Response, error)
-	// Action operations (placeholder for Issue #58)
+	// Action operations
 	RegisterAction(context.Context, *RegisterActionRequest) (*ActionResponse, error)
 	UpdateActionStatus(context.Context, *UpdateActionRequest) (*Response, error)
 	GetPendingActions(context.Context, *DatabaseFilterRequest) (*ActionListResponse, error)
+	// Database operations
+	RegisterDatabase(context.Context, *RegisterDatabaseRequest) (*DatabaseResponse, error)
+	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
+	ListDatabases(context.Context, *ListDatabasesRequest) (*DatabaseListResponse, error)
+	UpdateDatabaseHealth(context.Context, *UpdateDatabaseHealthRequest) (*Response, error)
+	UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error)
+	// System statistics
+	GetSystemStats(context.Context, *GetSystemStatsRequest) (*GetSystemStatsResponse, error)
 	mustEmbedUnimplementedKnowledgeServiceServer()
 }
 
@@ -168,6 +250,24 @@ func (UnimplementedKnowledgeServiceServer) UpdateActionStatus(context.Context, *
 }
 func (UnimplementedKnowledgeServiceServer) GetPendingActions(context.Context, *DatabaseFilterRequest) (*ActionListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPendingActions not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) RegisterDatabase(context.Context, *RegisterDatabaseRequest) (*DatabaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterDatabase not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDatabase not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) ListDatabases(context.Context, *ListDatabasesRequest) (*DatabaseListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDatabases not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) UpdateDatabaseHealth(context.Context, *UpdateDatabaseHealthRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDatabaseHealth not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnregisterDatabase not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) GetSystemStats(context.Context, *GetSystemStatsRequest) (*GetSystemStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystemStats not implemented")
 }
 func (UnimplementedKnowledgeServiceServer) mustEmbedUnimplementedKnowledgeServiceServer() {}
 func (UnimplementedKnowledgeServiceServer) testEmbeddedByValue()                          {}
@@ -316,6 +416,114 @@ func _KnowledgeService_GetPendingActions_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KnowledgeService_RegisterDatabase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterDatabaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).RegisterDatabase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_RegisterDatabase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).RegisterDatabase(ctx, req.(*RegisterDatabaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_GetDatabase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDatabaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).GetDatabase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_GetDatabase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).GetDatabase(ctx, req.(*GetDatabaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_ListDatabases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDatabasesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).ListDatabases(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_ListDatabases_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).ListDatabases(ctx, req.(*ListDatabasesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_UpdateDatabaseHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDatabaseHealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).UpdateDatabaseHealth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_UpdateDatabaseHealth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).UpdateDatabaseHealth(ctx, req.(*UpdateDatabaseHealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_UnregisterDatabase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnregisterDatabaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).UnregisterDatabase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_UnregisterDatabase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).UnregisterDatabase(ctx, req.(*UnregisterDatabaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_GetSystemStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSystemStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).GetSystemStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_GetSystemStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).GetSystemStats(ctx, req.(*GetSystemStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KnowledgeService_ServiceDesc is the grpc.ServiceDesc for KnowledgeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -351,7 +559,31 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetPendingActions",
 			Handler:    _KnowledgeService_GetPendingActions_Handler,
 		},
+		{
+			MethodName: "RegisterDatabase",
+			Handler:    _KnowledgeService_RegisterDatabase_Handler,
+		},
+		{
+			MethodName: "GetDatabase",
+			Handler:    _KnowledgeService_GetDatabase_Handler,
+		},
+		{
+			MethodName: "ListDatabases",
+			Handler:    _KnowledgeService_ListDatabases_Handler,
+		},
+		{
+			MethodName: "UpdateDatabaseHealth",
+			Handler:    _KnowledgeService_UpdateDatabaseHealth_Handler,
+		},
+		{
+			MethodName: "UnregisterDatabase",
+			Handler:    _KnowledgeService_UnregisterDatabase_Handler,
+		},
+		{
+			MethodName: "GetSystemStats",
+			Handler:    _KnowledgeService_GetSystemStats_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/knowledge.proto",
+	Metadata: "knowledge.proto",
 }

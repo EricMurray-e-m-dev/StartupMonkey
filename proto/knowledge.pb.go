@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.32.1
-// source: proto/knowledge.proto
+// source: knowledge.proto
 
 package proto
 
@@ -37,7 +37,7 @@ type RegisterDetectionRequest struct {
 
 func (x *RegisterDetectionRequest) Reset() {
 	*x = RegisterDetectionRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[0]
+	mi := &file_knowledge_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +49,7 @@ func (x *RegisterDetectionRequest) String() string {
 func (*RegisterDetectionRequest) ProtoMessage() {}
 
 func (x *RegisterDetectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[0]
+	mi := &file_knowledge_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *RegisterDetectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterDetectionRequest.ProtoReflect.Descriptor instead.
 func (*RegisterDetectionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{0}
+	return file_knowledge_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RegisterDetectionRequest) GetId() string {
@@ -123,7 +123,7 @@ type DetectionKeyRequest struct {
 
 func (x *DetectionKeyRequest) Reset() {
 	*x = DetectionKeyRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[1]
+	mi := &file_knowledge_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -135,7 +135,7 @@ func (x *DetectionKeyRequest) String() string {
 func (*DetectionKeyRequest) ProtoMessage() {}
 
 func (x *DetectionKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[1]
+	mi := &file_knowledge_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,7 +148,7 @@ func (x *DetectionKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionKeyRequest.ProtoReflect.Descriptor instead.
 func (*DetectionKeyRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{1}
+	return file_knowledge_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DetectionKeyRequest) GetKey() string {
@@ -168,7 +168,7 @@ type DetectionStatusResponse struct {
 
 func (x *DetectionStatusResponse) Reset() {
 	*x = DetectionStatusResponse{}
-	mi := &file_proto_knowledge_proto_msgTypes[2]
+	mi := &file_knowledge_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -180,7 +180,7 @@ func (x *DetectionStatusResponse) String() string {
 func (*DetectionStatusResponse) ProtoMessage() {}
 
 func (x *DetectionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[2]
+	mi := &file_knowledge_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -193,7 +193,7 @@ func (x *DetectionStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionStatusResponse.ProtoReflect.Descriptor instead.
 func (*DetectionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{2}
+	return file_knowledge_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DetectionStatusResponse) GetIsActive() bool {
@@ -219,7 +219,7 @@ type DatabaseFilterRequest struct {
 
 func (x *DatabaseFilterRequest) Reset() {
 	*x = DatabaseFilterRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[3]
+	mi := &file_knowledge_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -231,7 +231,7 @@ func (x *DatabaseFilterRequest) String() string {
 func (*DatabaseFilterRequest) ProtoMessage() {}
 
 func (x *DatabaseFilterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[3]
+	mi := &file_knowledge_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -244,7 +244,7 @@ func (x *DatabaseFilterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseFilterRequest.ProtoReflect.Descriptor instead.
 func (*DatabaseFilterRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{3}
+	return file_knowledge_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DatabaseFilterRequest) GetDatabaseId() string {
@@ -265,7 +265,7 @@ type DetectionResponse struct {
 
 func (x *DetectionResponse) Reset() {
 	*x = DetectionResponse{}
-	mi := &file_proto_knowledge_proto_msgTypes[4]
+	mi := &file_knowledge_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -277,7 +277,7 @@ func (x *DetectionResponse) String() string {
 func (*DetectionResponse) ProtoMessage() {}
 
 func (x *DetectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[4]
+	mi := &file_knowledge_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +290,7 @@ func (x *DetectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionResponse.ProtoReflect.Descriptor instead.
 func (*DetectionResponse) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{4}
+	return file_knowledge_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DetectionResponse) GetSuccess() bool {
@@ -323,7 +323,7 @@ type DetectionListResponse struct {
 
 func (x *DetectionListResponse) Reset() {
 	*x = DetectionListResponse{}
-	mi := &file_proto_knowledge_proto_msgTypes[5]
+	mi := &file_knowledge_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +335,7 @@ func (x *DetectionListResponse) String() string {
 func (*DetectionListResponse) ProtoMessage() {}
 
 func (x *DetectionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[5]
+	mi := &file_knowledge_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +348,7 @@ func (x *DetectionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionListResponse.ProtoReflect.Descriptor instead.
 func (*DetectionListResponse) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{5}
+	return file_knowledge_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DetectionListResponse) GetDetections() []*Detection {
@@ -377,7 +377,7 @@ type Detection struct {
 
 func (x *Detection) Reset() {
 	*x = Detection{}
-	mi := &file_proto_knowledge_proto_msgTypes[6]
+	mi := &file_knowledge_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -389,7 +389,7 @@ func (x *Detection) String() string {
 func (*Detection) ProtoMessage() {}
 
 func (x *Detection) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[6]
+	mi := &file_knowledge_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +402,7 @@ func (x *Detection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Detection.ProtoReflect.Descriptor instead.
 func (*Detection) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{6}
+	return file_knowledge_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Detection) GetId() string {
@@ -492,7 +492,7 @@ type ResolveDetectionRequest struct {
 
 func (x *ResolveDetectionRequest) Reset() {
 	*x = ResolveDetectionRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[7]
+	mi := &file_knowledge_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +504,7 @@ func (x *ResolveDetectionRequest) String() string {
 func (*ResolveDetectionRequest) ProtoMessage() {}
 
 func (x *ResolveDetectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[7]
+	mi := &file_knowledge_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +517,7 @@ func (x *ResolveDetectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveDetectionRequest.ProtoReflect.Descriptor instead.
 func (*ResolveDetectionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{7}
+	return file_knowledge_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ResolveDetectionRequest) GetDetectionId() string {
@@ -534,7 +534,7 @@ func (x *ResolveDetectionRequest) GetSolution() string {
 	return ""
 }
 
-// Action messages (stubs for now)
+// Action messages
 type RegisterActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -548,7 +548,7 @@ type RegisterActionRequest struct {
 
 func (x *RegisterActionRequest) Reset() {
 	*x = RegisterActionRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[8]
+	mi := &file_knowledge_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +560,7 @@ func (x *RegisterActionRequest) String() string {
 func (*RegisterActionRequest) ProtoMessage() {}
 
 func (x *RegisterActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[8]
+	mi := &file_knowledge_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +573,7 @@ func (x *RegisterActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterActionRequest.ProtoReflect.Descriptor instead.
 func (*RegisterActionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{8}
+	return file_knowledge_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RegisterActionRequest) GetId() string {
@@ -622,7 +622,7 @@ type ActionResponse struct {
 
 func (x *ActionResponse) Reset() {
 	*x = ActionResponse{}
-	mi := &file_proto_knowledge_proto_msgTypes[9]
+	mi := &file_knowledge_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -634,7 +634,7 @@ func (x *ActionResponse) String() string {
 func (*ActionResponse) ProtoMessage() {}
 
 func (x *ActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[9]
+	mi := &file_knowledge_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -647,7 +647,7 @@ func (x *ActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResponse.ProtoReflect.Descriptor instead.
 func (*ActionResponse) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{9}
+	return file_knowledge_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ActionResponse) GetSuccess() bool {
@@ -684,7 +684,7 @@ type UpdateActionRequest struct {
 
 func (x *UpdateActionRequest) Reset() {
 	*x = UpdateActionRequest{}
-	mi := &file_proto_knowledge_proto_msgTypes[10]
+	mi := &file_knowledge_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -696,7 +696,7 @@ func (x *UpdateActionRequest) String() string {
 func (*UpdateActionRequest) ProtoMessage() {}
 
 func (x *UpdateActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[10]
+	mi := &file_knowledge_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -709,7 +709,7 @@ func (x *UpdateActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{10}
+	return file_knowledge_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UpdateActionRequest) GetActionId() string {
@@ -756,7 +756,7 @@ type ActionListResponse struct {
 
 func (x *ActionListResponse) Reset() {
 	*x = ActionListResponse{}
-	mi := &file_proto_knowledge_proto_msgTypes[11]
+	mi := &file_knowledge_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -768,7 +768,7 @@ func (x *ActionListResponse) String() string {
 func (*ActionListResponse) ProtoMessage() {}
 
 func (x *ActionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[11]
+	mi := &file_knowledge_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -781,7 +781,7 @@ func (x *ActionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionListResponse.ProtoReflect.Descriptor instead.
 func (*ActionListResponse) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{11}
+	return file_knowledge_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ActionListResponse) GetActions() []*Action {
@@ -805,7 +805,7 @@ type Action struct {
 
 func (x *Action) Reset() {
 	*x = Action{}
-	mi := &file_proto_knowledge_proto_msgTypes[12]
+	mi := &file_knowledge_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -817,7 +817,7 @@ func (x *Action) String() string {
 func (*Action) ProtoMessage() {}
 
 func (x *Action) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[12]
+	mi := &file_knowledge_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -830,7 +830,7 @@ func (x *Action) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Action.ProtoReflect.Descriptor instead.
 func (*Action) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{12}
+	return file_knowledge_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Action) GetId() string {
@@ -875,6 +875,836 @@ func (x *Action) GetCreatedAt() int64 {
 	return 0
 }
 
+// Database messages
+type RegisterDatabaseRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseId       string                 `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	ConnectionString string                 `protobuf:"bytes,2,opt,name=connection_string,json=connectionString,proto3" json:"connection_string,omitempty"`
+	DatabaseType     string                 `protobuf:"bytes,3,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"`
+	DatabaseName     string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Host             string                 `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
+	Port             int32                  `protobuf:"varint,6,opt,name=port,proto3" json:"port,omitempty"`
+	Version          string                 `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
+	RegisteredAt     int64                  `protobuf:"varint,8,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	Metadata         map[string]string      `protobuf:"bytes,9,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *RegisterDatabaseRequest) Reset() {
+	*x = RegisterDatabaseRequest{}
+	mi := &file_knowledge_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterDatabaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterDatabaseRequest) ProtoMessage() {}
+
+func (x *RegisterDatabaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterDatabaseRequest.ProtoReflect.Descriptor instead.
+func (*RegisterDatabaseRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RegisterDatabaseRequest) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetConnectionString() string {
+	if x != nil {
+		return x.ConnectionString
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetDatabaseType() string {
+	if x != nil {
+		return x.DatabaseType
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *RegisterDatabaseRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *RegisterDatabaseRequest) GetRegisteredAt() int64 {
+	if x != nil {
+		return x.RegisteredAt
+	}
+	return 0
+}
+
+func (x *RegisterDatabaseRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type DatabaseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DatabaseResponse) Reset() {
+	*x = DatabaseResponse{}
+	mi := &file_knowledge_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DatabaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatabaseResponse) ProtoMessage() {}
+
+func (x *DatabaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatabaseResponse.ProtoReflect.Descriptor instead.
+func (*DatabaseResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DatabaseResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *DatabaseResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type GetDatabaseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseId    string                 `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDatabaseRequest) Reset() {
+	*x = GetDatabaseRequest{}
+	mi := &file_knowledge_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDatabaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDatabaseRequest) ProtoMessage() {}
+
+func (x *GetDatabaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDatabaseRequest.ProtoReflect.Descriptor instead.
+func (*GetDatabaseRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetDatabaseRequest) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+type GetDatabaseResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Found            bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	DatabaseId       string                 `protobuf:"bytes,2,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	ConnectionString string                 `protobuf:"bytes,3,opt,name=connection_string,json=connectionString,proto3" json:"connection_string,omitempty"`
+	DatabaseType     string                 `protobuf:"bytes,4,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"`
+	DatabaseName     string                 `protobuf:"bytes,5,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Host             string                 `protobuf:"bytes,6,opt,name=host,proto3" json:"host,omitempty"`
+	Port             int32                  `protobuf:"varint,7,opt,name=port,proto3" json:"port,omitempty"`
+	Version          string                 `protobuf:"bytes,8,opt,name=version,proto3" json:"version,omitempty"`
+	RegisteredAt     int64                  `protobuf:"varint,9,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	LastSeen         int64                  `protobuf:"varint,10,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
+	Status           string                 `protobuf:"bytes,11,opt,name=status,proto3" json:"status,omitempty"`
+	HealthScore      float64                `protobuf:"fixed64,12,opt,name=health_score,json=healthScore,proto3" json:"health_score,omitempty"`
+	Metadata         map[string]string      `protobuf:"bytes,13,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetDatabaseResponse) Reset() {
+	*x = GetDatabaseResponse{}
+	mi := &file_knowledge_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDatabaseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDatabaseResponse) ProtoMessage() {}
+
+func (x *GetDatabaseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDatabaseResponse.ProtoReflect.Descriptor instead.
+func (*GetDatabaseResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetDatabaseResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *GetDatabaseResponse) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetConnectionString() string {
+	if x != nil {
+		return x.ConnectionString
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetDatabaseType() string {
+	if x != nil {
+		return x.DatabaseType
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *GetDatabaseResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetRegisteredAt() int64 {
+	if x != nil {
+		return x.RegisteredAt
+	}
+	return 0
+}
+
+func (x *GetDatabaseResponse) GetLastSeen() int64 {
+	if x != nil {
+		return x.LastSeen
+	}
+	return 0
+}
+
+func (x *GetDatabaseResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *GetDatabaseResponse) GetHealthScore() float64 {
+	if x != nil {
+		return x.HealthScore
+	}
+	return 0
+}
+
+func (x *GetDatabaseResponse) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type ListDatabasesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDatabasesRequest) Reset() {
+	*x = ListDatabasesRequest{}
+	mi := &file_knowledge_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDatabasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDatabasesRequest) ProtoMessage() {}
+
+func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDatabasesRequest.ProtoReflect.Descriptor instead.
+func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{17}
+}
+
+type DatabaseListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Databases     []*RegisteredDatabase  `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DatabaseListResponse) Reset() {
+	*x = DatabaseListResponse{}
+	mi := &file_knowledge_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DatabaseListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatabaseListResponse) ProtoMessage() {}
+
+func (x *DatabaseListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatabaseListResponse.ProtoReflect.Descriptor instead.
+func (*DatabaseListResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DatabaseListResponse) GetDatabases() []*RegisteredDatabase {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+type RegisteredDatabase struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseId    string                 `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	DatabaseType  string                 `protobuf:"bytes,2,opt,name=database_type,json=databaseType,proto3" json:"database_type,omitempty"`
+	DatabaseName  string                 `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Host          string                 `protobuf:"bytes,4,opt,name=host,proto3" json:"host,omitempty"`
+	Port          int32                  `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
+	Version       string                 `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	RegisteredAt  int64                  `protobuf:"varint,7,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	LastSeen      int64                  `protobuf:"varint,8,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
+	Status        string                 `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
+	HealthScore   float64                `protobuf:"fixed64,10,opt,name=health_score,json=healthScore,proto3" json:"health_score,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisteredDatabase) Reset() {
+	*x = RegisteredDatabase{}
+	mi := &file_knowledge_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisteredDatabase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisteredDatabase) ProtoMessage() {}
+
+func (x *RegisteredDatabase) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisteredDatabase.ProtoReflect.Descriptor instead.
+func (*RegisteredDatabase) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RegisteredDatabase) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetDatabaseType() string {
+	if x != nil {
+		return x.DatabaseType
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *RegisteredDatabase) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetRegisteredAt() int64 {
+	if x != nil {
+		return x.RegisteredAt
+	}
+	return 0
+}
+
+func (x *RegisteredDatabase) GetLastSeen() int64 {
+	if x != nil {
+		return x.LastSeen
+	}
+	return 0
+}
+
+func (x *RegisteredDatabase) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *RegisteredDatabase) GetHealthScore() float64 {
+	if x != nil {
+		return x.HealthScore
+	}
+	return 0
+}
+
+type UpdateDatabaseHealthRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseId    string                 `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	LastSeen      int64                  `protobuf:"varint,2,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	HealthScore   float64                `protobuf:"fixed64,4,opt,name=health_score,json=healthScore,proto3" json:"health_score,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateDatabaseHealthRequest) Reset() {
+	*x = UpdateDatabaseHealthRequest{}
+	mi := &file_knowledge_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateDatabaseHealthRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateDatabaseHealthRequest) ProtoMessage() {}
+
+func (x *UpdateDatabaseHealthRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateDatabaseHealthRequest.ProtoReflect.Descriptor instead.
+func (*UpdateDatabaseHealthRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UpdateDatabaseHealthRequest) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+func (x *UpdateDatabaseHealthRequest) GetLastSeen() int64 {
+	if x != nil {
+		return x.LastSeen
+	}
+	return 0
+}
+
+func (x *UpdateDatabaseHealthRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *UpdateDatabaseHealthRequest) GetHealthScore() float64 {
+	if x != nil {
+		return x.HealthScore
+	}
+	return 0
+}
+
+type UnregisterDatabaseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseId    string                 `protobuf:"bytes,1,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnregisterDatabaseRequest) Reset() {
+	*x = UnregisterDatabaseRequest{}
+	mi := &file_knowledge_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnregisterDatabaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnregisterDatabaseRequest) ProtoMessage() {}
+
+func (x *UnregisterDatabaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnregisterDatabaseRequest.ProtoReflect.Descriptor instead.
+func (*UnregisterDatabaseRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UnregisterDatabaseRequest) GetDatabaseId() string {
+	if x != nil {
+		return x.DatabaseId
+	}
+	return ""
+}
+
+// System statistics messages
+type GetSystemStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSystemStatsRequest) Reset() {
+	*x = GetSystemStatsRequest{}
+	mi := &file_knowledge_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSystemStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSystemStatsRequest) ProtoMessage() {}
+
+func (x *GetSystemStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSystemStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetSystemStatsRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{22}
+}
+
+type GetSystemStatsResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	TotalDatabases     int32                  `protobuf:"varint,1,opt,name=total_databases,json=totalDatabases,proto3" json:"total_databases,omitempty"`
+	HealthyDatabases   int32                  `protobuf:"varint,2,opt,name=healthy_databases,json=healthyDatabases,proto3" json:"healthy_databases,omitempty"`
+	DegradedDatabases  int32                  `protobuf:"varint,3,opt,name=degraded_databases,json=degradedDatabases,proto3" json:"degraded_databases,omitempty"`
+	OfflineDatabases   int32                  `protobuf:"varint,4,opt,name=offline_databases,json=offlineDatabases,proto3" json:"offline_databases,omitempty"`
+	TotalDetections    int32                  `protobuf:"varint,5,opt,name=total_detections,json=totalDetections,proto3" json:"total_detections,omitempty"`
+	ActiveDetections   int32                  `protobuf:"varint,6,opt,name=active_detections,json=activeDetections,proto3" json:"active_detections,omitempty"`
+	ResolvedDetections int32                  `protobuf:"varint,7,opt,name=resolved_detections,json=resolvedDetections,proto3" json:"resolved_detections,omitempty"`
+	TotalActions       int32                  `protobuf:"varint,8,opt,name=total_actions,json=totalActions,proto3" json:"total_actions,omitempty"`
+	ActionsQueued      int32                  `protobuf:"varint,9,opt,name=actions_queued,json=actionsQueued,proto3" json:"actions_queued,omitempty"`
+	ActionsExecuting   int32                  `protobuf:"varint,10,opt,name=actions_executing,json=actionsExecuting,proto3" json:"actions_executing,omitempty"`
+	ActionsCompleted   int32                  `protobuf:"varint,11,opt,name=actions_completed,json=actionsCompleted,proto3" json:"actions_completed,omitempty"`
+	ActionsFailed      int32                  `protobuf:"varint,12,opt,name=actions_failed,json=actionsFailed,proto3" json:"actions_failed,omitempty"`
+	UptimeSeconds      int64                  `protobuf:"varint,13,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GetSystemStatsResponse) Reset() {
+	*x = GetSystemStatsResponse{}
+	mi := &file_knowledge_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSystemStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSystemStatsResponse) ProtoMessage() {}
+
+func (x *GetSystemStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSystemStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetSystemStatsResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetSystemStatsResponse) GetTotalDatabases() int32 {
+	if x != nil {
+		return x.TotalDatabases
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetHealthyDatabases() int32 {
+	if x != nil {
+		return x.HealthyDatabases
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetDegradedDatabases() int32 {
+	if x != nil {
+		return x.DegradedDatabases
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetOfflineDatabases() int32 {
+	if x != nil {
+		return x.OfflineDatabases
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetTotalDetections() int32 {
+	if x != nil {
+		return x.TotalDetections
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetActiveDetections() int32 {
+	if x != nil {
+		return x.ActiveDetections
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetResolvedDetections() int32 {
+	if x != nil {
+		return x.ResolvedDetections
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetTotalActions() int32 {
+	if x != nil {
+		return x.TotalActions
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetActionsQueued() int32 {
+	if x != nil {
+		return x.ActionsQueued
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetActionsExecuting() int32 {
+	if x != nil {
+		return x.ActionsExecuting
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetActionsCompleted() int32 {
+	if x != nil {
+		return x.ActionsCompleted
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetActionsFailed() int32 {
+	if x != nil {
+		return x.ActionsFailed
+	}
+	return 0
+}
+
+func (x *GetSystemStatsResponse) GetUptimeSeconds() int64 {
+	if x != nil {
+		return x.UptimeSeconds
+	}
+	return 0
+}
+
 // Generic response
 type Response struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -886,7 +1716,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_proto_knowledge_proto_msgTypes[13]
+	mi := &file_knowledge_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +1728,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_knowledge_proto_msgTypes[13]
+	mi := &file_knowledge_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1741,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_proto_knowledge_proto_rawDescGZIP(), []int{13}
+	return file_knowledge_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Response) GetSuccess() bool {
@@ -928,11 +1758,11 @@ func (x *Response) GetMessage() string {
 	return ""
 }
 
-var File_proto_knowledge_proto protoreflect.FileDescriptor
+var File_knowledge_proto protoreflect.FileDescriptor
 
-const file_proto_knowledge_proto_rawDesc = "" +
+const file_knowledge_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/knowledge.proto\x12\tknowledge\"\xca\x01\n" +
+	"\x0fknowledge.proto\x12\tknowledge\"\xca\x01\n" +
 	"\x18RegisterDetectionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1a\n" +
@@ -1008,10 +1838,90 @@ const file_proto_knowledge_proto_rawDesc = "" +
 	"databaseId\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\x03R\tcreatedAt\">\n" +
+	"created_at\x18\x06 \x01(\x03R\tcreatedAt\"\xa3\x03\n" +
+	"\x17RegisterDatabaseRequest\x12\x1f\n" +
+	"\vdatabase_id\x18\x01 \x01(\tR\n" +
+	"databaseId\x12+\n" +
+	"\x11connection_string\x18\x02 \x01(\tR\x10connectionString\x12#\n" +
+	"\rdatabase_type\x18\x03 \x01(\tR\fdatabaseType\x12#\n" +
+	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12\x12\n" +
+	"\x04host\x18\x05 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\x06 \x01(\x05R\x04port\x12\x18\n" +
+	"\aversion\x18\a \x01(\tR\aversion\x12#\n" +
+	"\rregistered_at\x18\b \x01(\x03R\fregisteredAt\x12L\n" +
+	"\bmetadata\x18\t \x03(\v20.knowledge.RegisterDatabaseRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"F\n" +
+	"\x10DatabaseResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"5\n" +
+	"\x12GetDatabaseRequest\x12\x1f\n" +
+	"\vdatabase_id\x18\x01 \x01(\tR\n" +
+	"databaseId\"\x89\x04\n" +
+	"\x13GetDatabaseResponse\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12\x1f\n" +
+	"\vdatabase_id\x18\x02 \x01(\tR\n" +
+	"databaseId\x12+\n" +
+	"\x11connection_string\x18\x03 \x01(\tR\x10connectionString\x12#\n" +
+	"\rdatabase_type\x18\x04 \x01(\tR\fdatabaseType\x12#\n" +
+	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x12\n" +
+	"\x04host\x18\x06 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\a \x01(\x05R\x04port\x12\x18\n" +
+	"\aversion\x18\b \x01(\tR\aversion\x12#\n" +
+	"\rregistered_at\x18\t \x01(\x03R\fregisteredAt\x12\x1b\n" +
+	"\tlast_seen\x18\n" +
+	" \x01(\x03R\blastSeen\x12\x16\n" +
+	"\x06status\x18\v \x01(\tR\x06status\x12!\n" +
+	"\fhealth_score\x18\f \x01(\x01R\vhealthScore\x12H\n" +
+	"\bmetadata\x18\r \x03(\v2,.knowledge.GetDatabaseResponse.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x16\n" +
+	"\x14ListDatabasesRequest\"S\n" +
+	"\x14DatabaseListResponse\x12;\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x1d.knowledge.RegisteredDatabaseR\tdatabases\"\xbe\x02\n" +
+	"\x12RegisteredDatabase\x12\x1f\n" +
+	"\vdatabase_id\x18\x01 \x01(\tR\n" +
+	"databaseId\x12#\n" +
+	"\rdatabase_type\x18\x02 \x01(\tR\fdatabaseType\x12#\n" +
+	"\rdatabase_name\x18\x03 \x01(\tR\fdatabaseName\x12\x12\n" +
+	"\x04host\x18\x04 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\x05 \x01(\x05R\x04port\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12#\n" +
+	"\rregistered_at\x18\a \x01(\x03R\fregisteredAt\x12\x1b\n" +
+	"\tlast_seen\x18\b \x01(\x03R\blastSeen\x12\x16\n" +
+	"\x06status\x18\t \x01(\tR\x06status\x12!\n" +
+	"\fhealth_score\x18\n" +
+	" \x01(\x01R\vhealthScore\"\x96\x01\n" +
+	"\x1bUpdateDatabaseHealthRequest\x12\x1f\n" +
+	"\vdatabase_id\x18\x01 \x01(\tR\n" +
+	"databaseId\x12\x1b\n" +
+	"\tlast_seen\x18\x02 \x01(\x03R\blastSeen\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12!\n" +
+	"\fhealth_score\x18\x04 \x01(\x01R\vhealthScore\"<\n" +
+	"\x19UnregisterDatabaseRequest\x12\x1f\n" +
+	"\vdatabase_id\x18\x01 \x01(\tR\n" +
+	"databaseId\"\x17\n" +
+	"\x15GetSystemStatsRequest\"\xc7\x04\n" +
+	"\x16GetSystemStatsResponse\x12'\n" +
+	"\x0ftotal_databases\x18\x01 \x01(\x05R\x0etotalDatabases\x12+\n" +
+	"\x11healthy_databases\x18\x02 \x01(\x05R\x10healthyDatabases\x12-\n" +
+	"\x12degraded_databases\x18\x03 \x01(\x05R\x11degradedDatabases\x12+\n" +
+	"\x11offline_databases\x18\x04 \x01(\x05R\x10offlineDatabases\x12)\n" +
+	"\x10total_detections\x18\x05 \x01(\x05R\x0ftotalDetections\x12+\n" +
+	"\x11active_detections\x18\x06 \x01(\x05R\x10activeDetections\x12/\n" +
+	"\x13resolved_detections\x18\a \x01(\x05R\x12resolvedDetections\x12#\n" +
+	"\rtotal_actions\x18\b \x01(\x05R\ftotalActions\x12%\n" +
+	"\x0eactions_queued\x18\t \x01(\x05R\ractionsQueued\x12+\n" +
+	"\x11actions_executing\x18\n" +
+	" \x01(\x05R\x10actionsExecuting\x12+\n" +
+	"\x11actions_completed\x18\v \x01(\x05R\x10actionsCompleted\x12%\n" +
+	"\x0eactions_failed\x18\f \x01(\x05R\ractionsFailed\x12%\n" +
+	"\x0euptime_seconds\x18\r \x01(\x03R\ruptimeSeconds\">\n" +
 	"\bResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xe0\x04\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xd3\b\n" +
 	"\x10KnowledgeService\x12V\n" +
 	"\x11RegisterDetection\x12#.knowledge.RegisterDetectionRequest\x1a\x1c.knowledge.DetectionResponse\x12W\n" +
 	"\x11IsDetectionActive\x12\x1e.knowledge.DetectionKeyRequest\x1a\".knowledge.DetectionStatusResponse\x12Y\n" +
@@ -1019,81 +1929,115 @@ const file_proto_knowledge_proto_rawDesc = "" +
 	"\x15MarkDetectionResolved\x12\".knowledge.ResolveDetectionRequest\x1a\x13.knowledge.Response\x12M\n" +
 	"\x0eRegisterAction\x12 .knowledge.RegisterActionRequest\x1a\x19.knowledge.ActionResponse\x12I\n" +
 	"\x12UpdateActionStatus\x12\x1e.knowledge.UpdateActionRequest\x1a\x13.knowledge.Response\x12T\n" +
-	"\x11GetPendingActions\x12 .knowledge.DatabaseFilterRequest\x1a\x1d.knowledge.ActionListResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
+	"\x11GetPendingActions\x12 .knowledge.DatabaseFilterRequest\x1a\x1d.knowledge.ActionListResponse\x12S\n" +
+	"\x10RegisterDatabase\x12\".knowledge.RegisterDatabaseRequest\x1a\x1b.knowledge.DatabaseResponse\x12L\n" +
+	"\vGetDatabase\x12\x1d.knowledge.GetDatabaseRequest\x1a\x1e.knowledge.GetDatabaseResponse\x12Q\n" +
+	"\rListDatabases\x12\x1f.knowledge.ListDatabasesRequest\x1a\x1f.knowledge.DatabaseListResponse\x12S\n" +
+	"\x14UpdateDatabaseHealth\x12&.knowledge.UpdateDatabaseHealthRequest\x1a\x13.knowledge.Response\x12O\n" +
+	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12U\n" +
+	"\x0eGetSystemStats\x12 .knowledge.GetSystemStatsRequest\x1a!.knowledge.GetSystemStatsResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
 
 var (
-	file_proto_knowledge_proto_rawDescOnce sync.Once
-	file_proto_knowledge_proto_rawDescData []byte
+	file_knowledge_proto_rawDescOnce sync.Once
+	file_knowledge_proto_rawDescData []byte
 )
 
-func file_proto_knowledge_proto_rawDescGZIP() []byte {
-	file_proto_knowledge_proto_rawDescOnce.Do(func() {
-		file_proto_knowledge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_knowledge_proto_rawDesc), len(file_proto_knowledge_proto_rawDesc)))
+func file_knowledge_proto_rawDescGZIP() []byte {
+	file_knowledge_proto_rawDescOnce.Do(func() {
+		file_knowledge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_knowledge_proto_rawDesc), len(file_knowledge_proto_rawDesc)))
 	})
-	return file_proto_knowledge_proto_rawDescData
+	return file_knowledge_proto_rawDescData
 }
 
-var file_proto_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
-var file_proto_knowledge_proto_goTypes = []any{
-	(*RegisterDetectionRequest)(nil), // 0: knowledge.RegisterDetectionRequest
-	(*DetectionKeyRequest)(nil),      // 1: knowledge.DetectionKeyRequest
-	(*DetectionStatusResponse)(nil),  // 2: knowledge.DetectionStatusResponse
-	(*DatabaseFilterRequest)(nil),    // 3: knowledge.DatabaseFilterRequest
-	(*DetectionResponse)(nil),        // 4: knowledge.DetectionResponse
-	(*DetectionListResponse)(nil),    // 5: knowledge.DetectionListResponse
-	(*Detection)(nil),                // 6: knowledge.Detection
-	(*ResolveDetectionRequest)(nil),  // 7: knowledge.ResolveDetectionRequest
-	(*RegisterActionRequest)(nil),    // 8: knowledge.RegisterActionRequest
-	(*ActionResponse)(nil),           // 9: knowledge.ActionResponse
-	(*UpdateActionRequest)(nil),      // 10: knowledge.UpdateActionRequest
-	(*ActionListResponse)(nil),       // 11: knowledge.ActionListResponse
-	(*Action)(nil),                   // 12: knowledge.Action
-	(*Response)(nil),                 // 13: knowledge.Response
+var file_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_knowledge_proto_goTypes = []any{
+	(*RegisterDetectionRequest)(nil),    // 0: knowledge.RegisterDetectionRequest
+	(*DetectionKeyRequest)(nil),         // 1: knowledge.DetectionKeyRequest
+	(*DetectionStatusResponse)(nil),     // 2: knowledge.DetectionStatusResponse
+	(*DatabaseFilterRequest)(nil),       // 3: knowledge.DatabaseFilterRequest
+	(*DetectionResponse)(nil),           // 4: knowledge.DetectionResponse
+	(*DetectionListResponse)(nil),       // 5: knowledge.DetectionListResponse
+	(*Detection)(nil),                   // 6: knowledge.Detection
+	(*ResolveDetectionRequest)(nil),     // 7: knowledge.ResolveDetectionRequest
+	(*RegisterActionRequest)(nil),       // 8: knowledge.RegisterActionRequest
+	(*ActionResponse)(nil),              // 9: knowledge.ActionResponse
+	(*UpdateActionRequest)(nil),         // 10: knowledge.UpdateActionRequest
+	(*ActionListResponse)(nil),          // 11: knowledge.ActionListResponse
+	(*Action)(nil),                      // 12: knowledge.Action
+	(*RegisterDatabaseRequest)(nil),     // 13: knowledge.RegisterDatabaseRequest
+	(*DatabaseResponse)(nil),            // 14: knowledge.DatabaseResponse
+	(*GetDatabaseRequest)(nil),          // 15: knowledge.GetDatabaseRequest
+	(*GetDatabaseResponse)(nil),         // 16: knowledge.GetDatabaseResponse
+	(*ListDatabasesRequest)(nil),        // 17: knowledge.ListDatabasesRequest
+	(*DatabaseListResponse)(nil),        // 18: knowledge.DatabaseListResponse
+	(*RegisteredDatabase)(nil),          // 19: knowledge.RegisteredDatabase
+	(*UpdateDatabaseHealthRequest)(nil), // 20: knowledge.UpdateDatabaseHealthRequest
+	(*UnregisterDatabaseRequest)(nil),   // 21: knowledge.UnregisterDatabaseRequest
+	(*GetSystemStatsRequest)(nil),       // 22: knowledge.GetSystemStatsRequest
+	(*GetSystemStatsResponse)(nil),      // 23: knowledge.GetSystemStatsResponse
+	(*Response)(nil),                    // 24: knowledge.Response
+	nil,                                 // 25: knowledge.RegisterDatabaseRequest.MetadataEntry
+	nil,                                 // 26: knowledge.GetDatabaseResponse.MetadataEntry
 }
-var file_proto_knowledge_proto_depIdxs = []int32{
+var file_knowledge_proto_depIdxs = []int32{
 	6,  // 0: knowledge.DetectionListResponse.detections:type_name -> knowledge.Detection
 	12, // 1: knowledge.ActionListResponse.actions:type_name -> knowledge.Action
-	0,  // 2: knowledge.KnowledgeService.RegisterDetection:input_type -> knowledge.RegisterDetectionRequest
-	1,  // 3: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
-	3,  // 4: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
-	7,  // 5: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
-	8,  // 6: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
-	10, // 7: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
-	3,  // 8: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
-	4,  // 9: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
-	2,  // 10: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
-	5,  // 11: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
-	13, // 12: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
-	9,  // 13: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
-	13, // 14: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
-	11, // 15: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
-	9,  // [9:16] is the sub-list for method output_type
-	2,  // [2:9] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	25, // 2: knowledge.RegisterDatabaseRequest.metadata:type_name -> knowledge.RegisterDatabaseRequest.MetadataEntry
+	26, // 3: knowledge.GetDatabaseResponse.metadata:type_name -> knowledge.GetDatabaseResponse.MetadataEntry
+	19, // 4: knowledge.DatabaseListResponse.databases:type_name -> knowledge.RegisteredDatabase
+	0,  // 5: knowledge.KnowledgeService.RegisterDetection:input_type -> knowledge.RegisterDetectionRequest
+	1,  // 6: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
+	3,  // 7: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
+	7,  // 8: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
+	8,  // 9: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
+	10, // 10: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
+	3,  // 11: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
+	13, // 12: knowledge.KnowledgeService.RegisterDatabase:input_type -> knowledge.RegisterDatabaseRequest
+	15, // 13: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
+	17, // 14: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
+	20, // 15: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
+	21, // 16: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
+	22, // 17: knowledge.KnowledgeService.GetSystemStats:input_type -> knowledge.GetSystemStatsRequest
+	4,  // 18: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
+	2,  // 19: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
+	5,  // 20: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
+	24, // 21: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
+	9,  // 22: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
+	24, // 23: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
+	11, // 24: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
+	14, // 25: knowledge.KnowledgeService.RegisterDatabase:output_type -> knowledge.DatabaseResponse
+	16, // 26: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
+	18, // 27: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
+	24, // 28: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
+	24, // 29: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
+	23, // 30: knowledge.KnowledgeService.GetSystemStats:output_type -> knowledge.GetSystemStatsResponse
+	18, // [18:31] is the sub-list for method output_type
+	5,  // [5:18] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_proto_knowledge_proto_init() }
-func file_proto_knowledge_proto_init() {
-	if File_proto_knowledge_proto != nil {
+func init() { file_knowledge_proto_init() }
+func file_knowledge_proto_init() {
+	if File_knowledge_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_knowledge_proto_rawDesc), len(file_proto_knowledge_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowledge_proto_rawDesc), len(file_knowledge_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_knowledge_proto_goTypes,
-		DependencyIndexes: file_proto_knowledge_proto_depIdxs,
-		MessageInfos:      file_proto_knowledge_proto_msgTypes,
+		GoTypes:           file_knowledge_proto_goTypes,
+		DependencyIndexes: file_knowledge_proto_depIdxs,
+		MessageInfos:      file_knowledge_proto_msgTypes,
 	}.Build()
-	File_proto_knowledge_proto = out.File
-	file_proto_knowledge_proto_goTypes = nil
-	file_proto_knowledge_proto_depIdxs = nil
+	File_knowledge_proto = out.File
+	file_knowledge_proto_goTypes = nil
+	file_knowledge_proto_depIdxs = nil
 }
