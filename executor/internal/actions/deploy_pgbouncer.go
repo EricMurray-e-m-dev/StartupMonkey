@@ -2,14 +2,17 @@ package actions
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/docker"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
+	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	dockertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 )
@@ -26,11 +29,14 @@ type DeployPgBouncerAction struct {
 	// Docker client
 	dockerClient *docker.Client
 
+	// Knowledge client for fetching connection string
+	knowledgeClient pb.KnowledgeServiceClient
+
 	// Store deployment details for rollback
 	deploymentDetails map[string]interface{}
 }
 
-func NewDeployPgBouncerAction(actionID string, detectionID, databaseID, databaseType string, params map[string]interface{}) (*DeployPgBouncerAction, error) {
+func NewDeployPgBouncerAction(actionID string, detectionID, databaseID, databaseType string, knowledgeClient pb.KnowledgeServiceClient, params map[string]interface{}) (*DeployPgBouncerAction, error) {
 	containerName := fmt.Sprintf("pgbouncer-%s", databaseID)
 
 	// Create Docker client
@@ -46,6 +52,7 @@ func NewDeployPgBouncerAction(actionID string, detectionID, databaseID, database
 		databaseType:      databaseType,
 		containerName:     containerName,
 		dockerClient:      dockerClient,
+		knowledgeClient:   knowledgeClient,
 		deployed:          false,
 		deploymentDetails: make(map[string]interface{}),
 	}, nil
@@ -115,12 +122,26 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 		// Container doesn't exist - create new one
 		log.Printf("Deploying new PgBouncer container...")
 
-		// Parse connection string
-		connStr := os.Getenv("DB_CONNECTION_STRING")
-		if connStr == "" {
-			return nil, fmt.Errorf("DB_CONNECTION_STRING not set")
+		// Fetch database connection string from Knowledge
+		log.Printf("Fetching database connection info from Knowledge...")
+		dbCtx, dbCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer dbCancel()
+
+		dbResp, err := a.knowledgeClient.GetDatabase(dbCtx, &pb.GetDatabaseRequest{
+			DatabaseId: a.databaseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch database from Knowledge: %w", err)
 		}
 
+		if !dbResp.Found {
+			return nil, fmt.Errorf("database not found in Knowledge: %s", a.databaseID)
+		}
+
+		connStr := dbResp.ConnectionString
+		log.Printf("Retrieved connection string from Knowledge for database: %s", a.databaseID)
+
+		// Parse connection string
 		connStr = strings.TrimPrefix(connStr, "postgresql://")
 		connStr = strings.TrimPrefix(connStr, "postgres://")
 
@@ -154,6 +175,23 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 		port := hostPort[1]
 		dbname := hostDB[1]
 
+		// TODO: This assumes database is on the host machine (local development)
+		// In production, the database might be:
+		// - Remote server (use actual hostname/IP from connection string)
+		// - Same Docker network (use container name)
+		// - Cloud service (use cloud endpoint)
+		// Need to detect deployment context and handle accordingly
+		if host == "localhost" || host == "127.0.0.1" {
+			host = "host.docker.internal"
+			log.Printf("Replaced localhost with host.docker.internal for Docker networking")
+		}
+
+		// Generate userlist.txt file for authentication
+		configDir, err := generateUserlistFile(user, password)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate userlist.txt: %w", err)
+		}
+
 		defaultPoolSize := 20
 		maxClientConn := 100
 		reservePoolSize := 5
@@ -185,7 +223,8 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 			fmt.Sprintf("PGBOUNCER_DEFAULT_POOL_SIZE=%d", defaultPoolSize),
 			fmt.Sprintf("PGBOUNCER_MAX_CLIENT_CONN=%d", maxClientConn),
 			fmt.Sprintf("PGBOUNCER_RESERVE_POOL_SIZE=%d", reservePoolSize),
-			"PGBOUNCER_AUTH_TYPE=trust",
+			"PGBOUNCER_AUTH_TYPE=md5",
+			"PGBOUNCER_AUTH_FILE=/etc/pgbouncer/userlist.txt",
 		}
 
 		if password != "" {
@@ -204,6 +243,9 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 			PortBindings: portBindings,
 			RestartPolicy: dockertypes.RestartPolicy{
 				Name: "unless-stopped",
+			},
+			Binds: []string{
+				fmt.Sprintf("%s:/etc/pgbouncer", configDir),
 			},
 		}
 
@@ -239,7 +281,7 @@ func (a *DeployPgBouncerAction) Execute(ctx context.Context) (*models.ActionResu
 		return nil, fmt.Errorf("container started but is not running - check logs with: docker logs %s", a.containerName)
 	}
 
-	log.Printf("✅ PgBouncer is running on port 6432")
+	log.Printf("PgBouncer is running on port 6432")
 
 	endTime := time.Now()
 	executionTimeMs := endTime.Sub(startTime).Milliseconds()
@@ -302,9 +344,16 @@ func (a *DeployPgBouncerAction) Validate(ctx context.Context) error {
 		return fmt.Errorf("docker not available: %w", err)
 	}
 
-	// Check DB_CONNECTION_STRING is set
-	if os.Getenv("DB_CONNECTION_STRING") == "" {
-		return fmt.Errorf("DB_CONNECTION_STRING environment variable not set")
+	// Check database exists in Knowledge
+	dbResp, err := a.knowledgeClient.GetDatabase(ctx, &pb.GetDatabaseRequest{
+		DatabaseId: a.databaseID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to fetch database from Knowledge: %w", err)
+	}
+
+	if !dbResp.Found {
+		return fmt.Errorf("database not found in Knowledge: %s", a.databaseID)
 	}
 
 	return nil
@@ -318,4 +367,29 @@ func (a *DeployPgBouncerAction) GetMetadata() *models.ActionMetadata {
 		DatabaseType: a.databaseType,
 		CreatedAt:    time.Now(),
 	}
+}
+
+// generateUserlistFile creates a userlist.txt file for PgBouncer authentication
+func generateUserlistFile(user, password string) (string, error) {
+	// Create temp directory for PgBouncer config
+	configDir := "/tmp/pgbouncer-config"
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	userlistPath := filepath.Join(configDir, "userlist.txt")
+
+	// Generate MD5 hash: "md5" + md5(password + username)
+	hash := md5.Sum([]byte(password + user))
+	md5Hash := fmt.Sprintf("md5%x", hash)
+
+	// Write userlist.txt in format: "username" "md5hash"
+	content := fmt.Sprintf("\"%s\" \"%s\"\n", user, md5Hash)
+
+	if err := os.WriteFile(userlistPath, []byte(content), 0644); err != nil {
+		return "", fmt.Errorf("failed to write userlist.txt: %w", err)
+	}
+
+	log.Printf("Generated userlist.txt at: %s", userlistPath)
+	return configDir, nil
 }

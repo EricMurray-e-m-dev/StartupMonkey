@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/knowledge
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251127093529-f85c41ea1483
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20251202130719-2c0ec894a186
 	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.16.0
 	google.golang.org/grpc v1.76.0

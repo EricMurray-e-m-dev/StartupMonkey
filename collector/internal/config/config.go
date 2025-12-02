@@ -17,6 +17,7 @@ type Config struct {
 	AnalyserAddress    string
 	CollectionInterval time.Duration
 	NatsURL            string
+	KnowledgeAddress   string
 }
 
 func Load() (*Config, error) {
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		DatabaseName:       os.Getenv("DATABASE_NAME"),
 		AnalyserAddress:    os.Getenv("ANALYSER_ADDRESS"),
 		NatsURL:            os.Getenv("NATS_URL"),
+		KnowledgeAddress:   os.Getenv("KNOWLEDGE_ADDRESS"),
 	}
 
 	intervalStr := os.Getenv("COLLECTION_INTERVAL")
@@ -66,6 +68,10 @@ func (c *Config) Validate() error {
 
 	if c.DatabaseID == "" {
 		return fmt.Errorf("DATABASE_ID is required")
+	}
+
+	if c.KnowledgeAddress == "" {
+		return fmt.Errorf("KNOWLEDGE_ADDRESS is required")
 	}
 	return nil
 }

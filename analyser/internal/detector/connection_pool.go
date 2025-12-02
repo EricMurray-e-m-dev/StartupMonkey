@@ -13,7 +13,7 @@ type ConnectionPoolDetector struct {
 
 func NewConnectionPoolDetection() *ConnectionPoolDetector {
 	return &ConnectionPoolDetector{
-		usageThreshold: 0.8, // 80% Connection pool limit
+		usageThreshold: 0.1,
 	}
 }
 

@@ -135,12 +135,14 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
 
-	case "deploy_pgbouncer":
+	// TODO: This is only implemented for PgBouncer, Analyser sends deploy_connection_pooler as a detection, make this choose based on DB later
+	case "deploy_connection_pooler":
 		action, err := actions.NewDeployPgBouncerAction(
 			actionID,
 			detection.DetectionID,
 			detection.DatabaseID,
 			"postgres",
+			h.knowledgeClient.GetServiceClient(),
 			detection.ActionMetaData,
 		)
 		if err != nil {

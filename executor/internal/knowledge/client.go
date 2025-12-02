@@ -68,6 +68,10 @@ func (k *Client) GetPendingActions(ctx context.Context, databaseID string) ([]*p
 	return resp.Actions, nil
 }
 
+func (k *Client) GetServiceClient() pb.KnowledgeServiceClient {
+	return k.client
+}
+
 func (k *Client) Close() error {
 	if k.conn != nil {
 		return k.conn.Close()

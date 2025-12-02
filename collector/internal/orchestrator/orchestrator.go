@@ -2,7 +2,11 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
@@ -11,14 +15,17 @@ import (
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Orchestrator struct {
-	config        *config.Config
-	adapter       adapter.MetricAdapter
-	normaliser    normaliser.Normaliser
-	client        *grpcclient.MetricsClient
-	natsPublisher *eventbus.Publisher
+	config          *config.Config
+	adapter         adapter.MetricAdapter
+	normaliser      normaliser.Normaliser
+	client          *grpcclient.MetricsClient
+	natsPublisher   *eventbus.Publisher
+	knowledgeClient pb.KnowledgeServiceClient
 }
 
 func NewOrchestrator(cfg *config.Config) *Orchestrator {
@@ -60,6 +67,25 @@ func (o *Orchestrator) Start() error {
 		o.natsPublisher, err = eventbus.NewPublisher(o.config.NatsURL)
 		if err != nil {
 			log.Printf("Warning: failed to connect to NATS, Dashboard UI live metrics will be unavailable")
+		}
+	}
+
+	log.Printf("Connecting to brain at: %s", o.config.KnowledgeAddress)
+	knowledgeConn, err := grpc.NewClient(
+		o.config.KnowledgeAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+
+	if err != nil {
+		log.Printf("warning failed to connect to brain: %v", err)
+	} else {
+		o.knowledgeClient = pb.NewKnowledgeServiceClient(knowledgeConn)
+		log.Printf("Connected to brain")
+
+		if err := o.registerDatabase(); err != nil {
+			log.Printf("warning failed to register database to brain: %v", err)
+		} else {
+			log.Printf("Database registered with brain")
 		}
 	}
 
@@ -206,4 +232,68 @@ func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSna
 	}
 
 	return snapshot
+}
+
+// registerDatabase registers the database with Knowledge service
+func (o *Orchestrator) registerDatabase() error {
+	// Parse connection string to extract host, port, and database name
+	host, port, _ := o.parseConnectionString(o.config.DBConnectionString)
+
+	req := &pb.RegisterDatabaseRequest{
+		DatabaseId:       o.config.DatabaseID,
+		ConnectionString: o.config.DBConnectionString,
+		DatabaseType:     o.config.DBAdapter,
+		DatabaseName:     o.config.DatabaseName,
+		Host:             host,
+		Port:             port,
+		Version:          "unknown", // TODO: Query database for version
+		RegisteredAt:     time.Now().Unix(),
+		Metadata:         map[string]string{},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := o.knowledgeClient.RegisterDatabase(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Success {
+		return fmt.Errorf("failed to register database: %s", resp.Message)
+	}
+
+	log.Printf("Database registered: %s (%s)", o.config.DatabaseID, o.config.DBAdapter)
+	return nil
+}
+
+// parseConnectionString extracts host and port from connection string
+func (o *Orchestrator) parseConnectionString(connStr string) (string, int32, string) {
+	host := "localhost"
+	port := int32(5432) // Default for PostgreSQL
+
+	// Set default port based on database type
+	switch o.config.DBAdapter {
+	case "postgres", "postgresql":
+		port = 5432
+	case "mysql":
+		port = 3306
+	case "mongodb":
+		port = 27017
+	}
+
+	// Parse connection string
+	if strings.Contains(connStr, "://") {
+		u, err := url.Parse(connStr)
+		if err == nil {
+			host = u.Hostname()
+			if u.Port() != "" {
+				if p, err := strconv.Atoi(u.Port()); err == nil {
+					port = int32(p)
+				}
+			}
+		}
+	}
+
+	return host, port, "unknown"
 }
