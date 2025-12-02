@@ -249,3 +249,104 @@ func (c *Client) GetActionByStatus(ctx context.Context, status models.ActionStat
 
 	return actions, nil
 }
+
+// ===== [DATABASE OPERATIONS] =====
+
+// RegisterDatabase stores database connection info in Redis
+func (c *Client) RegisterDatabase(ctx context.Context, database *models.Database) error {
+	databaseKey := fmt.Sprintf("database:%s", database.ID)
+
+	data, err := json.Marshal(database)
+	if err != nil {
+		return fmt.Errorf("failed to marshal database: %w", err)
+	}
+
+	// Store database as JSON
+	if err := c.rdb.Set(ctx, databaseKey, data, 0).Err(); err != nil {
+		return fmt.Errorf("failed to store database: %w", err)
+	}
+
+	// Add to database list (set for uniqueness)
+	if err := c.rdb.SAdd(ctx, "databases:all", database.ID).Err(); err != nil {
+		return fmt.Errorf("failed to add to database list: %w", err)
+	}
+
+	return nil
+}
+
+// GetDatabase retrieves database connection info from Redis
+func (c *Client) GetDatabase(ctx context.Context, id string) (*models.Database, error) {
+	databaseKey := fmt.Sprintf("database:%s", id)
+
+	data, err := c.rdb.Get(ctx, databaseKey).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	var database models.Database
+	if err := json.Unmarshal([]byte(data), &database); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal database: %w", err)
+	}
+
+	return &database, nil
+}
+
+// ListDatabases returns all registered databases
+func (c *Client) ListDatabases(ctx context.Context) ([]*models.Database, error) {
+	databaseIDs, err := c.rdb.SMembers(ctx, "databases:all").Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database list: %w", err)
+	}
+
+	databases := make([]*models.Database, 0, len(databaseIDs))
+	for _, id := range databaseIDs {
+		database, err := c.GetDatabase(ctx, id)
+		if err != nil {
+			continue // Skip errors
+		}
+		databases = append(databases, database)
+	}
+
+	return databases, nil
+}
+
+// UpdateDatabaseHealth updates health status and last seen timestamp
+func (c *Client) UpdateDatabaseHealth(ctx context.Context, id string, lastSeen int64, status string, healthScore float64) error {
+	database, err := c.GetDatabase(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get database for update: %w", err)
+	}
+
+	database.LastSeen = time.Unix(lastSeen, 0)
+	database.Status = status
+	database.HealthScore = healthScore
+
+	databaseKey := fmt.Sprintf("database:%s", id)
+	data, err := json.Marshal(database)
+	if err != nil {
+		return fmt.Errorf("failed to marshal database: %w", err)
+	}
+
+	if err := c.rdb.Set(ctx, databaseKey, data, 0).Err(); err != nil {
+		return fmt.Errorf("failed to update database: %w", err)
+	}
+
+	return nil
+}
+
+// UnregisterDatabase removes a database from Redis
+func (c *Client) UnregisterDatabase(ctx context.Context, id string) error {
+	databaseKey := fmt.Sprintf("database:%s", id)
+
+	// Remove database record
+	if err := c.rdb.Del(ctx, databaseKey).Err(); err != nil {
+		return fmt.Errorf("failed to delete database: %w", err)
+	}
+
+	// Remove from database list
+	if err := c.rdb.SRem(ctx, "databases:all", id).Err(); err != nil {
+		return fmt.Errorf("failed to remove from database list: %w", err)
+	}
+
+	return nil
+}
