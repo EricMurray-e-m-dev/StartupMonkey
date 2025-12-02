@@ -12,10 +12,20 @@ service KnowledgeService {
   rpc GetActiveDetections(DatabaseFilterRequest) returns (DetectionListResponse);
   rpc MarkDetectionResolved(ResolveDetectionRequest) returns (Response);
   
-  // Action operations (placeholder for Issue #58)
+  // Action operations
   rpc RegisterAction(RegisterActionRequest) returns (ActionResponse);
   rpc UpdateActionStatus(UpdateActionRequest) returns (Response);
   rpc GetPendingActions(DatabaseFilterRequest) returns (ActionListResponse);
+  
+  // Database operations
+  rpc RegisterDatabase(RegisterDatabaseRequest) returns (DatabaseResponse);
+  rpc GetDatabase(GetDatabaseRequest) returns (GetDatabaseResponse);
+  rpc ListDatabases(ListDatabasesRequest) returns (DatabaseListResponse);
+  rpc UpdateDatabaseHealth(UpdateDatabaseHealthRequest) returns (Response);
+  rpc UnregisterDatabase(UnregisterDatabaseRequest) returns (Response);
+  
+  // System statistics
+  rpc GetSystemStats(GetSystemStatsRequest) returns (GetSystemStatsResponse);
 }
 
 // Detection messages
@@ -71,7 +81,7 @@ message ResolveDetectionRequest {
   string solution = 2;
 }
 
-// Action messages (stubs for now)
+// Action messages
 message RegisterActionRequest {
   string id = 1;
   string detection_id = 2;
@@ -105,6 +115,97 @@ message Action {
   string database_id = 4;
   string status = 5;
   int64 created_at = 6;
+}
+
+// Database messages
+message RegisterDatabaseRequest {
+  string database_id = 1;
+  string connection_string = 2;
+  string database_type = 3;
+  string database_name = 4;
+  string host = 5;
+  int32 port = 6;
+  string version = 7;
+  int64 registered_at = 8;
+  map<string, string> metadata = 9;
+}
+
+message DatabaseResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetDatabaseRequest {
+  string database_id = 1;
+}
+
+message GetDatabaseResponse {
+  bool found = 1;
+  string database_id = 2;
+  string connection_string = 3;
+  string database_type = 4;
+  string database_name = 5;
+  string host = 6;
+  int32 port = 7;
+  string version = 8;
+  int64 registered_at = 9;
+  int64 last_seen = 10;
+  string status = 11;
+  double health_score = 12;
+  map<string, string> metadata = 13;
+}
+
+message ListDatabasesRequest {
+  // Filter criteria for listing databases
+}
+
+message DatabaseListResponse {
+  repeated RegisteredDatabase databases = 1;
+}
+
+message RegisteredDatabase {
+  string database_id = 1;
+  string database_type = 2;
+  string database_name = 3;
+  string host = 4;
+  int32 port = 5;
+  string version = 6;
+  int64 registered_at = 7;
+  int64 last_seen = 8;
+  string status = 9;
+  double health_score = 10;
+}
+
+message UpdateDatabaseHealthRequest {
+  string database_id = 1;
+  int64 last_seen = 2;
+  string status = 3;
+  double health_score = 4;
+}
+
+message UnregisterDatabaseRequest {
+  string database_id = 1;
+}
+
+// System statistics messages
+message GetSystemStatsRequest {
+  // Request parameters for system-wide statistics
+}
+
+message GetSystemStatsResponse {
+  int32 total_databases = 1;
+  int32 healthy_databases = 2;
+  int32 degraded_databases = 3;
+  int32 offline_databases = 4;
+  int32 total_detections = 5;
+  int32 active_detections = 6;
+  int32 resolved_detections = 7;
+  int32 total_actions = 8;
+  int32 actions_queued = 9;
+  int32 actions_executing = 10;
+  int32 actions_completed = 11;
+  int32 actions_failed = 12;
+  int64 uptime_seconds = 13;
 }
 
 // Generic response
