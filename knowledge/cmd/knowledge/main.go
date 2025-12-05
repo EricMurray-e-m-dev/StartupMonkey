@@ -3,74 +3,80 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
-	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/grpc"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/health"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/redis"
-	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
-	"github.com/joho/godotenv"
-	grpclib "google.golang.org/grpc"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/config"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/orchestrator"
 )
 
+// main is the entry point for the Knowledge service.
+//
+// The Knowledge service is the central state store for StartupMonkey:
+//   - Stores database connection strings (for Executor autonomous actions)
+//   - Tracks detection state (for Analyser deduplication logic)
+//   - Manages action status (for Dashboard real-time visibility)
+//   - Provides system-wide statistics (databases, detections, actions)
+//
+// All state is persisted in Redis for reliability and performance.
+//
+// Lifecycle:
+//  1. Load configuration from environment variables
+//  2. Initialize orchestrator with Redis client and servers
+//  3. Start gRPC server (Knowledge API) and health check server
+//  4. Listen for shutdown signals (SIGINT, SIGTERM)
+//  5. Gracefully close all connections on shutdown
 func main() {
-	log.Printf("Starting Brain...")
+	log.Printf("StartupMonkey Knowledge (Brain) starting...")
 
-	// Load environment variables from ROOT .env
-	envPath := filepath.Join("..", "..", ".env")
-	_ = godotenv.Load(envPath)
-
-	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == "" {
-		redisAddr = "localhost:6379"
-	}
-
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-
-	// Create Redis client
-	redisClient, err := redis.NewClient(redisAddr, redisPassword, 0)
+	// Load configuration from environment variables and .env file
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to create Redis client: %v", err)
-	}
-	defer redisClient.Close()
-
-	// Start gRPC server
-	grpcServer := grpclib.NewServer()
-	pb.RegisterKnowledgeServiceServer(grpcServer, grpc.NewKnowledgeServer(redisClient))
-
-	listener, err := net.Listen("tcp", ":50053")
-	if err != nil {
-		log.Fatalf("Failed to listen on port 50053: %v", err)
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	go func() {
-		log.Printf("Knowledge gRPC server listening on :50053")
-		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatalf("gRPC server failed: %v", err)
-		}
-	}()
+	log.Printf("Configuration loaded successfully")
+	log.Printf("  gRPC Port: %s", cfg.GRPCPort)
+	log.Printf("  Health Port: %s", cfg.HealthPort)
+	log.Printf("  Redis Address: %s", cfg.RedisAddr)
+	log.Printf("  Redis DB: %d", cfg.RedisDB)
+	log.Printf("  Metrics Enabled: %v", cfg.EnableMetrics)
 
-	// Start health check server
-	healthServer := health.NewHealthServer(redisClient)
-	go func() {
-		log.Printf("Health check listening on :8083")
-		if err := healthServer.Start(":8083"); err != nil {
-			log.Fatalf("Health check server failed: %v", err)
-		}
-	}()
+	// Create orchestrator to manage service lifecycle
+	orch := orchestrator.NewOrchestrator(cfg)
 
-	log.Printf("Brain ready")
+	// Initialize Redis connection and servers
+	if err := orch.Start(); err != nil {
+		log.Fatalf("Failed to start orchestrator: %v", err)
+	}
 
-	// Graceful shutdown
+	// Setup graceful shutdown handling
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Listen for shutdown signals (Ctrl+C, Docker stop, k8s termination)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	<-sigChan
 
-	log.Printf("Shutting down Brain...")
-	grpcServer.GracefulStop()
-	healthServer.Shutdown(context.Background())
+	// Start gRPC and health check servers in background goroutine
+	go func() {
+		if err := orch.Run(ctx); err != nil && err != context.Canceled {
+			log.Printf("Orchestrator error: %v", err)
+		}
+	}()
+
+	// Block until shutdown signal received
+	<-sigChan
+	log.Printf("Shutdown signal received, initiating graceful shutdown...")
+
+	// Cancel context to stop servers
+	cancel()
+
+	// Close all connections and cleanup resources
+	if err := orch.Stop(); err != nil {
+		log.Printf("Error during shutdown: %v", err)
+	}
+
+	log.Printf("Knowledge service stopped successfully")
 }
