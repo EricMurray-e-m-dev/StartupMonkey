@@ -141,6 +141,16 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
 
+	case "cache_optimization_recommendation":
+		// Create recommendation action with safe and advanced options
+		return actions.NewRecommendationAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			metadata.DatabaseType, // Use from metadata
+			detection.ActionMetaData,
+		), nil
+
 	// TODO: This is only implemented for PgBouncer, Analyser sends deploy_connection_pooler as a detection, make this choose based on DB later
 	case "deploy_connection_pooler":
 		action, err := actions.NewDeployPgBouncerAction(
@@ -156,7 +166,20 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 		}
 		return action, nil
 
-	case "increase_cache_size", "deploy_redis", "optimise_queries":
+	case "deploy_redis":
+		// Deploy Redis cache layer (advanced - requires code changes)
+		action, err := actions.NewDeployRedisAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			detection.ActionMetaData,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Redis action: %w", err)
+		}
+		return action, nil
+
+	case "optimise_queries":
 		return actions.NewFutureFixAction(
 			actionID,
 			detection.ActionType,
