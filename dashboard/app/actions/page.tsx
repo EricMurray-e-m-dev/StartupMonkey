@@ -10,6 +10,17 @@ import { useActions } from "@/hooks/useActions";
 import { ActionResult } from "@/types/actions";
 import { useState } from "react";
 
+// Recommendation type definition
+interface Recommendation {
+    title: string;
+    description: string;
+    risk_level: 'safe' | 'medium' | 'advanced';
+    steps?: string[];
+    requires_restart?: boolean;
+    requires_code_change?: boolean;
+    deployable_action_type?: string;
+}
+
 export default function ActionsPage() {
     const { actions, loading } = useActions(5000);
 
@@ -243,8 +254,7 @@ function ActionCard({ action }: { action: ActionResult }) {
                 {/* Recommendation-specific UI */}
                 {isRecommendation && action.changes?.recommendations && Array.isArray(action.changes.recommendations) && (
                     <RecommendationDisplay 
-                        recommendations={action.changes.recommendations}
-                        databaseType={String(action.changes.database_type)}
+                        recommendations={action.changes.recommendations as Recommendation[]}
                         databaseId={action.database_id}
                     />
                 )}
@@ -274,14 +284,12 @@ function ActionCard({ action }: { action: ActionResult }) {
     );
 }
 
-// New Component: Recommendation Display
+// Recommendation Display Component
 function RecommendationDisplay({ 
     recommendations, 
-    databaseType,
     databaseId 
 }: { 
-    recommendations: any[];
-    databaseType: string;
+    recommendations: Recommendation[];
     databaseId: string;
 }) {
     const [deployingRedis, setDeployingRedis] = useState(false);
@@ -340,13 +348,13 @@ function RecommendationDisplay({
     );
 }
 
-// New Component: Individual Recommendation Card
+// Individual Recommendation Card Component
 function RecommendationCard({ 
     recommendation,
     onDeployRedis,
     deployingRedis 
 }: { 
-    recommendation: any;
+    recommendation: Recommendation;
     onDeployRedis?: () => void;
     deployingRedis?: boolean;
 }) {
@@ -370,7 +378,7 @@ function RecommendationCard({
         }
     };
 
-    const config = riskConfig[recommendation.risk_level as keyof typeof riskConfig] || riskConfig.medium;
+    const config = riskConfig[recommendation.risk_level] || riskConfig.medium;
 
     return (
         <div className={`border-l-4 ${config.borderColor} pl-4 py-2 space-y-3`}>
