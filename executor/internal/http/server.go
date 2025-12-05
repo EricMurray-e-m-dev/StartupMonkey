@@ -1,20 +1,25 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
 )
 
 type Server struct {
 	detectionHandler *handler.DetectionHandler
+	httpServer       *http.Server // Store server instance for graceful shutdown
 }
 
 func NewServer(dh *handler.DetectionHandler) *Server {
-	return &Server{detectionHandler: dh}
+	return &Server{
+		detectionHandler: dh,
+	}
 }
 
 func (s *Server) Start(addr string) error {
@@ -24,8 +29,34 @@ func (s *Server) Start(addr string) error {
 		s.handleRollback(w, r)
 	})
 
+	// Store server instance for graceful shutdown
+	s.httpServer = &http.Server{
+		Addr:    addr,
+		Handler: s.enableCORS(mux),
+	}
+
 	log.Printf("HTTP Server listening on: %s", addr)
-	return http.ListenAndServe(addr, s.enableCORS(mux))
+	return s.httpServer.ListenAndServe()
+}
+
+// Stop gracefully shuts down the HTTP server with a timeout.
+func (s *Server) Stop() error {
+	if s.httpServer == nil {
+		return nil
+	}
+
+	log.Printf("Stopping HTTP server...")
+
+	// 5 second timeout for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	log.Printf("HTTP server stopped successfully")
+	return nil
 }
 
 func (s *Server) handleRollback(w http.ResponseWriter, r *http.Request) {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -15,30 +13,20 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/knowledge"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
-	"github.com/joho/godotenv"
 )
 
 type DetectionHandler struct {
 	actions         map[string]*models.ActionResult
 	actionObjects   map[string]actions.Action
 	mu              sync.RWMutex
-	dbConnection    string
 	natsPublisher   *eventbus.Publisher
 	knowledgeClient *knowledge.Client
 }
 
 func NewDetectionHandler(natsPublisher *eventbus.Publisher, knowledgeClient *knowledge.Client) *DetectionHandler {
-	envPath := filepath.Join("..", ".env")
-	_ = godotenv.Load(envPath)
-
-	dbConnection := os.Getenv("DB_CONNECTION_STRING")
-	if dbConnection == "" {
-		log.Fatalf("No DB connection string in config")
-	}
 	return &DetectionHandler{
 		actions:         map[string]*models.ActionResult{},
 		actionObjects:   map[string]actions.Action{},
-		dbConnection:    dbConnection,
 		natsPublisher:   natsPublisher,
 		knowledgeClient: knowledgeClient,
 	}
@@ -117,8 +105,26 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 	switch detection.ActionType {
 	case "create_index":
+		// Fetch database connection string from Knowledge
+		if h.knowledgeClient == nil {
+			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
+		}
+
+		dbResp, err := h.knowledgeClient.GetServiceClient().GetDatabase(ctx, &pb.GetDatabaseRequest{
+			DatabaseId: detection.DatabaseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch database connection from Knowledge: %w", err)
+		}
+
+		if !dbResp.Found {
+			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
+		}
+
+		dbConnectionString := dbResp.ConnectionString
+
 		// TODO: replace with factory pattern when adding multi-database support
-		adapter, err := database.NewPostgresAdapter(ctx, h.dbConnection, detection.DatabaseID)
+		adapter, err := database.NewPostgresAdapter(ctx, dbConnectionString, detection.DatabaseID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database adapter: %w", err)
 		}
