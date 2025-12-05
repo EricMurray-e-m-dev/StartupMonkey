@@ -2,44 +2,71 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
+	// Database connection
 	DBConnectionString string
 	DBAdapter          string
 	DatabaseID         string
 	DatabaseName       string
-	AnalyserAddress    string
+
+	// Service addresses
+	AnalyserAddress  string
+	NatsURL          string
+	KnowledgeAddress string
+
+	// Operational settings
 	CollectionInterval time.Duration
-	NatsURL            string
-	KnowledgeAddress   string
+
+	// Feature flags
+	EnableMetricsPublishing bool
 }
 
 func Load() (*Config, error) {
+	// Try multiple .env locations
+	envPaths := []string{
+		".env",
+		"../.env",
+		"/app/.env", // Docker
+	}
 
-	envPath := filepath.Join("..", ".env")
-	_ = godotenv.Load(envPath)
+	envLoaded := false
+	for _, path := range envPaths {
+		if err := godotenv.Load(path); err == nil {
+			log.Printf("Loaded config from: %s", path)
+			envLoaded = true
+			break
+		}
+	}
+
+	if !envLoaded {
+		log.Printf("No .env file found, using environment variables")
+	}
 
 	config := &Config{
+		// Database (required)
 		DBConnectionString: os.Getenv("DB_CONNECTION_STRING"),
 		DBAdapter:          os.Getenv("DB_ADAPTER"),
 		DatabaseID:         os.Getenv("DATABASE_ID"),
 		DatabaseName:       os.Getenv("DATABASE_NAME"),
-		AnalyserAddress:    os.Getenv("ANALYSER_ADDRESS"),
-		NatsURL:            os.Getenv("NATS_URL"),
-		KnowledgeAddress:   os.Getenv("KNOWLEDGE_ADDRESS"),
+
+		// Service addresses (with defaults)
+		AnalyserAddress:  getEnvOrDefault("ANALYSER_ADDRESS", "localhost:50051"),
+		NatsURL:          getEnvOrDefault("NATS_URL", "nats://localhost:4222"),
+		KnowledgeAddress: getEnvOrDefault("KNOWLEDGE_ADDRESS", "localhost:50053"),
+
+		// Features
+		EnableMetricsPublishing: getEnvOrDefault("ENABLE_METRICS_PUBLISHING", "true") == "true",
 	}
 
-	intervalStr := os.Getenv("COLLECTION_INTERVAL")
-	if intervalStr == "" {
-		intervalStr = "30s"
-	}
-
+	// Parse collection interval with default
+	intervalStr := getEnvOrDefault("COLLECTION_INTERVAL", "10s")
 	interval, err := time.ParseDuration(intervalStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid COLLECTION_INTERVAL: %w", err)
@@ -54,24 +81,34 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) Validate() error {
-	if c.DBConnectionString == "" {
-		return fmt.Errorf("DB_CONNECTION_STRING is required")
+	// Required fields
+	required := map[string]string{
+		"DB_CONNECTION_STRING": c.DBConnectionString,
+		"DB_ADAPTER":           c.DBAdapter,
+		"DATABASE_ID":          c.DatabaseID,
+		"DATABASE_NAME":        c.DatabaseName,
+		"ANALYSER_ADDRESS":     c.AnalyserAddress,
+		"KNOWLEDGE_ADDRESS":    c.KnowledgeAddress,
 	}
 
-	if c.DBAdapter == "" {
-		return fmt.Errorf("DB_ADAPTER is required")
+	for name, value := range required {
+		if value == "" {
+			return fmt.Errorf("%s is required", name)
+		}
 	}
 
-	if c.AnalyserAddress == "" {
-		return fmt.Errorf("ANALYSER_ADDRESS is required")
+	// Validate collection interval
+	if c.CollectionInterval < 1*time.Second {
+		return fmt.Errorf("COLLECTION_INTERVAL must be at least 1 second")
 	}
 
-	if c.DatabaseID == "" {
-		return fmt.Errorf("DATABASE_ID is required")
-	}
-
-	if c.KnowledgeAddress == "" {
-		return fmt.Errorf("KNOWLEDGE_ADDRESS is required")
-	}
 	return nil
+}
+
+// Helper function for defaults
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

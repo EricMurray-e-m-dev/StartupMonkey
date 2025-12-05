@@ -1,101 +1,91 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
-	"google.golang.org/grpc"
-
-	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/eventbus"
-	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/grpc"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/handler"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/config"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/health"
-	httpserver "github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/http"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/knowledge"
-	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
-	"github.com/joho/godotenv"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/orchestrator"
 )
 
+// main is the entry point for the Executor service.
+//
+// The Executor is responsible for:
+//   - Subscribing to detection events from NATS (published by Analyser)
+//   - Executing autonomous database optimization actions
+//   - Publishing action status updates to NATS for Dashboard visibility
+//   - Registering actions with Knowledge for deduplication and tracking
+//   - Providing HTTP API for action rollback (triggered by Dashboard)
+//   - Providing gRPC API for action status queries
+//
+// Lifecycle:
+//  1. Load configuration from environment variables
+//  2. Initialize orchestrator with detection handler and service connections
+//  3. Start health check server (port 8082)
+//  4. Start HTTP server (rollback API) and gRPC server (status API)
+//  5. Listen for shutdown signals (SIGINT, SIGTERM)
+//  6. Gracefully close all connections on shutdown
 func main() {
-	log.Printf("Starting Executor Service")
-	envPath := filepath.Join("..", "..", ".env")
-	_ = godotenv.Load(envPath)
+	log.Printf("StartupMonkey Executor starting...")
 
-	natsURL := os.Getenv("NATS_URL")
-	if natsURL == "" {
-		natsURL = "nats://localhost:4222"
-	}
-
-	natsPublisher, err := eventbus.NewPublisher(natsURL)
+	// Load configuration from environment variables and .env file
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to create NATS publisher: %v", err)
-	}
-	defer natsPublisher.Close()
-
-	knowledgeAddr := os.Getenv("KNOWLEDGE_ADDRESS")
-	if knowledgeAddr == "" {
-		knowledgeAddr = "localhost:50053"
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	knowledgeClient, err := knowledge.NewClient(knowledgeAddr)
-	if err != nil {
-		log.Fatalf("failed to connect to knowledge service: %v", err)
+	log.Printf("Configuration loaded successfully")
+	log.Printf("  gRPC Port: %s", cfg.GRPCPort)
+	log.Printf("  HTTP Port: %s", cfg.HTTPPort)
+	log.Printf("  Health Port: %s", cfg.HealthPort)
+	log.Printf("  NATS URL: %s", cfg.NatsURL)
+	log.Printf("  Knowledge Address: %s", cfg.KnowledgeAddress)
+	log.Printf("  Auto-Execution Enabled: %v", cfg.EnableAutoExecution)
+	log.Printf("  Max Concurrent Actions: %d", cfg.MaxConcurrentActions)
+	log.Printf("  Action Timeout: %ds", cfg.ActionTimeout)
+
+	// Create orchestrator to manage service lifecycle
+	orch := orchestrator.NewOrchestrator(cfg)
+
+	// Initialize all service connections and handlers
+	if err := orch.Start(); err != nil {
+		log.Fatalf("Failed to start orchestrator: %v", err)
 	}
-	defer knowledgeClient.Close()
 
-	detectionHandler := handler.NewDetectionHandler(natsPublisher, knowledgeClient)
-	log.Printf("Detection Handler intialised")
+	// Setup graceful shutdown handling
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	httpSrv := httpserver.NewServer(detectionHandler)
+	// Listen for shutdown signals (Ctrl+C, Docker stop, k8s termination)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start health check HTTP server for container orchestration
+	// Exposes /health endpoint on configured port (default: 8082)
+	health.StartHealthCheckServer(cfg.HealthPort)
+
+	// Start HTTP and gRPC servers in background goroutine
 	go func() {
-		if err := httpSrv.Start(":8084"); err != nil {
-			log.Fatalf("HTTP Server failed: %v", err)
+		if err := orch.Run(ctx); err != nil && err != context.Canceled {
+			log.Printf("Orchestrator error: %v", err)
 		}
 	}()
 
-	subscriber, err := eventbus.NewSubscriber(natsURL, detectionHandler)
-	if err != nil {
-		log.Fatalf("Failed to connect to NATS: %v", err)
-	}
-	defer subscriber.Close()
+	// Block until shutdown signal received
+	<-sigChan
+	log.Printf("Shutdown signal received, initiating graceful shutdown...")
 
-	if err := subscriber.Start(); err != nil {
-		log.Fatalf("Failed to start subscriber: %v", err)
-	}
+	// Cancel context to stop servers
+	cancel()
 
-	grpcPort := "50052"
-
-	listener, err := net.Listen("tcp", ":"+grpcPort)
-	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
+	// Close all connections and cleanup resources
+	if err := orch.Stop(); err != nil {
+		log.Printf("Error during shutdown: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	executorServer := grpcserver.NewExecutorSever()
-	pb.RegisterExecutorServiceServer(grpcServer, executorServer)
-
-	log.Printf("Executor gRPC server listening on :%s", grpcPort)
-	health.StartHealthCheckServer("8082")
-
-	// Handle shutdown on signal
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
-
-		log.Printf("Shutting down executor service")
-		grpcServer.GracefulStop()
-		subscriber.Close()
-		log.Printf("Executor service stopped successfully")
-		os.Exit(0)
-	}()
-
-	log.Printf("Executor service ready")
-	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to server gRPC: %v", err)
-	}
+	log.Printf("Executor stopped successfully")
 }
