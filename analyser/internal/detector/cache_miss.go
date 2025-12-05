@@ -90,7 +90,7 @@ func (d *CacheMissDetector) Detect(snapshot *normaliser.NormalisedMetrics) *mode
 		// Advanced option: Deploy Redis
 		"advanced_option": map[string]interface{}{
 			"title":             "Deploy Redis Cache Layer",
-			"description":       d.getAdvancedOptionDescription(snapshot.DatabaseType, hitRate),
+			"description":       d.getAdvancedOptionDescription(hitRate),
 			"risk_level":        "advanced",
 			"requires_restart":  false,
 			"deployable_action": "deploy_redis",
@@ -202,7 +202,7 @@ func (d *CacheMissDetector) getSafeOptionSteps(dbType string) []string {
 }
 
 // getAdvancedOptionDescription returns description for Redis deployment option
-func (d *CacheMissDetector) getAdvancedOptionDescription(dbType string, hitRate float64) string {
+func (d *CacheMissDetector) getAdvancedOptionDescription(hitRate float64) string {
 	return fmt.Sprintf(
 		"Deploy Redis as an application-level cache layer to improve cache hit rate from %.1f%% to 95%%+. "+
 			"This approach requires modifying your application code to query Redis before the database. "+

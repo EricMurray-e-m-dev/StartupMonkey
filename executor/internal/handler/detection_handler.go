@@ -410,3 +410,45 @@ func (h *DetectionHandler) getActionObject(actionID string) (actions.Action, err
 
 	return action, nil
 }
+
+// ExecuteActionDirectly executes an action without going through NATS detection flow.
+// Used for user-triggered actions from Dashboard (e.g., manual Redis deployment).
+func (h *DetectionHandler) ExecuteActionDirectly(action actions.Action, detection *models.Detection) {
+	if action == nil {
+		log.Printf("Warning: ExecuteActionDirectly called with nil action")
+		return
+	}
+
+	metadata := action.GetMetadata()
+	actionID := metadata.ActionID
+
+	// Store action object for potential rollback
+	h.storeActionObject(actionID, action)
+
+	// Create initial result
+	result := &models.ActionResult{
+		ActionID:    actionID,
+		DetectionID: detection.DetectionID,
+		ActionType:  metadata.ActionType,
+		DatabaseID:  metadata.DatabaseID,
+		Status:      models.StatusQueued,
+		Message:     fmt.Sprintf("Action queued: %s", metadata.ActionType),
+		CreatedAt:   time.Now(),
+	}
+	h.storeAction(result)
+
+	// Register with Knowledge if available
+	if h.knowledgeClient != nil {
+		if err := h.registerActionWithKnowledge(context.Background(), detection, result); err != nil {
+			log.Printf("Warning: failed to register action with Knowledge: %v", err)
+		}
+	}
+
+	// Publish queued status
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(result)
+	}
+
+	// Execute action (reuse existing executeAction method)
+	h.executeAction(action, detection)
+}

@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2 } from "lucide-react";
+import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useActions } from "@/hooks/useActions";
 import { ActionResult } from "@/types/actions";
@@ -179,6 +179,9 @@ function ActionCard({ action }: { action: ActionResult }) {
 
     const config = statusConfig[action.status as keyof typeof statusConfig];
 
+    // Check if this is a recommendation action
+    const isRecommendation = action.action_type === 'recommendation' || action.action_type === 'cache_optimization_recommendation';
+
     return (
         <Card className={config.bgClass}>
             <CardHeader>
@@ -201,7 +204,7 @@ function ActionCard({ action }: { action: ActionResult }) {
                         <Badge variant={config.variant}>
                             {action.status}
                         </Badge>
-                        {action.status === 'completed' && action.can_rollback && (
+                        {action.status === 'completed' && action.can_rollback && !isRecommendation && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -237,8 +240,17 @@ function ActionCard({ action }: { action: ActionResult }) {
                     </div>
                 )}
 
-                {/* Changes (if completed) */}
-                {action.changes && Object.keys(action.changes).length > 0 && (
+                {/* Recommendation-specific UI */}
+                {isRecommendation && action.changes?.recommendations && Array.isArray(action.changes.recommendations) && (
+                    <RecommendationDisplay 
+                        recommendations={action.changes.recommendations}
+                        databaseType={String(action.changes.database_type)}
+                        databaseId={action.database_id}
+                    />
+                )}
+
+                {/* Standard Changes (if not recommendation) */}
+                {!isRecommendation && action.changes && Object.keys(action.changes).length > 0 && (
                     <div className="border-l-2 border-green-500 pl-4">
                         <h4 className="text-sm font-semibold mb-2 text-green-600">Changes Applied</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -259,5 +271,187 @@ function ActionCard({ action }: { action: ActionResult }) {
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+// New Component: Recommendation Display
+function RecommendationDisplay({ 
+    recommendations, 
+    databaseType,
+    databaseId 
+}: { 
+    recommendations: any[];
+    databaseType: string;
+    databaseId: string;
+}) {
+    const [deployingRedis, setDeployingRedis] = useState(false);
+
+    const handleDeployRedis = async () => {
+        setDeployingRedis(true);
+
+        try {
+            // Call Executor directly via HTTP (same pattern as rollback)
+            const response = await fetch('http://localhost:8084/api/deploy-redis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    database_id: databaseId,
+                    port: '6380',
+                    max_memory: '256mb',
+                    eviction_policy: 'allkeys-lru'
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Deployment failed');
+            }
+
+            const result = await response.json();
+            
+            toast.success('Redis deployment started', {
+                description: 'Redis container is being deployed. Check action queue for status.',
+            });
+
+            console.log('Deploy result:', result);
+        } catch (error) {
+            console.error('Deploy error:', error);
+            toast.error('Deployment failed', {
+                description: error instanceof Error ? error.message : 'Unknown error',
+            });
+        } finally {
+            setDeployingRedis(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            {recommendations.map((rec, index) => (
+                <RecommendationCard 
+                    key={index}
+                    recommendation={rec}
+                    onDeployRedis={rec.risk_level === 'advanced' ? handleDeployRedis : undefined}
+                    deployingRedis={deployingRedis}
+                />
+            ))}
+        </div>
+    );
+}
+
+// New Component: Individual Recommendation Card
+function RecommendationCard({ 
+    recommendation,
+    onDeployRedis,
+    deployingRedis 
+}: { 
+    recommendation: any;
+    onDeployRedis?: () => void;
+    deployingRedis?: boolean;
+}) {
+    const [showSteps, setShowSteps] = useState(false);
+
+    const riskConfig = {
+        safe: {
+            borderColor: 'border-green-500',
+            badgeVariant: 'default' as const,
+            badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+        },
+        medium: {
+            borderColor: 'border-yellow-500',
+            badgeVariant: 'default' as const,
+            badgeClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+        },
+        advanced: {
+            borderColor: 'border-red-500',
+            badgeVariant: 'default' as const,
+            badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+        }
+    };
+
+    const config = riskConfig[recommendation.risk_level as keyof typeof riskConfig] || riskConfig.medium;
+
+    return (
+        <div className={`border-l-4 ${config.borderColor} pl-4 py-2 space-y-3`}>
+            {/* Header */}
+            <div className="flex items-start justify-between">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-sm font-semibold">{recommendation.title}</h4>
+                        <Badge className={config.badgeClass} variant={config.badgeVariant}>
+                            {recommendation.risk_level}
+                        </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        {recommendation.description}
+                    </p>
+                </div>
+            </div>
+
+            {/* Warnings */}
+            {recommendation.requires_restart && (
+                <Alert className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                        Requires database restart (2-5 minutes downtime)
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {recommendation.requires_code_change && (
+                <Alert className="bg-red-50 dark:bg-red-950/20 border-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                        Requires application code changes. Not recommended for beginners.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Steps */}
+            {recommendation.steps && recommendation.steps.length > 0 && (
+                <div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSteps(!showSteps)}
+                        className="text-xs"
+                    >
+                        {showSteps ? 'Hide' : 'View'} Instructions
+                    </Button>
+
+                    {showSteps && (
+                        <ol className="mt-2 space-y-1 text-xs text-muted-foreground list-decimal list-inside">
+                            {recommendation.steps.map((step: string, i: number) => (
+                                <li key={i}>{step}</li>
+                            ))}
+                        </ol>
+                    )}
+                </div>
+            )}
+
+            {/* Deploy Redis Button (for advanced option) */}
+            {onDeployRedis && recommendation.deployable_action_type === 'deploy_redis' && (
+                <div className="flex gap-2">
+                    <Button
+                        onClick={onDeployRedis}
+                        disabled={deployingRedis}
+                        size="sm"
+                        variant="destructive"
+                    >
+                        {deployingRedis ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Deploying...
+                            </>
+                        ) : (
+                            <>
+                                Deploy Redis (Advanced)
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
+        </div>
     );
 }
