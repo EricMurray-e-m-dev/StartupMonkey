@@ -70,52 +70,175 @@ func (d *CacheMissDetector) Detect(snapshot *normaliser.NormalisedMetrics) *mode
 
 	detection.Recommendation = d.getRecommendation(snapshot.DatabaseType, hitRate)
 
-	detection.ActionType = "increase_cache_size"
+	// Changed from "increase_cache_size" to "cache_optimization_recommendation"
+	detection.ActionType = "cache_optimization_recommendation"
 	detection.ActionMetadata = map[string]interface{}{
 		"priority":         "medium",
 		"database_type":    snapshot.DatabaseType,
 		"current_hit_rate": hitPercent,
 		"target_hit_rate":  95,
+
+		// Safe option: Increase database cache
+		"safe_option": map[string]interface{}{
+			"title":            d.getSafeOptionTitle(snapshot.DatabaseType),
+			"description":      d.getSafeOptionDescription(snapshot.DatabaseType, hitRate),
+			"risk_level":       "safe",
+			"requires_restart": true,
+			"steps":            d.getSafeOptionSteps(snapshot.DatabaseType),
+		},
+
+		// Advanced option: Deploy Redis
+		"advanced_option": map[string]interface{}{
+			"title":             "Deploy Redis Cache Layer",
+			"description":       d.getAdvancedOptionDescription(hitRate),
+			"risk_level":        "advanced",
+			"requires_restart":  false,
+			"deployable_action": "deploy_redis",
+			"warning": "Requires modifying application query logic. " +
+				"Not recommended for beginners. Test thoroughly before production deployment.",
+		},
 	}
 
 	return detection
 }
 
-func (d *CacheMissDetector) getRecommendation(dbType string, hitRate float64) string {
+// getSafeOptionTitle returns database-specific title for safe cache increase
+func (d *CacheMissDetector) getSafeOptionTitle(dbType string) string {
+	switch dbType {
+	case "postgres", "postgresql":
+		return "Increase PostgreSQL shared_buffers"
+	case "mysql":
+		return "Increase MySQL InnoDB Buffer Pool"
+	case "mongodb":
+		return "Increase MongoDB WiredTiger Cache"
+	case "sqlite":
+		return "Increase SQLite Cache Size"
+	default:
+		return "Increase Database Cache"
+	}
+}
+
+// getSafeOptionDescription returns database-specific description for safe option
+func (d *CacheMissDetector) getSafeOptionDescription(dbType string, hitRate float64) string {
 	switch dbType {
 	case "postgres", "postgresql":
 		return fmt.Sprintf(
-			"Increase PostgreSQL's shared_buffers setting to allocate more memory for caching. "+
-				"Current cache hit rate: %.1f%%. Recommended: Increase shared_buffers from current value "+
-				"(typically 25%% of system RAM is a good starting point). "+
-				"Restart required after changing shared_buffers.",
+			"Increase shared_buffers to improve cache hit rate from %.1f%% to 95%%+. "+
+				"Recommended: 25%% of system RAM.",
 			hitRate*100,
 		)
 	case "mysql":
 		return fmt.Sprintf(
-			"Increase MySQL's innodb_buffer_pool_size to allocate more memory for caching. "+
-				"Current cache hit rate: %.1f%%. Recommended: Set innodb_buffer_pool_size to 70-80%% "+
-				"of available system RAM for dedicated database servers.",
+			"Increase innodb_buffer_pool_size to improve cache hit rate from %.1f%% to 95%%+. "+
+				"Recommended: 70-80%% of system RAM for dedicated servers.",
 			hitRate*100,
 		)
 	case "mongodb":
 		return fmt.Sprintf(
-			"MongoDB uses the operating system's file system cache (WiredTiger cache). "+
-				"Current cache hit rate: %.1f%%. Recommended: Increase available system memory "+
-				"or reduce working set size. MongoDB typically uses 50%% of RAM minus 1GB for cache.",
+			"Increase WiredTiger cache to improve cache hit rate from %.1f%% to 95%%+. "+
+				"MongoDB typically uses 50%% of RAM minus 1GB.",
 			hitRate*100,
 		)
 	case "sqlite":
 		return fmt.Sprintf(
-			"SQLite cache performance is low (%.1f%% hit rate). "+
-				"Increase PRAGMA cache_size to allocate more memory for page cache. "+
-				"Note: SQLite cache is limited compared to server databases like PostgreSQL.",
+			"Increase PRAGMA cache_size to improve cache hit rate from %.1f%% to 95%%+. "+
+				"Note: SQLite cache is limited compared to server databases.",
 			hitRate*100,
 		)
 	default:
 		return fmt.Sprintf(
-			"Cache hit rate is low (%.1f%%). Increase database cache/buffer pool size "+
-				"to improve performance. Consult your database documentation for cache configuration.",
+			"Increase database cache size to improve cache hit rate from %.1f%% to 95%%+.",
+			hitRate*100,
+		)
+	}
+}
+
+// getSafeOptionSteps returns database-specific steps for safe cache increase
+func (d *CacheMissDetector) getSafeOptionSteps(dbType string) []string {
+	switch dbType {
+	case "postgres", "postgresql":
+		return []string{
+			"Locate postgresql.conf file",
+			"Find the shared_buffers setting",
+			"Increase to 256MB (or 25% of system RAM)",
+			"Save the file",
+			"Restart PostgreSQL service",
+			"Monitor cache hit rate in Dashboard",
+		}
+	case "mysql":
+		return []string{
+			"Locate my.cnf or my.ini file",
+			"Find the innodb_buffer_pool_size setting",
+			"Increase to 512MB (or 70% of system RAM)",
+			"Save the file",
+			"Restart MySQL service",
+			"Monitor cache hit rate in Dashboard",
+		}
+	case "mongodb":
+		return []string{
+			"Locate mongod.conf file",
+			"Find the wiredTigerCacheSizeGB setting",
+			"Increase to appropriate size (50% RAM - 1GB)",
+			"Save the file",
+			"Restart MongoDB service",
+			"Monitor cache hit rate in Dashboard",
+		}
+	case "sqlite":
+		return []string{
+			"Add PRAGMA cache_size command to connection initialization",
+			"Set cache_size to 10000 or higher",
+			"Restart application",
+			"Monitor query performance",
+		}
+	default:
+		return []string{
+			"Review database documentation for cache configuration",
+			"Identify cache-related setting",
+			"Increase cache size appropriately",
+			"Restart database service",
+			"Monitor performance",
+		}
+	}
+}
+
+// getAdvancedOptionDescription returns description for Redis deployment option
+func (d *CacheMissDetector) getAdvancedOptionDescription(hitRate float64) string {
+	return fmt.Sprintf(
+		"Deploy Redis as an application-level cache layer to improve cache hit rate from %.1f%% to 95%%+. "+
+			"This approach requires modifying your application code to query Redis before the database. "+
+			"Provides maximum performance gains but requires development effort and testing.",
+		hitRate*100,
+	)
+}
+
+// getRecommendation returns general recommendation text (kept for backwards compatibility)
+func (d *CacheMissDetector) getRecommendation(dbType string, hitRate float64) string {
+	switch dbType {
+	case "postgres", "postgresql":
+		return fmt.Sprintf(
+			"Cache hit rate is low (%.1f%%). Two options: "+
+				"1) Increase shared_buffers in postgresql.conf (requires restart), or "+
+				"2) Deploy Redis for application-level caching (requires code changes).",
+			hitRate*100,
+		)
+	case "mysql":
+		return fmt.Sprintf(
+			"Cache hit rate is low (%.1f%%). Two options: "+
+				"1) Increase innodb_buffer_pool_size in my.cnf (requires restart), or "+
+				"2) Deploy Redis for application-level caching (requires code changes).",
+			hitRate*100,
+		)
+	case "mongodb":
+		return fmt.Sprintf(
+			"Cache hit rate is low (%.1f%%). Two options: "+
+				"1) Increase wiredTigerCacheSizeGB (requires restart), or "+
+				"2) Deploy Redis for application-level caching (requires code changes).",
+			hitRate*100,
+		)
+	default:
+		return fmt.Sprintf(
+			"Cache hit rate is low (%.1f%%). Review database cache configuration "+
+				"or consider deploying Redis for application-level caching.",
 			hitRate*100,
 		)
 	}

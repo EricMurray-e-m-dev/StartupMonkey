@@ -141,6 +141,16 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewCreateIndexAction(metadata, adapter, tableName, []string{columnName}, false), nil
 
+	case "cache_optimization_recommendation":
+		// Create recommendation action with safe and advanced options
+		return actions.NewRecommendationAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			metadata.DatabaseType, // Use from metadata
+			detection.ActionMetaData,
+		), nil
+
 	// TODO: This is only implemented for PgBouncer, Analyser sends deploy_connection_pooler as a detection, make this choose based on DB later
 	case "deploy_connection_pooler":
 		action, err := actions.NewDeployPgBouncerAction(
@@ -156,7 +166,20 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 		}
 		return action, nil
 
-	case "increase_cache_size", "deploy_redis", "optimise_queries":
+	case "deploy_redis":
+		// Deploy Redis cache layer (advanced - requires code changes)
+		action, err := actions.NewDeployRedisAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			detection.ActionMetaData,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Redis action: %w", err)
+		}
+		return action, nil
+
+	case "optimise_queries":
 		return actions.NewFutureFixAction(
 			actionID,
 			detection.ActionType,
@@ -386,4 +409,46 @@ func (h *DetectionHandler) getActionObject(actionID string) (actions.Action, err
 	}
 
 	return action, nil
+}
+
+// ExecuteActionDirectly executes an action without going through NATS detection flow.
+// Used for user-triggered actions from Dashboard (e.g., manual Redis deployment).
+func (h *DetectionHandler) ExecuteActionDirectly(action actions.Action, detection *models.Detection) {
+	if action == nil {
+		log.Printf("Warning: ExecuteActionDirectly called with nil action")
+		return
+	}
+
+	metadata := action.GetMetadata()
+	actionID := metadata.ActionID
+
+	// Store action object for potential rollback
+	h.storeActionObject(actionID, action)
+
+	// Create initial result
+	result := &models.ActionResult{
+		ActionID:    actionID,
+		DetectionID: detection.DetectionID,
+		ActionType:  metadata.ActionType,
+		DatabaseID:  metadata.DatabaseID,
+		Status:      models.StatusQueued,
+		Message:     fmt.Sprintf("Action queued: %s", metadata.ActionType),
+		CreatedAt:   time.Now(),
+	}
+	h.storeAction(result)
+
+	// Register with Knowledge if available
+	if h.knowledgeClient != nil {
+		if err := h.registerActionWithKnowledge(context.Background(), detection, result); err != nil {
+			log.Printf("Warning: failed to register action with Knowledge: %v", err)
+		}
+	}
+
+	// Publish queued status
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(result)
+	}
+
+	// Execute action (reuse existing executeAction method)
+	h.executeAction(action, detection)
 }
