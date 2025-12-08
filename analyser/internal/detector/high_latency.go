@@ -8,12 +8,12 @@ import (
 )
 
 type HighLatencyDetector struct {
-	avgLatencyThreshold float64
+	p95LatencyThreshold float64
 }
 
 func NewHighLatencyDetector() *HighLatencyDetector {
 	return &HighLatencyDetector{
-		avgLatencyThreshold: 100.0, // Alert if over 100ms
+		p95LatencyThreshold: 100.0, // Alert if p95 over 500ms
 	}
 }
 
@@ -26,21 +26,29 @@ func (d *HighLatencyDetector) Category() models.DetectionCategory {
 }
 
 func (d *HighLatencyDetector) Detect(snapshot *normaliser.NormalisedMetrics) *models.Detection {
-	if snapshot.Measurements.AvgQueryLatencyMs == nil {
-		return nil
+	// Prefer p95 latency, fallback to average
+	var latency float64
+	var latencyType string
+
+	if snapshot.Measurements.P95QueryLatencyMs != nil {
+		latency = *snapshot.Measurements.P95QueryLatencyMs
+		latencyType = "p95"
+	} else if snapshot.Measurements.AvgQueryLatencyMs != nil {
+		latency = *snapshot.Measurements.AvgQueryLatencyMs
+		latencyType = "avg"
+	} else {
+		return nil // No latency metrics available
 	}
 
-	avgLatency := *snapshot.Measurements.AvgQueryLatencyMs
-
 	// No issues if below threshold
-	if avgLatency < d.avgLatencyThreshold {
+	if latency < d.p95LatencyThreshold {
 		return nil
 	}
 
 	var severity models.DetectionSeverity
-	if avgLatency > d.avgLatencyThreshold*3 {
-		severity = models.SeverityCritical // If over 3x Threshold
-	} else if avgLatency > d.avgLatencyThreshold*2 {
+	if latency > d.p95LatencyThreshold*3 {
+		severity = models.SeverityCritical // If over 3x threshold
+	} else if latency > d.p95LatencyThreshold*2 {
 		severity = models.SeverityWarning
 	} else {
 		severity = models.SeverityInfo
@@ -50,21 +58,28 @@ func (d *HighLatencyDetector) Detect(snapshot *normaliser.NormalisedMetrics) *mo
 	detection.Severity = severity
 	detection.Timestamp = snapshot.Timestamp
 
-	detection.Title = fmt.Sprintf("High average query latency (%.0fms)", avgLatency)
+	detection.Title = fmt.Sprintf("High query latency detected (%.0fms %s)", latency, latencyType)
 	detection.Description = fmt.Sprintf(
-		"Database queries have an average execution time of %.0fms (threshold: %.0fms). "+
+		"Database queries have high execution times (%s: %.0fms, threshold: %.0fms). "+
 			"Slow queries degrade application responsiveness and user experience. "+
-			"Common causes include missing indexes, inefficient queries, lock contention, or insufficient resources.",
-		avgLatency, d.avgLatencyThreshold,
+			"Common causes include missing indexes, inefficient queries, insufficient memory allocation, or suboptimal configuration.",
+		latencyType, latency, d.p95LatencyThreshold,
 	)
 
 	evidence := map[string]interface{}{
-		"avg_latency_ms": avgLatency,
-		"threshold_ms":   d.avgLatencyThreshold,
-		"query_health":   snapshot.QueryHealth,
+		"latency_ms":   latency,
+		"latency_type": latencyType,
+		"threshold_ms": d.p95LatencyThreshold,
+		"query_health": snapshot.QueryHealth,
 	}
 
-	// Check if available (TODO: Calculate percentiles in future sprint)
+	// Include all available latency metrics
+	if snapshot.Measurements.AvgQueryLatencyMs != nil {
+		evidence["avg_latency_ms"] = *snapshot.Measurements.AvgQueryLatencyMs
+	}
+	if snapshot.Measurements.P50QueryLatencyMs != nil {
+		evidence["p50_latency_ms"] = *snapshot.Measurements.P50QueryLatencyMs
+	}
 	if snapshot.Measurements.P95QueryLatencyMs != nil {
 		evidence["p95_latency_ms"] = *snapshot.Measurements.P95QueryLatencyMs
 	}
@@ -74,75 +89,43 @@ func (d *HighLatencyDetector) Detect(snapshot *normaliser.NormalisedMetrics) *mo
 
 	detection.Evidence = evidence
 
-	detection.Recommendation = d.getRecommendation(snapshot.DatabaseType, avgLatency)
+	detection.Recommendation = d.getRecommendation(snapshot.DatabaseType)
 
-	// For Executor
-	detection.ActionType = "optimise_queries"
+	// NEW: Use tune_config_high_latency action instead of optimise_queries
+	detection.ActionType = "tune_config_high_latency"
 	detection.ActionMetadata = map[string]interface{}{
-		"priority":           "high",
-		"database_type":      snapshot.DatabaseType,
-		"current_latency_ms": avgLatency,
-		"require_analysis":   true,
+		"database_type":  snapshot.DatabaseType,
+		"p95_latency_ms": latency,
+		"threshold_ms":   d.p95LatencyThreshold,
+	}
+
+	// Include avg latency if available
+	if snapshot.Measurements.AvgQueryLatencyMs != nil {
+		detection.ActionMetadata["avg_latency_ms"] = *snapshot.Measurements.AvgQueryLatencyMs
 	}
 
 	return detection
 }
 
-func (d *HighLatencyDetector) getRecommendation(dbType string, latency float64) string {
+func (d *HighLatencyDetector) getRecommendation(dbType string) string {
 	switch dbType {
 	case "postgres", "postgresql":
-		return fmt.Sprintf(
-			"Average query latency is high (%.0fms). To identify and fix slow queries:\n"+
-				"1. Enable pg_stat_statements: CREATE EXTENSION pg_stat_statements;\n"+
-				"2. Find slow queries: SELECT query, mean_exec_time, calls FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;\n"+
-				"3. Run EXPLAIN ANALYZE on slow queries to identify missing indexes or inefficient plans\n"+
-				"4. Check for table bloat: SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) FROM pg_tables;\n"+
-				"5. Consider VACUUM ANALYZE to update statistics",
-			latency,
-		)
+		return "StartupMonkey will tune PostgreSQL configuration (work_mem, effective_cache_size, random_page_cost) " +
+			"to improve query performance and identify slow queries that require code changes."
 	case "mysql":
-		return fmt.Sprintf(
-			"Average query latency is high (%.0fms). To identify and fix slow queries:\n"+
-				"1. Enable slow query log: SET GLOBAL slow_query_log = 'ON'; SET GLOBAL long_query_time = 0.1;\n"+
-				"2. Review /var/log/mysql/slow-queries.log for slow queries\n"+
-				"3. Run EXPLAIN on slow queries to identify missing indexes\n"+
-				"4. Update table statistics: ANALYZE TABLE table_name;\n"+
-				"5. Check for table locks: SHOW ENGINE INNODB STATUS;",
-			latency,
-		)
+		return "StartupMonkey will tune MySQL configuration (innodb_buffer_pool_size, tmp_table_size) " +
+			"to improve query performance and identify slow queries that require optimization."
 	case "mongodb":
-		return fmt.Sprintf(
-			"Average query latency is high (%.0fms). To identify and fix slow queries:\n"+
-				"1. Enable profiler: db.setProfilingLevel(1, {slowms: 100});\n"+
-				"2. Review slow queries: db.system.profile.find().sort({ts:-1}).limit(10);\n"+
-				"3. Use explain() to analyze query plans: db.collection.find({...}).explain('executionStats');\n"+
-				"4. Create indexes on frequently queried fields\n"+
-				"5. Consider sharding for large collections",
-			latency,
-		)
+		return "StartupMonkey will tune MongoDB configuration (wiredTigerCacheSizeGB) " +
+			"to improve query performance and identify slow queries that require optimization."
 	case "sqlite":
-		return fmt.Sprintf(
-			"Average query latency is high (%.0fms). SQLite optimization options:\n"+
-				"1. Create indexes on frequently queried columns: CREATE INDEX idx_name ON table(column);\n"+
-				"2. Analyze query plans: EXPLAIN QUERY PLAN SELECT ...;\n"+
-				"3. Increase cache size: PRAGMA cache_size = 10000;\n"+
-				"4. Enable WAL mode for better concurrency: PRAGMA journal_mode = WAL;\n"+
-				"5. For high-traffic apps, consider migrating to PostgreSQL or MySQL",
-			latency,
-		)
+		return "StartupMonkey will tune SQLite configuration (cache_size, journal_mode) " +
+			"to improve query performance. For high-traffic applications, consider migrating to PostgreSQL or MySQL."
 	default:
-		return fmt.Sprintf(
-			"Average query latency is high (%.0fms). General optimization steps:\n"+
-				"1. Identify slow queries using database profiling tools\n"+
-				"2. Analyze query execution plans\n"+
-				"3. Create appropriate indexes on filtered/joined columns\n"+
-				"4. Update database statistics\n"+
-				"5. Check for resource constraints (CPU, memory, disk I/O)",
-			latency,
-		)
+		return "StartupMonkey will optimize database configuration to improve query performance."
 	}
 }
 
 func (d *HighLatencyDetector) SetThreshold(threshold float64) {
-	d.avgLatencyThreshold = threshold
+	d.p95LatencyThreshold = threshold
 }
