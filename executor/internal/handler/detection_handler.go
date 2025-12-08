@@ -179,6 +179,51 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 		}
 		return action, nil
 
+	case "tune_config_high_latency":
+		// Fetch database connection from Knowledge
+		if h.knowledgeClient == nil {
+			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
+		}
+
+		dbResp, err := h.knowledgeClient.GetServiceClient().GetDatabase(ctx, &pb.GetDatabaseRequest{
+			DatabaseId: detection.DatabaseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch database connection from Knowledge: %w", err)
+		}
+
+		if !dbResp.Found {
+			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
+		}
+
+		// Determine database type (default to postgres for now)
+		databaseType := getStringFromMap(detection.ActionMetaData, "database_type", "postgres")
+
+		// Create adapter based on database type
+		var adapter database.DatabaseAdapter
+		switch databaseType {
+		case "postgres":
+			adapter, err = database.NewPostgresAdapter(
+				ctx,
+				dbResp.ConnectionString,
+				detection.DatabaseID,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create postgres adapter: %w", err)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported database type for config tuning: %s", databaseType)
+		}
+
+		// Create action with adapter
+		return actions.NewTuneConfigAction(
+			actionID,
+			detection.DetectionID,
+			detection.DatabaseID,
+			databaseType,
+			adapter,
+		)
+
 	case "optimise_queries":
 		return actions.NewFutureFixAction(
 			actionID,
@@ -451,4 +496,14 @@ func (h *DetectionHandler) ExecuteActionDirectly(action actions.Action, detectio
 
 	// Execute action (reuse existing executeAction method)
 	h.executeAction(action, detection)
+}
+
+// Helper function to safely get string from map with default value
+func getStringFromMap(m map[string]interface{}, key string, defaultValue string) string {
+	if val, ok := m[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return defaultValue
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -94,12 +95,92 @@ func (p *PostgresAdapter) IndexExists(ctx context.Context, indexName string) (bo
 	return exists, nil
 }
 
+func (p *PostgresAdapter) GetCurrentConfig(ctx context.Context, parameters []string) (map[string]string, error) {
+	config := make(map[string]string)
+
+	for _, param := range parameters {
+		var value string
+		query := fmt.Sprintf("SHOW %s", param)
+		err := p.pool.QueryRow(ctx, query).Scan(&value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get config for: %s: %w", param, err)
+		}
+		config[param] = value
+	}
+
+	return config, nil
+}
+
+func (p *PostgresAdapter) SetConfig(ctx context.Context, changes map[string]string) error {
+
+	for param, value := range changes {
+		query := fmt.Sprintf("ALTER SYSTEM SET %s = '%s'", param, value)
+		_, err := p.pool.Exec(ctx, query)
+		if err != nil {
+			return fmt.Errorf("failed to set %s to %s: %w", param, value, err)
+		}
+	}
+
+	_, err := p.pool.Exec(ctx, "SELECT pg_reload_conf()")
+	if err != nil {
+		return fmt.Errorf("failed to reload config: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PostgresAdapter) GetSlowQueries(ctx context.Context, thresholdMs float64, limit int) ([]SlowQuery, error) {
+	query := `
+		SELECT 
+			query,
+			mean_exec_time,
+			calls
+		FROM pg_stat_statements
+		WHERE mean_exec_time > $1
+		ORDER BY mean_exec_time DESC
+		LIMIT $2
+	`
+
+	rows, err := p.pool.Query(ctx, query, thresholdMs, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query slow queries: %w", err)
+	}
+	defer rows.Close()
+
+	var slowQueries []SlowQuery
+
+	for rows.Next() {
+		var rawQuery string
+		var execTime float64
+		var calls int32
+
+		if err := rows.Scan(&rawQuery, &execTime, &calls); err != nil {
+			return nil, fmt.Errorf("failed to scan slow queries: %w", err)
+		}
+
+		sanitised := sanitiseQuery(rawQuery)
+
+		issueType, recommendation := analyseQuery(rawQuery)
+
+		slowQueries = append(slowQueries, SlowQuery{
+			QueryPattern:    sanitised,
+			ExecutionTimeMs: execTime,
+			CallCount:       calls,
+			IssueType:       issueType,
+			Recommendation:  recommendation,
+		})
+	}
+	return slowQueries, nil
+}
+
 func (p *PostgresAdapter) GetCapabilities() Capabilities {
 	return Capabilities{
-		SupportsIndexes:           true,
-		SupportsConcurrentIndexes: true, // Postgres 8.2+
-		SupportsUniqueIndex:       true,
-		SupportsMultiColumnIndex:  true,
+		SupportsIndexes:              true,
+		SupportsConcurrentIndexes:    true, // Postgres 8.2+
+		SupportsUniqueIndex:          true,
+		SupportsMultiColumnIndex:     true,
+		SupportsConfigTuning:         true,
+		SupportsRuntimeConfigChanges: true,
 	}
 }
 
@@ -109,4 +190,51 @@ func (p *PostgresAdapter) Close() error {
 		p.pool = nil
 	}
 	return nil
+}
+
+// Helper: Sanitise queries
+func sanitiseQuery(query string) string {
+	// Replace string literals
+	query = regexp.MustCompile(`'[^']*'`).ReplaceAllString(query, "?")
+
+	// Replace numbers
+	query = regexp.MustCompile(`\b\d+\b`).ReplaceAllString(query, "?")
+
+	// Truncate if too long
+	if len(query) > 200 {
+		query = query[:200] + "..."
+	}
+
+	// Remove extra whitespace
+	query = strings.Join(strings.Fields(query), " ")
+
+	return query
+}
+
+// Helper: Analyse query to determine issue type
+func analyseQuery(query string) (issueType string, recommendation string) {
+	queryLower := strings.ToLower(query)
+
+	// Check for sequential scans (common with missing indexes)
+	if strings.Contains(queryLower, "seq scan") {
+		return "sequential_scan", "Consider adding an index on the filtered columns"
+	}
+
+	// Check for ORDER BY without index
+	if strings.Contains(queryLower, "order by") && !strings.Contains(queryLower, "index") {
+		return "missing_index", "Add index on ORDER BY columns for faster sorting"
+	}
+
+	// Check for complex joins
+	if strings.Count(queryLower, "join") >= 3 {
+		return "complex_join", "Consider simplifying joins or adding indexes on join columns"
+	}
+
+	// Check for SELECT *
+	if strings.Contains(queryLower, "select *") {
+		return "inefficient_select", "Select only required columns instead of SELECT *"
+	}
+
+	// Default
+	return "high_latency", "Review query execution plan with EXPLAIN ANALYZE"
 }
