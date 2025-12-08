@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle } from "lucide-react";
+import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useActions } from "@/hooks/useActions";
 import { ActionResult } from "@/types/actions";
@@ -19,6 +19,23 @@ interface Recommendation {
     requires_restart?: boolean;
     requires_code_change?: boolean;
     deployable_action_type?: string;
+}
+
+// Slow Query type definition
+interface SlowQuery {
+    query_pattern: string;
+    execution_time_ms: number;
+    call_count: number;
+    issue_type: string;
+    recommendation: string;
+}
+
+// Optimization Guide type definition
+interface OptimizationGuide {
+    title: string;
+    url: string;
+    topics: string[];
+    key_tips?: string[];
 }
 
 export default function ActionsPage() {
@@ -190,8 +207,9 @@ function ActionCard({ action }: { action: ActionResult }) {
 
     const config = statusConfig[action.status as keyof typeof statusConfig];
 
-    // Check if this is a recommendation action
+    // Check action type
     const isRecommendation = action.action_type === 'recommendation' || action.action_type === 'cache_optimization_recommendation';
+    const isConfigTuning = action.action_type === 'tune_config_high_latency';
 
     return (
         <Card className={config.bgClass}>
@@ -259,8 +277,13 @@ function ActionCard({ action }: { action: ActionResult }) {
                     />
                 )}
 
-                {/* Standard Changes (if not recommendation) */}
-                {!isRecommendation && action.changes && Object.keys(action.changes).length > 0 && (
+                {/* Config Tuning UI */}
+                {isConfigTuning && action.changes && (
+                    <ConfigTuningDisplay changes={action.changes} />
+                )}
+
+                {/* Standard Changes (if not recommendation or config tuning) */}
+                {!isRecommendation && !isConfigTuning && action.changes && Object.keys(action.changes).length > 0 && (
                     <div className="border-l-2 border-green-500 pl-4">
                         <h4 className="text-sm font-semibold mb-2 text-green-600">Changes Applied</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -284,6 +307,157 @@ function ActionCard({ action }: { action: ActionResult }) {
     );
 }
 
+// Config Tuning Display Component
+function ConfigTuningDisplay({ 
+    changes 
+}: { 
+    changes: Record<string, unknown>;
+}) {
+    const configChanges = (changes.config_changes || {}) as Record<string, string>;
+    const originalConfig = (changes.original_config || {}) as Record<string, string>;
+    const slowQueries = (changes.slow_queries || []) as SlowQuery[];
+    const guide = changes.optimization_guide as OptimizationGuide | undefined;
+
+    return (
+        <div className="space-y-4">
+            {/* Configuration Changes */}
+            {Object.keys(configChanges).length > 0 && (
+                <div className="border-l-4 border-green-500 pl-4 py-2">
+                    <h4 className="text-sm font-semibold mb-2 text-green-600">Configuration Optimized</h4>
+                    <div className="space-y-2">
+                        {Object.entries(configChanges).map(([param, newValue]) => (
+                            <div key={param} className="text-xs">
+                                <span className="font-mono text-muted-foreground">{param}:</span>{' '}
+                                <span className="text-red-600 line-through">{originalConfig[param]}</span>
+                                {' → '}
+                                <span className="text-green-600 font-semibold">{newValue}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Slow Queries Found */}
+            {slowQueries.length > 0 && (
+                <div className="border-l-4 border-amber-500 pl-4 py-2">
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <h4 className="text-sm font-semibold text-amber-600">
+                            Slow Queries Detected ({slowQueries.length})
+                        </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                        These queries require code changes for optimal performance.
+                    </p>
+                    
+                    <div className="space-y-3">
+                        {slowQueries.map((query, index) => (
+                            <SlowQueryCard key={index} query={query} index={index + 1} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Optimization Guide */}
+            {guide && (
+                <div className="border-l-4 border-slate-500 pl-4 py-2">
+                    <h4 className="text-sm font-semibold mb-2 text-slate-600 dark:text-slate-400">{guide.title}</h4>
+                    <a 
+                        href={guide.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-600 dark:text-slate-400 hover:underline mb-2 flex items-center gap-1"
+                    >
+                        View Official Documentation
+                        <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {guide.key_tips && guide.key_tips.length > 0 && (
+                        <ul className="text-xs text-muted-foreground space-y-1 mt-2">
+                            {guide.key_tips.map((tip, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                    <span className="text-slate-600 dark:text-slate-400 mt-0.5">•</span>
+                                    <span>{tip}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function SlowQueryCard({ 
+    query, 
+    index 
+}: { 
+    query: SlowQuery;
+    index: number;
+}) {
+    const [expanded, setExpanded] = useState(false);
+
+    const issueColors = {
+        sequential_scan: 'text-red-600',
+        missing_index: 'text-amber-600',
+        complex_join: 'text-amber-600',
+        inefficient_select: 'text-slate-600',
+        high_latency: 'text-slate-600 dark:text-slate-400',
+    };
+
+    // Safe fallbacks for all properties
+    const issueType = query.issue_type || 'high_latency';
+    const issueColor = issueColors[issueType as keyof typeof issueColors] || 'text-slate-600';
+    const executionTime = query.execution_time_ms ?? 0;
+    const callCount = query.call_count ?? 0;
+    const queryPattern = query.query_pattern || 'Query pattern not available';
+    const recommendation = query.recommendation || 'No recommendation available';
+
+    return (
+        <div className="bg-muted/30 rounded p-3 space-y-2">
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs">
+                            Query #{index}
+                        </Badge>
+                        <span className={`text-xs font-semibold ${issueColor}`}>
+                            {issueType.replace(/_/g, ' ')}
+                        </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        {executionTime.toFixed(0)}ms avg • {callCount.toLocaleString()} calls
+                    </p>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-xs"
+                >
+                    {expanded ? 'Hide' : 'View'}
+                </Button>
+            </div>
+
+            {expanded && (
+                <div className="space-y-2 pt-2 border-t">
+                    <div>
+                        <p className="text-xs font-semibold mb-1">Query Pattern:</p>
+                        <code className="text-xs bg-black/5 dark:bg-white/5 p-2 rounded block overflow-x-auto">
+                            {queryPattern}
+                        </code>
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold mb-1">Recommendation:</p>
+                        <p className="text-xs text-muted-foreground">
+                            {recommendation}
+                        </p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // Recommendation Display Component
 function RecommendationDisplay({ 
     recommendations, 
@@ -298,7 +472,6 @@ function RecommendationDisplay({
         setDeployingRedis(true);
 
         try {
-            // Call Executor directly via HTTP (same pattern as rollback)
             const response = await fetch('http://localhost:8084/api/deploy-redis', {
                 method: 'POST',
                 headers: {

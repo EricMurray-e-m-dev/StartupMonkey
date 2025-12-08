@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/database"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/executor/internal/models"
@@ -60,20 +61,25 @@ func (a *TuneConfigAction) Execute(ctx context.Context) (*models.ActionResult, e
 	// 2. Determine optimal configuration
 	newConfig := a.calculateOptimalConfig(currentConfig)
 
-	// 3. Apply configuration changes
-	err = a.adapter.SetConfig(ctx, newConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply config changes: %w", err)
+	// 3. Apply configuration changes (only if there are changes)
+	changesMade := len(newConfig) > 0
+	if changesMade {
+		err = a.adapter.SetConfig(ctx, newConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply config changes: %w", err)
+		}
+
+		log.Printf("Applied config changes: %+v", newConfig)
+		a.appliedChanges = newConfig
+	} else {
+		log.Printf("No configuration changes needed - all parameters already optimal")
 	}
 
-	log.Printf("Applied config changes: %+v", newConfig)
-	a.appliedChanges = newConfig
-
 	// 4. Get slow queries for educational component
-	slowQueries, err := a.adapter.GetSlowQueries(ctx, 500.0, 5) // 500ms threshold, top 5
+	slowQueries, err := a.adapter.GetSlowQueries(ctx, 500.0, 5)
 	if err != nil {
 		log.Printf("Warning: failed to retrieve slow queries: %v", err)
-		slowQueries = []database.SlowQuery{} // Continue without slow queries
+		slowQueries = []database.SlowQuery{}
 	}
 
 	// 5. Build optimization guide
@@ -88,15 +94,23 @@ func (a *TuneConfigAction) Execute(ctx context.Context) (*models.ActionResult, e
 		"database_type":      a.databaseType,
 	}
 
+	// Build message based on whether changes were made
+	var message string
+	if changesMade {
+		message = fmt.Sprintf("Applied %d configuration optimizations. Found %d slow queries requiring code changes.", len(newConfig), len(slowQueries))
+	} else {
+		message = fmt.Sprintf("Configuration already optimal. Found %d slow queries requiring code changes.", len(slowQueries))
+	}
+
 	return &models.ActionResult{
 		ActionID:    a.actionID,
 		DetectionID: a.detectionID,
 		ActionType:  "tune_config_high_latency",
 		DatabaseID:  a.databaseID,
 		Status:      models.StatusCompleted,
-		Message:     fmt.Sprintf("Applied %d configuration optimizations. Found %d slow queries requiring code changes.", len(newConfig), len(slowQueries)),
+		Message:     message,
 		Changes:     changes,
-		CanRollback: true,
+		CanRollback: changesMade, // Only allow rollback if we actually made changes
 	}, nil
 }
 
@@ -144,21 +158,21 @@ func (a *TuneConfigAction) calculateOptimalConfig(current map[string]string) map
 	optimal := make(map[string]string)
 
 	// work_mem: Increase from default 4MB to 16MB
-	// (helps with sorting and hash operations in queries)
-	if current["work_mem"] == "4MB" || current["work_mem"] == "4096kB" {
+	if currentVal := current["work_mem"]; currentVal == "4MB" || currentVal == "4096kB" {
 		optimal["work_mem"] = "16MB"
 	}
 
-	// effective_cache_size: Set to 50% of system RAM
-	// (helps query planner make better decisions)
-	// Default is often too low (4GB)
-	if current["effective_cache_size"] != "" {
-		optimal["effective_cache_size"] = "8GB"
+	// effective_cache_size: Increase if currently at default (4GB or less)
+	if currentVal := current["effective_cache_size"]; currentVal != "" {
+		// Parse current value (handle GB/MB)
+		if currentVal == "4GB" || currentVal == "4096MB" || strings.HasPrefix(currentVal, "1GB") || strings.HasPrefix(currentVal, "2GB") || strings.HasPrefix(currentVal, "512MB") {
+			optimal["effective_cache_size"] = "8GB"
+		}
+		// If it's already 8GB or higher, don't change it
 	}
 
-	// random_page_cost: Assume SSD storage (default 4.0 is for HDD)
-	// Lower value makes random reads seem cheaper, improving index usage
-	if current["random_page_cost"] == "4" || current["random_page_cost"] == "4.0" {
+	// random_page_cost: Lower from HDD default (4.0) to SSD (1.1)
+	if currentVal := current["random_page_cost"]; currentVal == "4" || currentVal == "4.0" {
 		optimal["random_page_cost"] = "1.1"
 	}
 

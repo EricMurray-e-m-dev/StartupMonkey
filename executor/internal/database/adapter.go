@@ -17,28 +17,28 @@ type DatabaseAdapter interface {
 }
 
 type SlowQuery struct {
-	QueryPattern    string
-	ExecutionTimeMs float64
-	CallCount       int32
-	IssueType       string
-	Recommendation  string
+	QueryPattern    string  `json:"query_pattern"`
+	ExecutionTimeMs float64 `json:"execution_time_ms"`
+	CallCount       int32   `json:"call_count"`
+	IssueType       string  `json:"issue_type"`
+	Recommendation  string  `json:"recommendation"`
 }
 
 type IndexParams struct {
-	TableName   string
-	ColumnNames []string
-	IndexName   string
-	Unique      bool
-	Concurrent  bool
+	TableName   string   `json:"table_name"`
+	ColumnNames []string `json:"column_names"`
+	IndexName   string   `json:"index_name"`
+	Unique      bool     `json:"unique"`
+	Concurrent  bool     `json:"concurrent"`
 }
 
 type Capabilities struct {
-	SupportsIndexes              bool
-	SupportsConcurrentIndexes    bool
-	SupportsUniqueIndex          bool
-	SupportsMultiColumnIndex     bool
-	SupportsConfigTuning         bool
-	SupportsRuntimeConfigChanges bool
+	SupportsIndexes              bool `json:"supports_indexes"`
+	SupportsConcurrentIndexes    bool `json:"supports_concurrent_indexes"`
+	SupportsUniqueIndex          bool `json:"supports_unique_index"`
+	SupportsMultiColumnIndex     bool `json:"supports_multi_column_index"`
+	SupportsConfigTuning         bool `json:"supports_config_tuning"`
+	SupportsRuntimeConfigChanges bool `json:"supports_runtime_config_changes"`
 }
 
 var (
