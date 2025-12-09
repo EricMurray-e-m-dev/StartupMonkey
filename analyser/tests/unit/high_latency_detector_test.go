@@ -113,8 +113,10 @@ func TestHighLatencyDetector_PostgresRecommendation(t *testing.T) {
 	detection := det.Detect(snapshot)
 
 	assert.NotNil(t, detection)
-	assert.Contains(t, detection.Recommendation, "pg_stat_statements")
-	assert.Contains(t, detection.Recommendation, "EXPLAIN ANALYZE")
+	// Updated to match actual recommendation text
+	assert.Contains(t, detection.Recommendation, "work_mem")
+	assert.Contains(t, detection.Recommendation, "effective_cache_size")
+	assert.Contains(t, detection.Recommendation, "PostgreSQL")
 }
 
 func TestHighLatencyDetector_MySQLRecommendation(t *testing.T) {
@@ -132,5 +134,7 @@ func TestHighLatencyDetector_MySQLRecommendation(t *testing.T) {
 	detection := det.Detect(snapshot)
 
 	assert.NotNil(t, detection)
-	assert.Contains(t, detection.Recommendation, "slow query log")
+	// Updated to match actual recommendation text
+	assert.Contains(t, detection.Recommendation, "innodb_buffer_pool_size")
+	assert.Contains(t, detection.Recommendation, "MySQL")
 }

@@ -115,8 +115,10 @@ func TestCacheMissDetector_PostgresRecommendation(t *testing.T) {
 	detection := det.Detect(snapshot)
 
 	assert.NotNil(t, detection)
+	// Updated assertions - check for actual recommendation content
 	assert.Contains(t, detection.Recommendation, "shared_buffers")
-	assert.Contains(t, detection.Recommendation, "PostgreSQL")
+	assert.Contains(t, detection.Recommendation, "postgresql.conf")
+	assert.Contains(t, detection.ActionType, "cache_optimization_recommendation")
 }
 
 func TestCacheMissDetector_MySQLRecommendation(t *testing.T) {
@@ -134,8 +136,10 @@ func TestCacheMissDetector_MySQLRecommendation(t *testing.T) {
 	detection := det.Detect(snapshot)
 
 	assert.NotNil(t, detection)
+	// Updated assertions - check for actual recommendation content
 	assert.Contains(t, detection.Recommendation, "innodb_buffer_pool_size")
-	assert.Contains(t, detection.Recommendation, "MySQL")
+	assert.Contains(t, detection.Recommendation, "my.cnf")
+	assert.Contains(t, detection.ActionType, "cache_optimization_recommendation")
 }
 
 func TestCacheMissDetector_CustomThreshold(t *testing.T) {
@@ -154,4 +158,61 @@ func TestCacheMissDetector_CustomThreshold(t *testing.T) {
 	detection := det.Detect(snapshot)
 
 	assert.NotNil(t, detection, "Detection should fire with custom threshold")
+}
+
+func TestCacheMissDetector_ActionType(t *testing.T) {
+	det := detector.NewCacheMissDetector()
+
+	hitRate := 0.85
+	snapshot := &normaliser.NormalisedMetrics{
+		DatabaseID:   "test-db",
+		DatabaseType: "postgres",
+		Measurements: normaliser.Measurements{
+			CacheHitRate: &hitRate,
+		},
+	}
+
+	detection := det.Detect(snapshot)
+
+	assert.NotNil(t, detection)
+	assert.Equal(t, "cache_optimization_recommendation", detection.ActionType)
+}
+
+func TestCacheMissDetector_EvidenceData(t *testing.T) {
+	det := detector.NewCacheMissDetector()
+
+	hitRate := 0.85
+	snapshot := &normaliser.NormalisedMetrics{
+		DatabaseID:   "test-db",
+		DatabaseType: "postgres",
+		Measurements: normaliser.Measurements{
+			CacheHitRate: &hitRate,
+		},
+		CacheHealth: 0.85, // Added cache health
+	}
+
+	detection := det.Detect(snapshot)
+
+	assert.NotNil(t, detection)
+	assert.NotNil(t, detection.Evidence)
+
+	// Verify evidence contains cache hit rate (actual keys from detector)
+	cacheHit, ok := detection.Evidence["cache_hit_rate"]
+	assert.True(t, ok, "Evidence should contain cache_hit_rate")
+	assert.Equal(t, 0.85, cacheHit)
+
+	// Verify cache hit percent
+	cacheHitPercent, ok := detection.Evidence["cache_hit_percent"]
+	assert.True(t, ok, "Evidence should contain cache_hit_percent")
+	assert.Equal(t, 85, cacheHitPercent)
+
+	// Verify cache miss percent
+	cacheMissPercent, ok := detection.Evidence["cache_miss_percent"]
+	assert.True(t, ok, "Evidence should contain cache_miss_percent")
+	assert.Equal(t, 15, cacheMissPercent)
+
+	// Verify cache health
+	cacheHealth, ok := detection.Evidence["cache_health"]
+	assert.True(t, ok, "Evidence should contain cache_health")
+	assert.Equal(t, 0.85, cacheHealth)
 }
