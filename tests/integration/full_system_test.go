@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -87,19 +88,21 @@ func testCollectorSendsMetrics(t *testing.T, env *framework.TestEnvironment) {
 	logs, err := env.GetLogs("collector")
 	require.NoError(t, err, "Failed to get collector logs")
 
-	// Collector should have sent metrics
 	if len(logs) > 0 {
 		t.Log("Collector is actively collecting metrics")
 	}
 }
 
-// connectToNATS connects to NATS with retries for CI stability
-func connectToNATS(t *testing.T) *nats.Conn {
-	natsURL := "nats://localhost:4222"
+// connectToNATS connects using the dynamically assigned host port
+func connectToNATS(t *testing.T, env *framework.TestEnvironment) *nats.Conn {
+	// Dynamically determine host port
+	port, err := env.GetPublishedPort("nats", "4222")
+	require.NoError(t, err, "Failed to determine NATS published port")
+
+	natsURL := fmt.Sprintf("nats://localhost:%s", port)
 	t.Logf("Connecting to NATS at: %s", natsURL)
 
 	var nc *nats.Conn
-	var err error
 	maxRetries := 5
 
 	for i := 0; i < maxRetries; i++ {
@@ -112,39 +115,38 @@ func connectToNATS(t *testing.T) *nats.Conn {
 		time.Sleep(5 * time.Second)
 	}
 
-	require.NoError(t, err, "Failed to connect to NATS after %d attempts", maxRetries)
-	return nil // Never reached due to require.NoError
+	require.NoError(t, err, "Failed to connect to NATS after retries")
+	return nil
 }
 
 // testManualDetectionProcessing publishes detection and verifies processing
 func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment) {
 	t.Log("Testing manual detection processing...")
 
-	nc := connectToNATS(t)
+	nc := connectToNATS(t, env)
 	defer nc.Close()
 
-	// Create channels for different message types
+	// Channels for message types
 	detectionAck := make(chan bool, 1)
 	actionQueued := make(chan bool, 1)
 	actionCompleted := make(chan bool, 1)
 
-	// Subscribe to all topics to see what's happening
+	// Subscribe to all topics
 	_, err := nc.Subscribe(">", func(msg *nats.Msg) {
 		t.Logf("NATS message received on topic: %s", msg.Subject)
 
-		// Track different events
-		switch {
-		case msg.Subject == "detections":
+		switch msg.Subject {
+		case "detections":
 			detectionAck <- true
-		case msg.Subject == "actions.status.queued":
+		case "actions.status.queued":
 			actionQueued <- true
-		case msg.Subject == "actions.status.completed":
+		case "actions.status.completed":
 			actionCompleted <- true
 		}
 	})
 	require.NoError(t, err, "Failed to subscribe to NATS")
 
-	// Publish a simple test detection
+	// Build test detection payload
 	testDetection := map[string]interface{}{
 		"detection_id":   "integration-test-001",
 		"detector_name":  "test_detector",
@@ -176,7 +178,7 @@ func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment)
 
 	t.Log("Detection published successfully")
 
-	// Wait to see what messages we receive
+	// Wait for expected messages
 	timeout := time.After(30 * time.Second)
 	messagesReceived := 0
 
@@ -198,7 +200,8 @@ func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment)
 				return
 			}
 			logs, _ := env.GetLogs("executor")
-			t.Logf("Executor logs (last 500 chars):\n%s", logs[max(0, len(logs)-500):])
+			start := max(0, len(logs)-500)
+			t.Logf("Executor logs (last 500 chars):\n%s", logs[start:])
 			t.Fatal("No NATS messages received - system may not be processing detections")
 		}
 	}
@@ -228,23 +231,22 @@ func TestNATSConnectivity(t *testing.T) {
 
 	time.Sleep(10 * time.Second)
 
-	nc := connectToNATS(t)
+	nc := connectToNATS(t, env)
 	defer nc.Close()
 
-	// Test pub/sub
 	received := make(chan bool, 1)
 
 	_, err = nc.Subscribe("test.topic", func(msg *nats.Msg) {
 		t.Log("Test message received")
 		received <- true
 	})
-	require.NoError(t, err, "Failed to subscribe")
+	require.NoError(t, err, "Failed to subscribe to topic")
 
 	err = nc.Publish("test.topic", []byte("test"))
-	require.NoError(t, err, "Failed to publish")
+	require.NoError(t, err, "Failed to publish test message")
 
 	err = nc.Flush()
-	require.NoError(t, err, "Failed to flush")
+	require.NoError(t, err, "Failed to flush NATS")
 
 	select {
 	case <-received:
