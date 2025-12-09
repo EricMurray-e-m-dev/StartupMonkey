@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -36,8 +37,13 @@ func TestFullSystem_BasicFlow(t *testing.T) {
 	err = env.WaitForHealthy(90 * time.Second)
 	require.NoError(t, err, "Services did not become healthy")
 
-	// Give services time to initialize
-	time.Sleep(15 * time.Second)
+	// Give services extra time in CI
+	sleepTime := 15 * time.Second
+	if os.Getenv("CI") != "" {
+		sleepTime = 30 * time.Second
+		t.Log("Running in CI - using extended wait times")
+	}
+	time.Sleep(sleepTime)
 
 	// Test 1: Services are running
 	t.Run("ServicesRunning", func(t *testing.T) {
@@ -87,16 +93,35 @@ func testCollectorSendsMetrics(t *testing.T, env *framework.TestEnvironment) {
 	}
 }
 
+// connectToNATS connects to NATS with retries for CI stability
+func connectToNATS(t *testing.T) *nats.Conn {
+	natsURL := "nats://localhost:4222"
+	t.Logf("Connecting to NATS at: %s", natsURL)
+
+	var nc *nats.Conn
+	var err error
+	maxRetries := 5
+
+	for i := 0; i < maxRetries; i++ {
+		nc, err = nats.Connect(natsURL, nats.Timeout(10*time.Second))
+		if err == nil {
+			t.Log("Successfully connected to NATS")
+			return nc
+		}
+		t.Logf("NATS connection attempt %d/%d failed: %v", i+1, maxRetries, err)
+		time.Sleep(5 * time.Second)
+	}
+
+	require.NoError(t, err, "Failed to connect to NATS after %d attempts", maxRetries)
+	return nil // Never reached due to require.NoError
+}
+
 // testManualDetectionProcessing publishes detection and verifies processing
 func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment) {
 	t.Log("Testing manual detection processing...")
 
-	// Connect to NATS
-	nc, err := nats.Connect("nats://localhost:4222")
-	require.NoError(t, err, "Failed to connect to NATS")
+	nc := connectToNATS(t)
 	defer nc.Close()
-
-	t.Log("Connected to NATS")
 
 	// Create channels for different message types
 	detectionAck := make(chan bool, 1)
@@ -104,7 +129,7 @@ func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment)
 	actionCompleted := make(chan bool, 1)
 
 	// Subscribe to all topics to see what's happening
-	_, err = nc.Subscribe(">", func(msg *nats.Msg) {
+	_, err := nc.Subscribe(">", func(msg *nats.Msg) {
 		t.Logf("NATS message received on topic: %s", msg.Subject)
 
 		// Track different events
@@ -166,14 +191,12 @@ func testManualDetectionProcessing(t *testing.T, env *framework.TestEnvironment)
 		case <-actionCompleted:
 			t.Log("Action completed")
 			messagesReceived++
-			// If we got completion, test is successful
 			return
 		case <-timeout:
 			if messagesReceived > 0 {
 				t.Logf("Received %d messages, system is processing", messagesReceived)
 				return
 			}
-			// Check Executor logs to see what happened
 			logs, _ := env.GetLogs("executor")
 			t.Logf("Executor logs (last 500 chars):\n%s", logs[max(0, len(logs)-500):])
 			t.Fatal("No NATS messages received - system may not be processing detections")
@@ -203,11 +226,9 @@ func TestNATSConnectivity(t *testing.T) {
 	err = env.WaitForHealthy(30 * time.Second)
 	require.NoError(t, err, "NATS did not become healthy")
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
-	// Connect to NATS
-	nc, err := nats.Connect("nats://localhost:4222")
-	require.NoError(t, err, "Failed to connect to NATS")
+	nc := connectToNATS(t)
 	defer nc.Close()
 
 	// Test pub/sub
