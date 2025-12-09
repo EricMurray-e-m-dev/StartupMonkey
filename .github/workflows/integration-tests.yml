@@ -11,53 +11,100 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
+      # ---------------------------------------------------------
+      # Checkout
+      # ---------------------------------------------------------
       - uses: actions/checkout@v4
-      
+
+      # ---------------------------------------------------------
+      # Setup Go
+      # ---------------------------------------------------------
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      
-      - name: Debug port usage
+
+      # ---------------------------------------------------------
+      # Enable Buildx + Load Cache
+      # ---------------------------------------------------------
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Restore Docker build cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            buildx-${{ runner.os }}-
+
+      # ---------------------------------------------------------
+      # Prebuild all service images (cached)
+      # ---------------------------------------------------------
+      - name: Pre-build service images
         run: |
-          echo "=== Checking common ports ==="
-          sudo lsof -i :5432 || echo "Port 5432 is free"
-          sudo lsof -i :4222 || echo "Port 4222 is free (NATS)"
-          sudo lsof -i :50051 || echo "Port 50051 is free"
-          sudo lsof -i :50052 || echo "Port 50052 is free"
-          echo "=== All listening ports ==="
-          sudo netstat -tulpn | grep LISTEN || true
-      
+          build() {
+            NAME=$1
+            CONTEXT=$2
+
+            echo "=== Building $NAME ==="
+            docker buildx build \
+              --cache-from type=local,src=/tmp/.buildx-cache \
+              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+              --load \
+              -t $NAME \
+              $CONTEXT
+          }
+
+          build sm-knowledge ./knowledge
+          build sm-collector ./collector
+          build sm-analyser ./analyser
+          build sm-executor ./executor
+          
+      - name: Move updated build cache
+        if: success()
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # ---------------------------------------------------------
+      # Clean Docker environment (ensures fresh test start)
+      # ---------------------------------------------------------
       - name: Clean Docker environment
         run: |
-          docker ps -aq | xargs -r docker stop || true
           docker ps -aq | xargs -r docker rm -f || true
           docker network prune -f || true
           docker volume prune -f || true
-      
+
+      # ---------------------------------------------------------
+      # Run Integration Tests
+      # ---------------------------------------------------------
       - name: Run integration tests
         run: |
           cd tests/integration
-          go test -v -timeout 10m  # Per-test timeout (allows for slow CI runners)
+          go test -v -timeout 10m
         env:
           DOCKER_BUILDKIT: 1
-      
+
+      # ---------------------------------------------------------
+      # Logs on failure
+      # ---------------------------------------------------------
       - name: Show service logs on failure
         if: failure()
         run: |
           echo "=== Showing logs for all test containers ==="
           docker ps -a
-          for container in $(docker ps -a --format '{{.Names}}' | grep startupmonkey-test); do
-            echo "=== Logs for $container ==="
-            docker logs $container 2>&1 || true
+          for c in $(docker ps -a --format '{{.Names}}' | grep startupmonkey-test); do
+            echo "=== Logs for $c ==="
+            docker logs $c || true
           done
-      
+
+      # ---------------------------------------------------------
+      # Cleanup
+      # ---------------------------------------------------------
       - name: Cleanup
         if: always()
         run: |
-          # Clean up any test containers
-          docker ps -a --format '{{.Names}}' | grep startupmonkey-test | xargs -r docker rm -f || true
-          docker compose down -v || true
+          docker ps -aq | xargs -r docker rm -f || true
           docker network prune -f || true
           docker volume prune -f || true
