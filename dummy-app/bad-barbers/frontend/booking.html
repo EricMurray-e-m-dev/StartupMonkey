@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - BarberBook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation (same as index.html) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <strong>BarberBook</strong> | Classic Cuts
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="booking.html">Book Now</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="my-bookings.html">My Bookings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin.html">Admin</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Booking Form -->
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Book Your Appointment</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Success/Error Messages -->
+                        <div id="booking-message" class="alert d-none" role="alert"></div>
+
+                        <form id="booking-form">
+                            <!-- Customer Details -->
+                            <h5 class="mb-3">Your Details</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="customer_name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="customer_name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="customer_phone" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="customer_phone" 
+                                           placeholder="+353 87 123 4567" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="customer_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="customer_email">
+                            </div>
+
+                            <!-- Booking Details -->
+                            <h5 class="mb-3 mt-4">Booking Details</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="barber_id" class="form-label">Select Barber *</label>
+                                    <select class="form-select" id="barber_id" required>
+                                        <option value="">Loading barbers...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="service" class="form-label">Service *</label>
+                                    <select class="form-select" id="service" required>
+                                        <option value="">Loading services...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="booking_date" class="form-label">Date *</label>
+                                    <input type="date" class="form-control" id="booking_date" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="booking_time" class="form-label">Time *</label>
+                                    <select class="form-select" id="booking_time" required>
+                                        <option value="">Select date and barber first</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                                    <span id="submit-text">Book Appointment</span>
+                                    <span id="submit-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 BarberBook - Classic Cuts Barbershop</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="booking.js"></script>
+</body>
+</html>
