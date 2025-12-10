@@ -1,7 +1,7 @@
 // BarberBook - Booking Page JavaScript
 // AI-generated booking form logic
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
 
 // Load barbers and services on page load
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,7 +1,7 @@
 // BarberBook - Admin Panel
 // AI-generated admin panel for today's bookings
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadTodayBookings();

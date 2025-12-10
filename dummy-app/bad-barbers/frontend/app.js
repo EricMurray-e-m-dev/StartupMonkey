@@ -1,7 +1,7 @@
 // BarberBook - Homepage JavaScript
 // AI-generated code for loading popular barbers and services
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
 
 // Load popular barbers on page load
 document.addEventListener('DOMContentLoaded', () => {
