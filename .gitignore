@@ -51,4 +51,4 @@ Thumbs.db
 *.lock
 .env
 
-/.dummys/
+benchmarking/outputs/*
