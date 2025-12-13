@@ -36,7 +36,7 @@ services:
     container_name: barberbook-backend
     environment:
       PORT: 3001
-      DB_HOST: postgres
+      DB_HOST: pgbouncer-bad_barbers_app_01
       DB_PORT: 5432
       DB_NAME: barberbook
       DB_USER: postgres
@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
     container_name: barberbook-frontend
     ports:
-      - "8080:80"
+      - "3020:80"
     depends_on:
       - backend
     healthcheck:

@@ -1,0 +1,60 @@
+# Bad Barbers Benchmark Configuration
+
+app_name: bad-barbers
+target_host: http://localhost:8080
+
+# Test stages
+stages:
+  0:
+    name: "Baseline"
+    description: "No optimizations - pure AI-generated code with all flaws"
+    notes: |
+      - No indexes on customer_phone, booking_date
+      - Connection pool exhaustion (new Client per request)
+      - No caching for popular_barbers aggregation
+      - Inefficient queries (load all then filter in JS)
+  
+  1:
+    name: "Safe Autonomous Optimizations"
+    description: "StartupMonkey auto-fixes only"
+    notes: |
+      Applied by StartupMonkey:
+      - CREATE INDEX on bookings(customer_phone)
+      - CREATE INDEX on bookings(booking_date)
+      - CREATE INDEX on barbers(shop_id)
+      - PgBouncer deployed for connection pooling
+      - PostgreSQL config tuned (work_mem, cache_size)
+  
+  2:
+    name: "All Optimizations"
+    description: "Auto-fixes + manual code improvements"
+    notes: |
+      Everything from Stage 1 +
+      Manual improvements:
+      - Fixed connection pool in backend code
+      - Added Redis for popular_barbers caching
+      - Refactored inefficient queries
+
+# User count progression
+user_counts: [1, 10, 25, 50, 100]
+
+# Test duration per user count (seconds)
+duration: 120
+
+# Cooldown between tests (seconds)
+cooldown: 30
+
+# Expected detections per stage
+expected_detections:
+  stage_0:
+    - missing_index (customer_phone)
+    - missing_index (booking_date)
+    - connection_pool_exhaustion
+    - cache_miss (popular_barbers)
+    - high_latency (inefficient queries)
+  
+  stage_1:
+    - None (all issues fixed by StartupMonkey)
+  
+  stage_2:
+    - None (all issues fixed)
