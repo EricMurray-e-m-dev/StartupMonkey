@@ -1,0 +1,205 @@
+name: Release
+
+on:
+  # Manual trigger with version input
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: true
+        type: boolean
+        default: true
+
+  # Or trigger on version tag
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/startupmonkey
+
+jobs:
+  # Run tests first
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+      
+      - name: Test Collector
+        run: cd collector && go test ./tests/unit/... -v -short
+      
+      - name: Test Analyser
+        run: cd analyser && go test ./tests/unit/... -v -short
+      
+      - name: Test Executor
+        run: cd executor && go test ./tests/unit/... -v -short
+      
+      - name: Test Dashboard
+        run: |
+          cd dashboard
+          npm ci
+          npm test
+
+  # Build and push images
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "PRERELEASE=${{ inputs.prerelease }}" >> $GITHUB_OUTPUT
+          else
+            # Extract from tag (removes 'v' prefix)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            # Tags with -pre, -alpha, -beta, -rc are prereleases
+            if [[ "$VERSION" == *"-"* ]]; then
+              echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+            else
+              echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Collector
+        uses: docker/build-push-action@v5
+        with:
+          context: ./collector
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/collector:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/collector:latest
+
+      - name: Build and push Analyser
+        uses: docker/build-push-action@v5
+        with:
+          context: ./analyser
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/analyser:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/analyser:latest
+
+      - name: Build and push Executor
+        uses: docker/build-push-action@v5
+        with:
+          context: ./executor
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/executor:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/executor:latest
+
+      - name: Build and push Knowledge
+        uses: docker/build-push-action@v5
+        with:
+          context: ./knowledge
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/knowledge:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/knowledge:latest
+
+      - name: Build and push Dashboard
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dashboard
+          file: ./dashboard/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/dashboard:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/dashboard:latest
+
+      - name: Build and push Dashboard Collector
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dashboard
+          file: ./dashboard/Dockerfile.collector
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/dashboard-collector:${{ steps.version.outputs.VERSION }}
+            ${{ env.IMAGE_PREFIX }}/dashboard-collector:latest
+
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+      prerelease: ${{ steps.version.outputs.PRERELEASE }}
+
+  # Create GitHub Release
+  release:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.build-and-push.outputs.version }}
+          name: StartupMonkey v${{ needs.build-and-push.outputs.version }}
+          prerelease: ${{ needs.build-and-push.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            docker-compose.release.yml
+            .env.release.example
+            QUICKSTART.md
+          body: |
+            ## Quick Start
+            
+            ```bash
+            # Download release files
+            curl -LO https://github.com/${{ github.repository }}/releases/download/v${{ needs.build-and-push.outputs.version }}/docker-compose.release.yml
+            curl -LO https://github.com/${{ github.repository }}/releases/download/v${{ needs.build-and-push.outputs.version }}/.env.release.example
+            
+            # Configure
+            cp .env.release.example .env
+            # Edit .env with your database connection string
+            
+            # Run
+            docker-compose -f docker-compose.release.yml up -d
+            
+            # Open dashboard
+            open http://localhost:3000
+            ```
+            
+            ## Docker Images
+            
+            All images available at `ghcr.io/${{ github.repository_owner }}/startupmonkey/<service>:${{ needs.build-and-push.outputs.version }}`
+            
+            - `collector`
+            - `analyser`
+            - `executor`
+            - `knowledge`
+            - `dashboard`
+            - `dashboard-collector`
