@@ -21,7 +21,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/startupmonkey
 
 jobs:
   # Run tests first
@@ -99,8 +98,8 @@ jobs:
           context: ./collector
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/collector:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/collector:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/collector:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/collector:latest
 
       - name: Build and push Analyser
         uses: docker/build-push-action@v5
@@ -108,8 +107,8 @@ jobs:
           context: ./analyser
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/analyser:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/analyser:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/analyser:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/analyser:latest
 
       - name: Build and push Executor
         uses: docker/build-push-action@v5
@@ -117,8 +116,8 @@ jobs:
           context: ./executor
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/executor:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/executor:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/executor:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/executor:latest
 
       - name: Build and push Knowledge
         uses: docker/build-push-action@v5
@@ -126,8 +125,8 @@ jobs:
           context: ./knowledge
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/knowledge:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/knowledge:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/knowledge:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/knowledge:latest
 
       - name: Build and push Dashboard
         uses: docker/build-push-action@v5
@@ -136,8 +135,8 @@ jobs:
           file: ./dashboard/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/dashboard:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/dashboard:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard:latest
 
       - name: Build and push Dashboard Collector
         uses: docker/build-push-action@v5
@@ -146,8 +145,8 @@ jobs:
           file: ./dashboard/Dockerfile.collector
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}/dashboard-collector:${{ steps.version.outputs.VERSION }}
-            ${{ env.IMAGE_PREFIX }}/dashboard-collector:latest
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard-collector:${{ steps.version.outputs.VERSION }}
+            ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard-collector:latest
 
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
@@ -195,7 +194,7 @@ jobs:
             
             ## Docker Images
             
-            All images available at `ghcr.io/${{ github.repository_owner }}/startupmonkey/<service>:${{ needs.build-and-push.outputs.version }}`
+            All images available at `ghcr.io/ericmurray-e-m-dev/startupmonkey/<service>:${{ needs.build-and-push.outputs.version }}`
             
             - `collector`
             - `analyser`
