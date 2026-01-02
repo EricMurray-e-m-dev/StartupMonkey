@@ -1,0 +1,158 @@
+# StartupMonkey - Release Configuration
+# 
+# This compose file connects to YOUR external database.
+# Copy .env.release.example to .env and configure your database connection.
+#
+# Usage:
+#   cp .env.release.example .env
+#   # Edit .env with your database credentials
+#   docker-compose -f docker-compose.release.yml up -d
+
+services:
+  # StartupMonkey Infrastructure (managed automatically)
+  redis:
+    image: redis:7-alpine
+    command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - startupmonkey
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  nats:
+    image: nats:2.10-alpine
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  # Core Services
+  knowledge:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/knowledge:latest
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  collector:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/collector:latest
+    environment:
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING:?Database connection string is required}
+      - DB_ADAPTER=${DB_ADAPTER:-postgres}
+      - DATABASE_ID=${DATABASE_ID:-user-database}
+      - DATABASE_NAME=${DATABASE_NAME:-database}
+      - ANALYSER_ADDRESS=analyser:50051
+      - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-30s}
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      analyser:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  analyser:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/analyser:latest
+    environment:
+      - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
+    depends_on:
+      nats:
+        condition: service_started
+      knowledge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  executor:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/executor:latest
+    environment:
+      - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING:?Database connection string is required}
+    depends_on:
+      nats:
+        condition: service_started
+      knowledge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Dashboard
+  dashboard-collector:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard-collector:latest
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      nats:
+        condition: service_started
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+  dashboard:
+    image: ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard:latest
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_COLLECTOR_URL=http://dashboard-collector:3001
+      - EXECUTOR_HTTP_URL=http://executor:8084
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    depends_on:
+      dashboard-collector:
+        condition: service_started
+      executor:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks:
+      - startupmonkey
+    restart: unless-stopped
+
+networks:
+  startupmonkey:
+    driver: bridge
+
+volumes:
+  redis_data:
