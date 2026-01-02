@@ -1,4 +1,4 @@
-# Decision 008: Rules-Based Detection Engine
+# Decision 006: Rules-Based Detection Engine
 
 **Date:** 2025-10-23
 **Status:** Accepted
