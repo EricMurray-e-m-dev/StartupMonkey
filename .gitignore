@@ -51,4 +51,4 @@ Thumbs.db
 *.lock
 .env
 
-benchmarking/outputs/*
+.surge/
