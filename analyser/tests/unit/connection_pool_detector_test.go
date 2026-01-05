@@ -34,7 +34,7 @@ func TestConnectionPoolDetector_FiresWhenAboveThreshold(t *testing.T) {
 
 func TestConnectionPoolDetector_NoDetectionBelowThreshold(t *testing.T) {
 	det := detector.NewConnectionPoolDetection()
-
+	det.SetThreshold(0.8)
 	active := int32(50)
 	max := int32(100)
 

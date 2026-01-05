@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - "5434:5432"  # Different port to avoid conflicts
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "max_connections=30"  # Low limit to hit threshold easily
+
+  api:
+    build: ./app
+    ports:
+      - "4001:4001"
+    environment:
+      # Direct connection to postgres (before PgBouncer)
+      DATABASE_URL: postgresql://testuser:testpass@postgres:5432/testdb
+      # After PgBouncer deployed, restart with:
+      # DATABASE_URL: postgresql://testuser:testpass@host.docker.internal:6432/testdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+# =============================================================================
+# Connection Info for StartupMonkey:
+# postgresql://testuser:testpass@localhost:5434/testdb?sslmode=disable
+#
+# After PgBouncer deployed by StartupMonkey:
+# 1. Note the PgBouncer port (usually 6432)
+# 2. Restart app: docker-compose stop api && DATABASE_URL=postgresql://testuser:testpass@host.docker.internal:6432/testdb docker-compose up api -d
+# =============================================================================
