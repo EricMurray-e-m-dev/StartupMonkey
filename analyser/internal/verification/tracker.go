@@ -10,6 +10,9 @@ const (
 	// Number of collection cycles to wait before confirming action worked
 	DefaultVerificationCycles = 3
 
+	// Minimum cycles before rollback can trigger (grace period)
+	MinCyclesBeforeRollback = 1
+
 	// Max time to wait for verification before giving up (not rolling back, just abandoning check)
 	MaxVerificationTime = 10 * time.Minute
 )
@@ -78,7 +81,7 @@ func (t *Tracker) AddPendingVerification(detectionKey, detectionID, actionID, ac
 }
 
 // OnDetectionFired is called when a detection would fire
-// Returns true if this detection has a pending verification (meaning action didn't help)
+// Returns true if this detection has a pending verification (suppresses the detection)
 func (t *Tracker) OnDetectionFired(detectionKey string) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -88,7 +91,14 @@ func (t *Tracker) OnDetectionFired(detectionKey string) bool {
 		return false
 	}
 
-	// Same issue detected again - action didn't help
+	// Grace period - don't rollback on first cycle, metrics need time to reflect the fix
+	if pv.CyclesElapsed < MinCyclesBeforeRollback {
+		log.Printf("[Verification] Detection %s re-fired but in grace period (cycle %d < %d), suppressing",
+			detectionKey, pv.CyclesElapsed, MinCyclesBeforeRollback)
+		return true // Suppress detection but don't rollback yet
+	}
+
+	// Same issue detected again after grace period - action didn't help
 	log.Printf("[Verification] Action %s did not resolve issue (detection key: %s fired again after %d cycles)",
 		pv.ActionID, detectionKey, pv.CyclesElapsed)
 
