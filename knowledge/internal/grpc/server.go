@@ -118,7 +118,7 @@ func (s *KnowledgeServer) MarkDetectionResolved(ctx context.Context, req *pb.Res
 		}, err
 	}
 
-	log.Printf("✅ Detection resolved: %s (solution: %s)", req.DetectionId, req.Solution)
+	log.Printf("Detection resolved: %s (solution: %s)", req.DetectionId, req.Solution)
 
 	return &pb.Response{
 		Success: true,

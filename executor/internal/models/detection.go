@@ -2,6 +2,7 @@ package models
 
 type Detection struct {
 	DetectionID    string                 `json:"id"` // Match Analyser's "id"
+	Key            string                 `json:"key"`
 	DetectorName   string                 `json:"detector_name"`
 	Category       string                 `json:"category"`
 	Severity       string                 `json:"severity"`

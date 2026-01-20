@@ -11,13 +11,15 @@ import (
 )
 
 type ActionCompletedEvent struct {
-	ActionID    string `json:"action_id"`
-	DetectionID string `json:"detection_id"`
-	ActionType  string `json:"action_type"`
-	Status      string `json:"status"`
-	Solution    string `json:"solution"`
-	Message     string `json:"message"`
-	Timestamp   int64  `json:"timestamp"`
+	ActionID     string `json:"action_id"`
+	DetectionID  string `json:"detection_id"`
+	DetectionKey string `json:"detection_key"`
+	ActionType   string `json:"action_type"`
+	DatabaseID   string `json:"database_id"`
+	Status       string `json:"status"`
+	Solution     string `json:"solution"`
+	Message      string `json:"message"`
+	Timestamp    int64  `json:"timestamp"`
 }
 
 type Publisher struct {
@@ -60,13 +62,15 @@ func (p *Publisher) PublishActionCompleted(result *models.ActionResult, detectio
 	solution := generateSolution(result, detection)
 
 	event := ActionCompletedEvent{
-		ActionID:    result.ActionID,
-		DetectionID: detection.DetectionID,
-		ActionType:  result.ActionType,
-		Status:      result.Status,
-		Solution:    solution,
-		Message:     result.Message,
-		Timestamp:   time.Now().Unix(),
+		ActionID:     result.ActionID,
+		DetectionID:  detection.DetectionID,
+		DetectionKey: detection.Key,
+		ActionType:   result.ActionType,
+		DatabaseID:   detection.DatabaseID,
+		Status:       result.Status,
+		Solution:     solution,
+		Message:      result.Message,
+		Timestamp:    time.Now().Unix(),
 	}
 
 	data, err := json.Marshal(event)

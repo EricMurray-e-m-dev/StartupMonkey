@@ -12,6 +12,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/eventbus"
 	grpcserver "github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/knowledge"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/verification"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -42,6 +43,9 @@ type Orchestrator struct {
 	// gRPC server
 	grpcServer   *grpc.Server
 	grpcListener net.Listener
+
+	// Verification tracker for auto rollback (temporary)
+	verificationTracker *verification.Tracker
 }
 
 // NewOrchestrator creates a new Orchestrator instance with the provided configuration.
@@ -69,6 +73,9 @@ func (o *Orchestrator) Start() error {
 	if err := o.initializeEngine(); err != nil {
 		return fmt.Errorf("failed to initialize detection engine: %w", err)
 	}
+
+	// Verification setup
+	o.initializeVerificationTracker()
 
 	// Connect to downstream services
 	o.connectKnowledge() // Optional - warnings logged on failure
@@ -139,6 +146,46 @@ func (o *Orchestrator) registerDetectors() {
 		o.config.Thresholds.CacheHitRateThreshold*100)
 }
 
+// initializeVerificationTracker creates the verification tracker for autonomous rollback.
+// After an action is executed, the tracker monitors subsequent metrics to verify the action improved performance.
+//
+// The tracker uses a configurable number of verification cycles (currently 3) to determine success:
+//   - If metrics improve or stabilize: detection marked as resolved in Knowledge layer
+//   - If metrics degrade: rollback request published to NATS for Executor to revert the action
+//
+// Requires both NATS publisher (for rollback requests) and Knowledge client (for resolution tracking)
+// to be available for full functionality. Partial functionality if either is unavailable.
+func (o *Orchestrator) initializeVerificationTracker() {
+	log.Printf("Initializing verification tracker...")
+
+	o.verificationTracker = verification.NewTracker(
+		3, // verification cycles
+
+		// Rollback callback
+		func(request *verification.RollbackRequest) {
+			if o.publisher != nil {
+				log.Printf("Verification failed - requesting rollback for action %s", request.ActionID)
+				if err := o.publisher.PublishRollbackRequest(request); err != nil {
+					log.Printf("Failed to publish rollback request: %v", err)
+				}
+			}
+		},
+
+		// Verified callback
+		func(detectionID string) {
+			if o.knowledgeClient != nil {
+				log.Printf("Action verified - marking detection %s as resolved", detectionID)
+				ctx := context.Background()
+				if err := o.knowledgeClient.MarkDetectionResolved(ctx, detectionID, "verified_by_metrics"); err != nil {
+					log.Printf("Failed to mark detection resolved: %v", err)
+				}
+			}
+		},
+	)
+
+	log.Printf("Verification tracker initialized (3 cycle verification)")
+}
+
 // connectKnowledge establishes gRPC connection to Knowledge service for detection deduplication.
 // This is an optional connection - failure logs a warning but does not prevent startup.
 // Without Knowledge connection, duplicate detections may be published to NATS.
@@ -179,7 +226,7 @@ func (o *Orchestrator) connectNATS() {
 
 	// Initialize subscriber for action completion events
 	if o.knowledgeClient != nil {
-		subscriber, err := eventbus.NewSubscriber(o.config.NatsURL, o.knowledgeClient)
+		subscriber, err := eventbus.NewSubscriber(o.config.NatsURL, o.knowledgeClient, o.verificationTracker)
 		if err != nil {
 			log.Printf("Warning: failed to create NATS subscriber: %v", err)
 			log.Printf("Action completion tracking unavailable")
@@ -211,7 +258,7 @@ func (o *Orchestrator) initializeGRPCServer() error {
 	o.grpcServer = grpc.NewServer()
 
 	// Register metrics service with detection engine, publisher, and knowledge client
-	metricsServer := grpcserver.NewMetricsServer(o.engine, o.publisher, o.knowledgeClient)
+	metricsServer := grpcserver.NewMetricsServer(o.engine, o.publisher, o.knowledgeClient, o.verificationTracker)
 	pb.RegisterMetricsServiceServer(o.grpcServer, metricsServer)
 
 	// Enable gRPC reflection for debugging (grpcurl, etc.)

@@ -16,7 +16,7 @@ func TestNewMetricsServer(t *testing.T) {
 	detectionEngine := engine.NewEngine()
 	publisher, _ := eventbus.NewPublisher("test")
 	knowledgeClient, _ := knowledge.NewKnowledgeClient("localhost:50053")
-	server := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient)
+	server := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient, nil)
 
 	assert.NotNil(t, server)
 }
@@ -25,7 +25,7 @@ func TestRegisterDatabase(t *testing.T) {
 	detectionEngine := engine.NewEngine()
 	publisher, _ := eventbus.NewPublisher("test")
 	knowledgeClient, _ := knowledge.NewKnowledgeClient("localhost:50053")
-	server := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient)
+	server := grpcserver.NewMetricsServer(detectionEngine, publisher, knowledgeClient, nil)
 	ctx := context.Background()
 
 	info := &pb.DatabaseInfo{

@@ -136,7 +136,7 @@ func (o *Orchestrator) initializeDetectionHandler() error {
 	log.Printf("Detection handler initialized")
 
 	// Now initialize NATS subscriber with the handler
-	subscriber, err := eventbus.NewSubscriber(o.config.NatsURL, o.detectionHandler)
+	subscriber, err := eventbus.NewSubscriber(o.config.NatsURL, o.detectionHandler, o.detectionHandler)
 	if err != nil {
 		return fmt.Errorf("failed to create NATS subscriber: %w", err)
 	}
