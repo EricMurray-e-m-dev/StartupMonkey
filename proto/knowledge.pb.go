@@ -1705,6 +1705,483 @@ func (x *GetSystemStatsResponse) GetUptimeSeconds() int64 {
 	return 0
 }
 
+// Configuration management messages
+type DatabaseConfig struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	ConnectionString string                 `protobuf:"bytes,3,opt,name=connection_string,json=connectionString,proto3" json:"connection_string,omitempty"`
+	Type             string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"` // postgres, mysql, sqlite
+	Enabled          bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DatabaseConfig) Reset() {
+	*x = DatabaseConfig{}
+	mi := &file_knowledge_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DatabaseConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatabaseConfig) ProtoMessage() {}
+
+func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatabaseConfig.ProtoReflect.Descriptor instead.
+func (*DatabaseConfig) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DatabaseConfig) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DatabaseConfig) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DatabaseConfig) GetConnectionString() string {
+	if x != nil {
+		return x.ConnectionString
+	}
+	return ""
+}
+
+func (x *DatabaseConfig) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *DatabaseConfig) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type DetectionThresholds struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	ConnectionPoolCritical  float64                `protobuf:"fixed64,1,opt,name=connection_pool_critical,json=connectionPoolCritical,proto3" json:"connection_pool_critical,omitempty"`   // e.g., 0.8 = 80%
+	SequentialScanThreshold int64                  `protobuf:"varint,2,opt,name=sequential_scan_threshold,json=sequentialScanThreshold,proto3" json:"sequential_scan_threshold,omitempty"` // e.g., 1000
+	SequentialScanDelta     float64                `protobuf:"fixed64,3,opt,name=sequential_scan_delta,json=sequentialScanDelta,proto3" json:"sequential_scan_delta,omitempty"`            // e.g., 100.0
+	P95LatencyMs            float64                `protobuf:"fixed64,4,opt,name=p95_latency_ms,json=p95LatencyMs,proto3" json:"p95_latency_ms,omitempty"`                                 // e.g., 100.0
+	CacheHitRateThreshold   float64                `protobuf:"fixed64,5,opt,name=cache_hit_rate_threshold,json=cacheHitRateThreshold,proto3" json:"cache_hit_rate_threshold,omitempty"`    // e.g., 0.9 = 90%
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *DetectionThresholds) Reset() {
+	*x = DetectionThresholds{}
+	mi := &file_knowledge_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DetectionThresholds) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DetectionThresholds) ProtoMessage() {}
+
+func (x *DetectionThresholds) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DetectionThresholds.ProtoReflect.Descriptor instead.
+func (*DetectionThresholds) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DetectionThresholds) GetConnectionPoolCritical() float64 {
+	if x != nil {
+		return x.ConnectionPoolCritical
+	}
+	return 0
+}
+
+func (x *DetectionThresholds) GetSequentialScanThreshold() int64 {
+	if x != nil {
+		return x.SequentialScanThreshold
+	}
+	return 0
+}
+
+func (x *DetectionThresholds) GetSequentialScanDelta() float64 {
+	if x != nil {
+		return x.SequentialScanDelta
+	}
+	return 0
+}
+
+func (x *DetectionThresholds) GetP95LatencyMs() float64 {
+	if x != nil {
+		return x.P95LatencyMs
+	}
+	return 0
+}
+
+func (x *DetectionThresholds) GetCacheHitRateThreshold() float64 {
+	if x != nil {
+		return x.CacheHitRateThreshold
+	}
+	return 0
+}
+
+type SystemConfig struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Database           *DatabaseConfig        `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"` // Single DB for MVP
+	Thresholds         *DetectionThresholds   `protobuf:"bytes,2,opt,name=thresholds,proto3" json:"thresholds,omitempty"`
+	OnboardingComplete bool                   `protobuf:"varint,3,opt,name=onboarding_complete,json=onboardingComplete,proto3" json:"onboarding_complete,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SystemConfig) Reset() {
+	*x = SystemConfig{}
+	mi := &file_knowledge_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SystemConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SystemConfig) ProtoMessage() {}
+
+func (x *SystemConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SystemConfig.ProtoReflect.Descriptor instead.
+func (*SystemConfig) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *SystemConfig) GetDatabase() *DatabaseConfig {
+	if x != nil {
+		return x.Database
+	}
+	return nil
+}
+
+func (x *SystemConfig) GetThresholds() *DetectionThresholds {
+	if x != nil {
+		return x.Thresholds
+	}
+	return nil
+}
+
+func (x *SystemConfig) GetOnboardingComplete() bool {
+	if x != nil {
+		return x.OnboardingComplete
+	}
+	return false
+}
+
+type SystemStatus struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Configured         bool                   `protobuf:"varint,1,opt,name=configured,proto3" json:"configured,omitempty"`
+	OnboardingComplete bool                   `protobuf:"varint,2,opt,name=onboarding_complete,json=onboardingComplete,proto3" json:"onboarding_complete,omitempty"`
+	ServiceStates      map[string]string      `protobuf:"bytes,3,rep,name=service_states,json=serviceStates,proto3" json:"service_states,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // e.g., {"collector": "connected"}
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SystemStatus) Reset() {
+	*x = SystemStatus{}
+	mi := &file_knowledge_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SystemStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SystemStatus) ProtoMessage() {}
+
+func (x *SystemStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SystemStatus.ProtoReflect.Descriptor instead.
+func (*SystemStatus) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *SystemStatus) GetConfigured() bool {
+	if x != nil {
+		return x.Configured
+	}
+	return false
+}
+
+func (x *SystemStatus) GetOnboardingComplete() bool {
+	if x != nil {
+		return x.OnboardingComplete
+	}
+	return false
+}
+
+func (x *SystemStatus) GetServiceStates() map[string]string {
+	if x != nil {
+		return x.ServiceStates
+	}
+	return nil
+}
+
+type GetSystemConfigRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSystemConfigRequest) Reset() {
+	*x = GetSystemConfigRequest{}
+	mi := &file_knowledge_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSystemConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSystemConfigRequest) ProtoMessage() {}
+
+func (x *GetSystemConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSystemConfigRequest.ProtoReflect.Descriptor instead.
+func (*GetSystemConfigRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{28}
+}
+
+type SaveSystemConfigRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        *SystemConfig          `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveSystemConfigRequest) Reset() {
+	*x = SaveSystemConfigRequest{}
+	mi := &file_knowledge_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveSystemConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveSystemConfigRequest) ProtoMessage() {}
+
+func (x *SaveSystemConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveSystemConfigRequest.ProtoReflect.Descriptor instead.
+func (*SaveSystemConfigRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *SaveSystemConfigRequest) GetConfig() *SystemConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type GetSystemStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSystemStatusRequest) Reset() {
+	*x = GetSystemStatusRequest{}
+	mi := &file_knowledge_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSystemStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSystemStatusRequest) ProtoMessage() {}
+
+func (x *GetSystemStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSystemStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetSystemStatusRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{30}
+}
+
+type FlushAllDataRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlushAllDataRequest) Reset() {
+	*x = FlushAllDataRequest{}
+	mi := &file_knowledge_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlushAllDataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlushAllDataRequest) ProtoMessage() {}
+
+func (x *FlushAllDataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlushAllDataRequest.ProtoReflect.Descriptor instead.
+func (*FlushAllDataRequest) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{31}
+}
+
+type FlushAllDataResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlushAllDataResponse) Reset() {
+	*x = FlushAllDataResponse{}
+	mi := &file_knowledge_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlushAllDataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlushAllDataResponse) ProtoMessage() {}
+
+func (x *FlushAllDataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowledge_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlushAllDataResponse.ProtoReflect.Descriptor instead.
+func (*FlushAllDataResponse) Descriptor() ([]byte, []int) {
+	return file_knowledge_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *FlushAllDataResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *FlushAllDataResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 // Generic response
 type Response struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1716,7 +2193,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_knowledge_proto_msgTypes[24]
+	mi := &file_knowledge_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1728,7 +2205,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[24]
+	mi := &file_knowledge_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +2218,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{24}
+	return file_knowledge_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *Response) GetSuccess() bool {
@@ -1918,10 +2395,45 @@ const file_knowledge_proto_rawDesc = "" +
 	" \x01(\x05R\x10actionsExecuting\x12+\n" +
 	"\x11actions_completed\x18\v \x01(\x05R\x10actionsCompleted\x12%\n" +
 	"\x0eactions_failed\x18\f \x01(\x05R\ractionsFailed\x12%\n" +
-	"\x0euptime_seconds\x18\r \x01(\x03R\ruptimeSeconds\">\n" +
+	"\x0euptime_seconds\x18\r \x01(\x03R\ruptimeSeconds\"\x8f\x01\n" +
+	"\x0eDatabaseConfig\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12+\n" +
+	"\x11connection_string\x18\x03 \x01(\tR\x10connectionString\x12\x12\n" +
+	"\x04type\x18\x04 \x01(\tR\x04type\x12\x18\n" +
+	"\aenabled\x18\x05 \x01(\bR\aenabled\"\x9e\x02\n" +
+	"\x13DetectionThresholds\x128\n" +
+	"\x18connection_pool_critical\x18\x01 \x01(\x01R\x16connectionPoolCritical\x12:\n" +
+	"\x19sequential_scan_threshold\x18\x02 \x01(\x03R\x17sequentialScanThreshold\x122\n" +
+	"\x15sequential_scan_delta\x18\x03 \x01(\x01R\x13sequentialScanDelta\x12$\n" +
+	"\x0ep95_latency_ms\x18\x04 \x01(\x01R\fp95LatencyMs\x127\n" +
+	"\x18cache_hit_rate_threshold\x18\x05 \x01(\x01R\x15cacheHitRateThreshold\"\xb6\x01\n" +
+	"\fSystemConfig\x125\n" +
+	"\bdatabase\x18\x01 \x01(\v2\x19.knowledge.DatabaseConfigR\bdatabase\x12>\n" +
+	"\n" +
+	"thresholds\x18\x02 \x01(\v2\x1e.knowledge.DetectionThresholdsR\n" +
+	"thresholds\x12/\n" +
+	"\x13onboarding_complete\x18\x03 \x01(\bR\x12onboardingComplete\"\xf4\x01\n" +
+	"\fSystemStatus\x12\x1e\n" +
+	"\n" +
+	"configured\x18\x01 \x01(\bR\n" +
+	"configured\x12/\n" +
+	"\x13onboarding_complete\x18\x02 \x01(\bR\x12onboardingComplete\x12Q\n" +
+	"\x0eservice_states\x18\x03 \x03(\v2*.knowledge.SystemStatus.ServiceStatesEntryR\rserviceStates\x1a@\n" +
+	"\x12ServiceStatesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x18\n" +
+	"\x16GetSystemConfigRequest\"J\n" +
+	"\x17SaveSystemConfigRequest\x12/\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.knowledge.SystemConfigR\x06config\"\x18\n" +
+	"\x16GetSystemStatusRequest\"\x15\n" +
+	"\x13FlushAllDataRequest\"J\n" +
+	"\x14FlushAllDataResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\">\n" +
 	"\bResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xd3\b\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\x8f\v\n" +
 	"\x10KnowledgeService\x12V\n" +
 	"\x11RegisterDetection\x12#.knowledge.RegisterDetectionRequest\x1a\x1c.knowledge.DetectionResponse\x12W\n" +
 	"\x11IsDetectionActive\x12\x1e.knowledge.DetectionKeyRequest\x1a\".knowledge.DetectionStatusResponse\x12Y\n" +
@@ -1935,7 +2447,11 @@ const file_knowledge_proto_rawDesc = "" +
 	"\rListDatabases\x12\x1f.knowledge.ListDatabasesRequest\x1a\x1f.knowledge.DatabaseListResponse\x12S\n" +
 	"\x14UpdateDatabaseHealth\x12&.knowledge.UpdateDatabaseHealthRequest\x1a\x13.knowledge.Response\x12O\n" +
 	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12U\n" +
-	"\x0eGetSystemStats\x12 .knowledge.GetSystemStatsRequest\x1a!.knowledge.GetSystemStatsResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
+	"\x0eGetSystemStats\x12 .knowledge.GetSystemStatsRequest\x1a!.knowledge.GetSystemStatsResponse\x12M\n" +
+	"\x0fGetSystemConfig\x12!.knowledge.GetSystemConfigRequest\x1a\x17.knowledge.SystemConfig\x12K\n" +
+	"\x10SaveSystemConfig\x12\".knowledge.SaveSystemConfigRequest\x1a\x13.knowledge.Response\x12M\n" +
+	"\x0fGetSystemStatus\x12!.knowledge.GetSystemStatusRequest\x1a\x17.knowledge.SystemStatus\x12O\n" +
+	"\fFlushAllData\x12\x1e.knowledge.FlushAllDataRequest\x1a\x1f.knowledge.FlushAllDataResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
 
 var (
 	file_knowledge_proto_rawDescOnce sync.Once
@@ -1949,7 +2465,7 @@ func file_knowledge_proto_rawDescGZIP() []byte {
 	return file_knowledge_proto_rawDescData
 }
 
-var file_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
 var file_knowledge_proto_goTypes = []any{
 	(*RegisterDetectionRequest)(nil),    // 0: knowledge.RegisterDetectionRequest
 	(*DetectionKeyRequest)(nil),         // 1: knowledge.DetectionKeyRequest
@@ -1975,47 +2491,69 @@ var file_knowledge_proto_goTypes = []any{
 	(*UnregisterDatabaseRequest)(nil),   // 21: knowledge.UnregisterDatabaseRequest
 	(*GetSystemStatsRequest)(nil),       // 22: knowledge.GetSystemStatsRequest
 	(*GetSystemStatsResponse)(nil),      // 23: knowledge.GetSystemStatsResponse
-	(*Response)(nil),                    // 24: knowledge.Response
-	nil,                                 // 25: knowledge.RegisterDatabaseRequest.MetadataEntry
-	nil,                                 // 26: knowledge.GetDatabaseResponse.MetadataEntry
+	(*DatabaseConfig)(nil),              // 24: knowledge.DatabaseConfig
+	(*DetectionThresholds)(nil),         // 25: knowledge.DetectionThresholds
+	(*SystemConfig)(nil),                // 26: knowledge.SystemConfig
+	(*SystemStatus)(nil),                // 27: knowledge.SystemStatus
+	(*GetSystemConfigRequest)(nil),      // 28: knowledge.GetSystemConfigRequest
+	(*SaveSystemConfigRequest)(nil),     // 29: knowledge.SaveSystemConfigRequest
+	(*GetSystemStatusRequest)(nil),      // 30: knowledge.GetSystemStatusRequest
+	(*FlushAllDataRequest)(nil),         // 31: knowledge.FlushAllDataRequest
+	(*FlushAllDataResponse)(nil),        // 32: knowledge.FlushAllDataResponse
+	(*Response)(nil),                    // 33: knowledge.Response
+	nil,                                 // 34: knowledge.RegisterDatabaseRequest.MetadataEntry
+	nil,                                 // 35: knowledge.GetDatabaseResponse.MetadataEntry
+	nil,                                 // 36: knowledge.SystemStatus.ServiceStatesEntry
 }
 var file_knowledge_proto_depIdxs = []int32{
 	6,  // 0: knowledge.DetectionListResponse.detections:type_name -> knowledge.Detection
 	12, // 1: knowledge.ActionListResponse.actions:type_name -> knowledge.Action
-	25, // 2: knowledge.RegisterDatabaseRequest.metadata:type_name -> knowledge.RegisterDatabaseRequest.MetadataEntry
-	26, // 3: knowledge.GetDatabaseResponse.metadata:type_name -> knowledge.GetDatabaseResponse.MetadataEntry
+	34, // 2: knowledge.RegisterDatabaseRequest.metadata:type_name -> knowledge.RegisterDatabaseRequest.MetadataEntry
+	35, // 3: knowledge.GetDatabaseResponse.metadata:type_name -> knowledge.GetDatabaseResponse.MetadataEntry
 	19, // 4: knowledge.DatabaseListResponse.databases:type_name -> knowledge.RegisteredDatabase
-	0,  // 5: knowledge.KnowledgeService.RegisterDetection:input_type -> knowledge.RegisterDetectionRequest
-	1,  // 6: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
-	3,  // 7: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
-	7,  // 8: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
-	8,  // 9: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
-	10, // 10: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
-	3,  // 11: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
-	13, // 12: knowledge.KnowledgeService.RegisterDatabase:input_type -> knowledge.RegisterDatabaseRequest
-	15, // 13: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
-	17, // 14: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
-	20, // 15: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
-	21, // 16: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
-	22, // 17: knowledge.KnowledgeService.GetSystemStats:input_type -> knowledge.GetSystemStatsRequest
-	4,  // 18: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
-	2,  // 19: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
-	5,  // 20: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
-	24, // 21: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
-	9,  // 22: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
-	24, // 23: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
-	11, // 24: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
-	14, // 25: knowledge.KnowledgeService.RegisterDatabase:output_type -> knowledge.DatabaseResponse
-	16, // 26: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
-	18, // 27: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
-	24, // 28: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
-	24, // 29: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
-	23, // 30: knowledge.KnowledgeService.GetSystemStats:output_type -> knowledge.GetSystemStatsResponse
-	18, // [18:31] is the sub-list for method output_type
-	5,  // [5:18] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	24, // 5: knowledge.SystemConfig.database:type_name -> knowledge.DatabaseConfig
+	25, // 6: knowledge.SystemConfig.thresholds:type_name -> knowledge.DetectionThresholds
+	36, // 7: knowledge.SystemStatus.service_states:type_name -> knowledge.SystemStatus.ServiceStatesEntry
+	26, // 8: knowledge.SaveSystemConfigRequest.config:type_name -> knowledge.SystemConfig
+	0,  // 9: knowledge.KnowledgeService.RegisterDetection:input_type -> knowledge.RegisterDetectionRequest
+	1,  // 10: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
+	3,  // 11: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
+	7,  // 12: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
+	8,  // 13: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
+	10, // 14: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
+	3,  // 15: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
+	13, // 16: knowledge.KnowledgeService.RegisterDatabase:input_type -> knowledge.RegisterDatabaseRequest
+	15, // 17: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
+	17, // 18: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
+	20, // 19: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
+	21, // 20: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
+	22, // 21: knowledge.KnowledgeService.GetSystemStats:input_type -> knowledge.GetSystemStatsRequest
+	28, // 22: knowledge.KnowledgeService.GetSystemConfig:input_type -> knowledge.GetSystemConfigRequest
+	29, // 23: knowledge.KnowledgeService.SaveSystemConfig:input_type -> knowledge.SaveSystemConfigRequest
+	30, // 24: knowledge.KnowledgeService.GetSystemStatus:input_type -> knowledge.GetSystemStatusRequest
+	31, // 25: knowledge.KnowledgeService.FlushAllData:input_type -> knowledge.FlushAllDataRequest
+	4,  // 26: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
+	2,  // 27: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
+	5,  // 28: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
+	33, // 29: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
+	9,  // 30: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
+	33, // 31: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
+	11, // 32: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
+	14, // 33: knowledge.KnowledgeService.RegisterDatabase:output_type -> knowledge.DatabaseResponse
+	16, // 34: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
+	18, // 35: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
+	33, // 36: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
+	33, // 37: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
+	23, // 38: knowledge.KnowledgeService.GetSystemStats:output_type -> knowledge.GetSystemStatsResponse
+	26, // 39: knowledge.KnowledgeService.GetSystemConfig:output_type -> knowledge.SystemConfig
+	33, // 40: knowledge.KnowledgeService.SaveSystemConfig:output_type -> knowledge.Response
+	27, // 41: knowledge.KnowledgeService.GetSystemStatus:output_type -> knowledge.SystemStatus
+	32, // 42: knowledge.KnowledgeService.FlushAllData:output_type -> knowledge.FlushAllDataResponse
+	26, // [26:43] is the sub-list for method output_type
+	9,  // [9:26] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_knowledge_proto_init() }
@@ -2029,7 +2567,7 @@ func file_knowledge_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowledge_proto_rawDesc), len(file_knowledge_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   27,
+			NumMessages:   37,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

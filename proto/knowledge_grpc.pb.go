@@ -32,6 +32,10 @@ const (
 	KnowledgeService_UpdateDatabaseHealth_FullMethodName  = "/knowledge.KnowledgeService/UpdateDatabaseHealth"
 	KnowledgeService_UnregisterDatabase_FullMethodName    = "/knowledge.KnowledgeService/UnregisterDatabase"
 	KnowledgeService_GetSystemStats_FullMethodName        = "/knowledge.KnowledgeService/GetSystemStats"
+	KnowledgeService_GetSystemConfig_FullMethodName       = "/knowledge.KnowledgeService/GetSystemConfig"
+	KnowledgeService_SaveSystemConfig_FullMethodName      = "/knowledge.KnowledgeService/SaveSystemConfig"
+	KnowledgeService_GetSystemStatus_FullMethodName       = "/knowledge.KnowledgeService/GetSystemStatus"
+	KnowledgeService_FlushAllData_FullMethodName          = "/knowledge.KnowledgeService/FlushAllData"
 )
 
 // KnowledgeServiceClient is the client API for KnowledgeService service.
@@ -57,6 +61,11 @@ type KnowledgeServiceClient interface {
 	UnregisterDatabase(ctx context.Context, in *UnregisterDatabaseRequest, opts ...grpc.CallOption) (*Response, error)
 	// System statistics
 	GetSystemStats(ctx context.Context, in *GetSystemStatsRequest, opts ...grpc.CallOption) (*GetSystemStatsResponse, error)
+	// Configuration management
+	GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error)
+	SaveSystemConfig(ctx context.Context, in *SaveSystemConfigRequest, opts ...grpc.CallOption) (*Response, error)
+	GetSystemStatus(ctx context.Context, in *GetSystemStatusRequest, opts ...grpc.CallOption) (*SystemStatus, error)
+	FlushAllData(ctx context.Context, in *FlushAllDataRequest, opts ...grpc.CallOption) (*FlushAllDataResponse, error)
 }
 
 type knowledgeServiceClient struct {
@@ -197,6 +206,46 @@ func (c *knowledgeServiceClient) GetSystemStats(ctx context.Context, in *GetSyst
 	return out, nil
 }
 
+func (c *knowledgeServiceClient) GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SystemConfig)
+	err := c.cc.Invoke(ctx, KnowledgeService_GetSystemConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) SaveSystemConfig(ctx context.Context, in *SaveSystemConfigRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, KnowledgeService_SaveSystemConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) GetSystemStatus(ctx context.Context, in *GetSystemStatusRequest, opts ...grpc.CallOption) (*SystemStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SystemStatus)
+	err := c.cc.Invoke(ctx, KnowledgeService_GetSystemStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) FlushAllData(ctx context.Context, in *FlushAllDataRequest, opts ...grpc.CallOption) (*FlushAllDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FlushAllDataResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_FlushAllData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KnowledgeServiceServer is the server API for KnowledgeService service.
 // All implementations must embed UnimplementedKnowledgeServiceServer
 // for forward compatibility.
@@ -220,6 +269,11 @@ type KnowledgeServiceServer interface {
 	UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error)
 	// System statistics
 	GetSystemStats(context.Context, *GetSystemStatsRequest) (*GetSystemStatsResponse, error)
+	// Configuration management
+	GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error)
+	SaveSystemConfig(context.Context, *SaveSystemConfigRequest) (*Response, error)
+	GetSystemStatus(context.Context, *GetSystemStatusRequest) (*SystemStatus, error)
+	FlushAllData(context.Context, *FlushAllDataRequest) (*FlushAllDataResponse, error)
 	mustEmbedUnimplementedKnowledgeServiceServer()
 }
 
@@ -268,6 +322,18 @@ func (UnimplementedKnowledgeServiceServer) UnregisterDatabase(context.Context, *
 }
 func (UnimplementedKnowledgeServiceServer) GetSystemStats(context.Context, *GetSystemStatsRequest) (*GetSystemStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystemStats not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystemConfig not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) SaveSystemConfig(context.Context, *SaveSystemConfigRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveSystemConfig not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) GetSystemStatus(context.Context, *GetSystemStatusRequest) (*SystemStatus, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystemStatus not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) FlushAllData(context.Context, *FlushAllDataRequest) (*FlushAllDataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FlushAllData not implemented")
 }
 func (UnimplementedKnowledgeServiceServer) mustEmbedUnimplementedKnowledgeServiceServer() {}
 func (UnimplementedKnowledgeServiceServer) testEmbeddedByValue()                          {}
@@ -524,6 +590,78 @@ func _KnowledgeService_GetSystemStats_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KnowledgeService_GetSystemConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSystemConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).GetSystemConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_GetSystemConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).GetSystemConfig(ctx, req.(*GetSystemConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_SaveSystemConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveSystemConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).SaveSystemConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_SaveSystemConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).SaveSystemConfig(ctx, req.(*SaveSystemConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_GetSystemStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSystemStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).GetSystemStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_GetSystemStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).GetSystemStatus(ctx, req.(*GetSystemStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_FlushAllData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FlushAllDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).FlushAllData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_FlushAllData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).FlushAllData(ctx, req.(*FlushAllDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KnowledgeService_ServiceDesc is the grpc.ServiceDesc for KnowledgeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -582,6 +720,22 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSystemStats",
 			Handler:    _KnowledgeService_GetSystemStats_Handler,
+		},
+		{
+			MethodName: "GetSystemConfig",
+			Handler:    _KnowledgeService_GetSystemConfig_Handler,
+		},
+		{
+			MethodName: "SaveSystemConfig",
+			Handler:    _KnowledgeService_SaveSystemConfig_Handler,
+		},
+		{
+			MethodName: "GetSystemStatus",
+			Handler:    _KnowledgeService_GetSystemStatus_Handler,
+		},
+		{
+			MethodName: "FlushAllData",
+			Handler:    _KnowledgeService_FlushAllData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
