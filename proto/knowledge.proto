@@ -8,24 +8,33 @@ option go_package = "github.com/EricMurray-e-m-dev/StartupMonkey/proto";
 service KnowledgeService {
   // Detection operations
   rpc RegisterDetection(RegisterDetectionRequest) returns (DetectionResponse);
+  // Checks if a detection with the given key is currently active
   rpc IsDetectionActive(DetectionKeyRequest) returns (DetectionStatusResponse);
+  // Retrieves all active (unresolved) detections, optionally filtered by database
   rpc GetActiveDetections(DatabaseFilterRequest) returns (DetectionListResponse);
+  // Marks a detection as resolved, removing it from the active detections list
   rpc MarkDetectionResolved(ResolveDetectionRequest) returns (Response);
-  
-  // Action operations
-  rpc RegisterAction(RegisterActionRequest) returns (ActionResponse);
+
+  // Updates the status of an existing action (e.g., pending, completed, failed)
   rpc UpdateActionStatus(UpdateActionRequest) returns (Response);
+  // Retrieves all pending actions, optionally filtered by database
   rpc GetPendingActions(DatabaseFilterRequest) returns (ActionListResponse);
-  
-  // Database operations
-  rpc RegisterDatabase(RegisterDatabaseRequest) returns (DatabaseResponse);
+
+  // Retrieves detailed information about a specific registered database
   rpc GetDatabase(GetDatabaseRequest) returns (GetDatabaseResponse);
+  // Lists all registered databases in the system
   rpc ListDatabases(ListDatabasesRequest) returns (DatabaseListResponse);
+  // Updates the health status of a registered database
   rpc UpdateDatabaseHealth(UpdateDatabaseHealthRequest) returns (Response);
+  // Removes a database from the registry
   rpc UnregisterDatabase(UnregisterDatabaseRequest) returns (Response);
-  
-  // System statistics
-  rpc GetSystemStats(GetSystemStatsRequest) returns (GetSystemStatsResponse);
+
+  // Saves or updates the system configuration settings
+  rpc SaveSystemConfig(SaveSystemConfigRequest) returns (Response);
+  // Retrieves the current operational status of the system
+  rpc GetSystemStatus(GetSystemStatusRequest) returns (SystemStatus);
+  // Clears all data from the knowledge service (detections, actions, etc.)
+  rpc FlushAllData(FlushAllDataRequest) returns (FlushAllDataResponse);
 }
 
 // Detection messages
@@ -208,8 +217,51 @@ message GetSystemStatsResponse {
   int64 uptime_seconds = 13;
 }
 
+// Configuration management messages
+message DatabaseConfig {
+  string id = 1;
+  string name = 2;
+  string connection_string = 3;
+  string type = 4; // postgres, mysql, sqlite
+  bool enabled = 5;
+}
+
+message DetectionThresholds {
+  double connection_pool_critical = 1; // e.g., 0.8 = 80%
+  int64 sequential_scan_threshold = 2; // e.g., 1000
+  double sequential_scan_delta = 3; // e.g., 100.0
+  double p95_latency_ms = 4; // e.g., 100.0
+  double cache_hit_rate_threshold = 5; // e.g., 0.9 = 90%
+}
+
+message SystemConfig {
+  DatabaseConfig database = 1; // Single DB for MVP
+  DetectionThresholds thresholds = 2;
+  bool onboarding_complete = 3;
+}
+
+message SystemStatus {
+  bool configured = 1;
+  bool onboarding_complete = 2;
+  map<string, string> service_states = 3;  // e.g., {"collector": "connected"}
+}
+
+message GetSystemConfigRequest {}
+
+message SaveSystemConfigRequest {
+  SystemConfig config = 1;
+}
+
+message GetSystemStatusRequest {}
+
+message FlushAllDataRequest {}
+
+message FlushAllDataResponse {
+  bool success = 1;
+  string message = 2;
+}
+
 // Generic response
 message Response {
   bool success = 1;
   string message = 2;
-}
