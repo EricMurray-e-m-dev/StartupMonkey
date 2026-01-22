@@ -22,6 +22,10 @@ class MetricsStore {
     getHistory(limit = 20) {
         return this.metrics.slice(0, limit);
     }
+
+    clear() {
+        this.metrics = [];
+    }
 }
 
 module.exports = new MetricsStore();

@@ -20,6 +20,10 @@ class ActionsStore {
     getAll() {
         return this.actions;
     }
+
+    clear() {
+        this.actions = [];
+    }
 }
 
 module.exports = new ActionsStore();
