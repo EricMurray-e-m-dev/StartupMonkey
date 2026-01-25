@@ -1,6 +1,7 @@
 package unit
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,11 +12,8 @@ import (
 
 func TestNewOrchestrator(t *testing.T) {
 	cfg := &config.Config{
-		DBConnectionString: "postgres://test@localhost/test",
-		DBAdapter:          "postgres",
 		AnalyserAddress:    "localhost:50051",
-		DatabaseID:         "test-db",
-		DatabaseName:       "test",
+		KnowledgeAddress:   "localhost:50053",
 		CollectionInterval: 30 * time.Second,
 	}
 
@@ -24,30 +22,27 @@ func TestNewOrchestrator(t *testing.T) {
 	assert.NotNil(t, orch)
 }
 
-func TestOrchestrator_Start_InvalidAdapter(t *testing.T) {
+func TestOrchestrator_Start_FailsWithoutKnowledge(t *testing.T) {
 	cfg := &config.Config{
-		DBConnectionString: "conn-string",
-		DBAdapter:          "unsupported",
 		AnalyserAddress:    "localhost:50051",
-		DatabaseID:         "test-db",
-		DatabaseName:       "test",
+		KnowledgeAddress:   "localhost:99999", // Invalid port
 		CollectionInterval: 30 * time.Second,
 	}
 
-	orch := orchestrator.NewOrchestrator(cfg)
-	err := orch.Start()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
+	orch := orchestrator.NewOrchestrator(cfg)
+	err := orch.Start(ctx)
+
+	// Should fail to connect to Knowledge or timeout waiting for config
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unsupported")
 }
 
 func TestOrchestrator_Stop_SafeWhenNotStarted(t *testing.T) {
 	cfg := &config.Config{
-		DBConnectionString: "postgres://test@localhost/test",
-		DBAdapter:          "postgres",
 		AnalyserAddress:    "localhost:50051",
-		DatabaseID:         "test-db",
-		DatabaseName:       "test",
+		KnowledgeAddress:   "localhost:50053",
 		CollectionInterval: 30 * time.Second,
 	}
 

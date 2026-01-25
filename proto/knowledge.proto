@@ -265,3 +265,4 @@ message FlushAllDataResponse {
 message Response {
   bool success = 1;
   string message = 2;
+}

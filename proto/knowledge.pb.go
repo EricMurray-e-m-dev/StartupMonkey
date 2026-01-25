@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.32.1
-// source: knowledge.proto
+// source: proto/knowledge.proto
 
 package proto
 
@@ -37,7 +37,7 @@ type RegisterDetectionRequest struct {
 
 func (x *RegisterDetectionRequest) Reset() {
 	*x = RegisterDetectionRequest{}
-	mi := &file_knowledge_proto_msgTypes[0]
+	mi := &file_proto_knowledge_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +49,7 @@ func (x *RegisterDetectionRequest) String() string {
 func (*RegisterDetectionRequest) ProtoMessage() {}
 
 func (x *RegisterDetectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[0]
+	mi := &file_proto_knowledge_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *RegisterDetectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterDetectionRequest.ProtoReflect.Descriptor instead.
 func (*RegisterDetectionRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{0}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RegisterDetectionRequest) GetId() string {
@@ -123,7 +123,7 @@ type DetectionKeyRequest struct {
 
 func (x *DetectionKeyRequest) Reset() {
 	*x = DetectionKeyRequest{}
-	mi := &file_knowledge_proto_msgTypes[1]
+	mi := &file_proto_knowledge_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -135,7 +135,7 @@ func (x *DetectionKeyRequest) String() string {
 func (*DetectionKeyRequest) ProtoMessage() {}
 
 func (x *DetectionKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[1]
+	mi := &file_proto_knowledge_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,7 +148,7 @@ func (x *DetectionKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionKeyRequest.ProtoReflect.Descriptor instead.
 func (*DetectionKeyRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{1}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DetectionKeyRequest) GetKey() string {
@@ -168,7 +168,7 @@ type DetectionStatusResponse struct {
 
 func (x *DetectionStatusResponse) Reset() {
 	*x = DetectionStatusResponse{}
-	mi := &file_knowledge_proto_msgTypes[2]
+	mi := &file_proto_knowledge_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -180,7 +180,7 @@ func (x *DetectionStatusResponse) String() string {
 func (*DetectionStatusResponse) ProtoMessage() {}
 
 func (x *DetectionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[2]
+	mi := &file_proto_knowledge_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -193,7 +193,7 @@ func (x *DetectionStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionStatusResponse.ProtoReflect.Descriptor instead.
 func (*DetectionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{2}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DetectionStatusResponse) GetIsActive() bool {
@@ -219,7 +219,7 @@ type DatabaseFilterRequest struct {
 
 func (x *DatabaseFilterRequest) Reset() {
 	*x = DatabaseFilterRequest{}
-	mi := &file_knowledge_proto_msgTypes[3]
+	mi := &file_proto_knowledge_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -231,7 +231,7 @@ func (x *DatabaseFilterRequest) String() string {
 func (*DatabaseFilterRequest) ProtoMessage() {}
 
 func (x *DatabaseFilterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[3]
+	mi := &file_proto_knowledge_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -244,7 +244,7 @@ func (x *DatabaseFilterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseFilterRequest.ProtoReflect.Descriptor instead.
 func (*DatabaseFilterRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{3}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DatabaseFilterRequest) GetDatabaseId() string {
@@ -265,7 +265,7 @@ type DetectionResponse struct {
 
 func (x *DetectionResponse) Reset() {
 	*x = DetectionResponse{}
-	mi := &file_knowledge_proto_msgTypes[4]
+	mi := &file_proto_knowledge_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -277,7 +277,7 @@ func (x *DetectionResponse) String() string {
 func (*DetectionResponse) ProtoMessage() {}
 
 func (x *DetectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[4]
+	mi := &file_proto_knowledge_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +290,7 @@ func (x *DetectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionResponse.ProtoReflect.Descriptor instead.
 func (*DetectionResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{4}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DetectionResponse) GetSuccess() bool {
@@ -323,7 +323,7 @@ type DetectionListResponse struct {
 
 func (x *DetectionListResponse) Reset() {
 	*x = DetectionListResponse{}
-	mi := &file_knowledge_proto_msgTypes[5]
+	mi := &file_proto_knowledge_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +335,7 @@ func (x *DetectionListResponse) String() string {
 func (*DetectionListResponse) ProtoMessage() {}
 
 func (x *DetectionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[5]
+	mi := &file_proto_knowledge_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +348,7 @@ func (x *DetectionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionListResponse.ProtoReflect.Descriptor instead.
 func (*DetectionListResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{5}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DetectionListResponse) GetDetections() []*Detection {
@@ -377,7 +377,7 @@ type Detection struct {
 
 func (x *Detection) Reset() {
 	*x = Detection{}
-	mi := &file_knowledge_proto_msgTypes[6]
+	mi := &file_proto_knowledge_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -389,7 +389,7 @@ func (x *Detection) String() string {
 func (*Detection) ProtoMessage() {}
 
 func (x *Detection) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[6]
+	mi := &file_proto_knowledge_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +402,7 @@ func (x *Detection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Detection.ProtoReflect.Descriptor instead.
 func (*Detection) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{6}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Detection) GetId() string {
@@ -492,7 +492,7 @@ type ResolveDetectionRequest struct {
 
 func (x *ResolveDetectionRequest) Reset() {
 	*x = ResolveDetectionRequest{}
-	mi := &file_knowledge_proto_msgTypes[7]
+	mi := &file_proto_knowledge_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +504,7 @@ func (x *ResolveDetectionRequest) String() string {
 func (*ResolveDetectionRequest) ProtoMessage() {}
 
 func (x *ResolveDetectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[7]
+	mi := &file_proto_knowledge_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +517,7 @@ func (x *ResolveDetectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveDetectionRequest.ProtoReflect.Descriptor instead.
 func (*ResolveDetectionRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{7}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ResolveDetectionRequest) GetDetectionId() string {
@@ -548,7 +548,7 @@ type RegisterActionRequest struct {
 
 func (x *RegisterActionRequest) Reset() {
 	*x = RegisterActionRequest{}
-	mi := &file_knowledge_proto_msgTypes[8]
+	mi := &file_proto_knowledge_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +560,7 @@ func (x *RegisterActionRequest) String() string {
 func (*RegisterActionRequest) ProtoMessage() {}
 
 func (x *RegisterActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[8]
+	mi := &file_proto_knowledge_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +573,7 @@ func (x *RegisterActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterActionRequest.ProtoReflect.Descriptor instead.
 func (*RegisterActionRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{8}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RegisterActionRequest) GetId() string {
@@ -622,7 +622,7 @@ type ActionResponse struct {
 
 func (x *ActionResponse) Reset() {
 	*x = ActionResponse{}
-	mi := &file_knowledge_proto_msgTypes[9]
+	mi := &file_proto_knowledge_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -634,7 +634,7 @@ func (x *ActionResponse) String() string {
 func (*ActionResponse) ProtoMessage() {}
 
 func (x *ActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[9]
+	mi := &file_proto_knowledge_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -647,7 +647,7 @@ func (x *ActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResponse.ProtoReflect.Descriptor instead.
 func (*ActionResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{9}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ActionResponse) GetSuccess() bool {
@@ -684,7 +684,7 @@ type UpdateActionRequest struct {
 
 func (x *UpdateActionRequest) Reset() {
 	*x = UpdateActionRequest{}
-	mi := &file_knowledge_proto_msgTypes[10]
+	mi := &file_proto_knowledge_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -696,7 +696,7 @@ func (x *UpdateActionRequest) String() string {
 func (*UpdateActionRequest) ProtoMessage() {}
 
 func (x *UpdateActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[10]
+	mi := &file_proto_knowledge_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -709,7 +709,7 @@ func (x *UpdateActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{10}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UpdateActionRequest) GetActionId() string {
@@ -756,7 +756,7 @@ type ActionListResponse struct {
 
 func (x *ActionListResponse) Reset() {
 	*x = ActionListResponse{}
-	mi := &file_knowledge_proto_msgTypes[11]
+	mi := &file_proto_knowledge_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -768,7 +768,7 @@ func (x *ActionListResponse) String() string {
 func (*ActionListResponse) ProtoMessage() {}
 
 func (x *ActionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[11]
+	mi := &file_proto_knowledge_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -781,7 +781,7 @@ func (x *ActionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionListResponse.ProtoReflect.Descriptor instead.
 func (*ActionListResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{11}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ActionListResponse) GetActions() []*Action {
@@ -805,7 +805,7 @@ type Action struct {
 
 func (x *Action) Reset() {
 	*x = Action{}
-	mi := &file_knowledge_proto_msgTypes[12]
+	mi := &file_proto_knowledge_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -817,7 +817,7 @@ func (x *Action) String() string {
 func (*Action) ProtoMessage() {}
 
 func (x *Action) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[12]
+	mi := &file_proto_knowledge_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -830,7 +830,7 @@ func (x *Action) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Action.ProtoReflect.Descriptor instead.
 func (*Action) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{12}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Action) GetId() string {
@@ -893,7 +893,7 @@ type RegisterDatabaseRequest struct {
 
 func (x *RegisterDatabaseRequest) Reset() {
 	*x = RegisterDatabaseRequest{}
-	mi := &file_knowledge_proto_msgTypes[13]
+	mi := &file_proto_knowledge_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -905,7 +905,7 @@ func (x *RegisterDatabaseRequest) String() string {
 func (*RegisterDatabaseRequest) ProtoMessage() {}
 
 func (x *RegisterDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[13]
+	mi := &file_proto_knowledge_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -918,7 +918,7 @@ func (x *RegisterDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*RegisterDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{13}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RegisterDatabaseRequest) GetDatabaseId() string {
@@ -994,7 +994,7 @@ type DatabaseResponse struct {
 
 func (x *DatabaseResponse) Reset() {
 	*x = DatabaseResponse{}
-	mi := &file_knowledge_proto_msgTypes[14]
+	mi := &file_proto_knowledge_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1006,7 +1006,7 @@ func (x *DatabaseResponse) String() string {
 func (*DatabaseResponse) ProtoMessage() {}
 
 func (x *DatabaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[14]
+	mi := &file_proto_knowledge_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1019,7 +1019,7 @@ func (x *DatabaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseResponse.ProtoReflect.Descriptor instead.
 func (*DatabaseResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{14}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DatabaseResponse) GetSuccess() bool {
@@ -1045,7 +1045,7 @@ type GetDatabaseRequest struct {
 
 func (x *GetDatabaseRequest) Reset() {
 	*x = GetDatabaseRequest{}
-	mi := &file_knowledge_proto_msgTypes[15]
+	mi := &file_proto_knowledge_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1057,7 +1057,7 @@ func (x *GetDatabaseRequest) String() string {
 func (*GetDatabaseRequest) ProtoMessage() {}
 
 func (x *GetDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[15]
+	mi := &file_proto_knowledge_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1070,7 +1070,7 @@ func (x *GetDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{15}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetDatabaseRequest) GetDatabaseId() string {
@@ -1101,7 +1101,7 @@ type GetDatabaseResponse struct {
 
 func (x *GetDatabaseResponse) Reset() {
 	*x = GetDatabaseResponse{}
-	mi := &file_knowledge_proto_msgTypes[16]
+	mi := &file_proto_knowledge_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1113,7 +1113,7 @@ func (x *GetDatabaseResponse) String() string {
 func (*GetDatabaseResponse) ProtoMessage() {}
 
 func (x *GetDatabaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[16]
+	mi := &file_proto_knowledge_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1126,7 +1126,7 @@ func (x *GetDatabaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseResponse.ProtoReflect.Descriptor instead.
 func (*GetDatabaseResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{16}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetDatabaseResponse) GetFound() bool {
@@ -1228,7 +1228,7 @@ type ListDatabasesRequest struct {
 
 func (x *ListDatabasesRequest) Reset() {
 	*x = ListDatabasesRequest{}
-	mi := &file_knowledge_proto_msgTypes[17]
+	mi := &file_proto_knowledge_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1240,7 +1240,7 @@ func (x *ListDatabasesRequest) String() string {
 func (*ListDatabasesRequest) ProtoMessage() {}
 
 func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[17]
+	mi := &file_proto_knowledge_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1253,7 +1253,7 @@ func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{17}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{17}
 }
 
 type DatabaseListResponse struct {
@@ -1265,7 +1265,7 @@ type DatabaseListResponse struct {
 
 func (x *DatabaseListResponse) Reset() {
 	*x = DatabaseListResponse{}
-	mi := &file_knowledge_proto_msgTypes[18]
+	mi := &file_proto_knowledge_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1277,7 +1277,7 @@ func (x *DatabaseListResponse) String() string {
 func (*DatabaseListResponse) ProtoMessage() {}
 
 func (x *DatabaseListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[18]
+	mi := &file_proto_knowledge_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1290,7 +1290,7 @@ func (x *DatabaseListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseListResponse.ProtoReflect.Descriptor instead.
 func (*DatabaseListResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{18}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DatabaseListResponse) GetDatabases() []*RegisteredDatabase {
@@ -1318,7 +1318,7 @@ type RegisteredDatabase struct {
 
 func (x *RegisteredDatabase) Reset() {
 	*x = RegisteredDatabase{}
-	mi := &file_knowledge_proto_msgTypes[19]
+	mi := &file_proto_knowledge_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1330,7 +1330,7 @@ func (x *RegisteredDatabase) String() string {
 func (*RegisteredDatabase) ProtoMessage() {}
 
 func (x *RegisteredDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[19]
+	mi := &file_proto_knowledge_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1343,7 +1343,7 @@ func (x *RegisteredDatabase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisteredDatabase.ProtoReflect.Descriptor instead.
 func (*RegisteredDatabase) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{19}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RegisteredDatabase) GetDatabaseId() string {
@@ -1428,7 +1428,7 @@ type UpdateDatabaseHealthRequest struct {
 
 func (x *UpdateDatabaseHealthRequest) Reset() {
 	*x = UpdateDatabaseHealthRequest{}
-	mi := &file_knowledge_proto_msgTypes[20]
+	mi := &file_proto_knowledge_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1440,7 +1440,7 @@ func (x *UpdateDatabaseHealthRequest) String() string {
 func (*UpdateDatabaseHealthRequest) ProtoMessage() {}
 
 func (x *UpdateDatabaseHealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[20]
+	mi := &file_proto_knowledge_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1453,7 +1453,7 @@ func (x *UpdateDatabaseHealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDatabaseHealthRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDatabaseHealthRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{20}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UpdateDatabaseHealthRequest) GetDatabaseId() string {
@@ -1493,7 +1493,7 @@ type UnregisterDatabaseRequest struct {
 
 func (x *UnregisterDatabaseRequest) Reset() {
 	*x = UnregisterDatabaseRequest{}
-	mi := &file_knowledge_proto_msgTypes[21]
+	mi := &file_proto_knowledge_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1505,7 +1505,7 @@ func (x *UnregisterDatabaseRequest) String() string {
 func (*UnregisterDatabaseRequest) ProtoMessage() {}
 
 func (x *UnregisterDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[21]
+	mi := &file_proto_knowledge_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1518,7 +1518,7 @@ func (x *UnregisterDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnregisterDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*UnregisterDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{21}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UnregisterDatabaseRequest) GetDatabaseId() string {
@@ -1537,7 +1537,7 @@ type GetSystemStatsRequest struct {
 
 func (x *GetSystemStatsRequest) Reset() {
 	*x = GetSystemStatsRequest{}
-	mi := &file_knowledge_proto_msgTypes[22]
+	mi := &file_proto_knowledge_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1549,7 +1549,7 @@ func (x *GetSystemStatsRequest) String() string {
 func (*GetSystemStatsRequest) ProtoMessage() {}
 
 func (x *GetSystemStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[22]
+	mi := &file_proto_knowledge_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1562,7 +1562,7 @@ func (x *GetSystemStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetSystemStatsRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{22}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{22}
 }
 
 type GetSystemStatsResponse struct {
@@ -1586,7 +1586,7 @@ type GetSystemStatsResponse struct {
 
 func (x *GetSystemStatsResponse) Reset() {
 	*x = GetSystemStatsResponse{}
-	mi := &file_knowledge_proto_msgTypes[23]
+	mi := &file_proto_knowledge_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1598,7 +1598,7 @@ func (x *GetSystemStatsResponse) String() string {
 func (*GetSystemStatsResponse) ProtoMessage() {}
 
 func (x *GetSystemStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[23]
+	mi := &file_proto_knowledge_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1611,7 +1611,7 @@ func (x *GetSystemStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemStatsResponse.ProtoReflect.Descriptor instead.
 func (*GetSystemStatsResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{23}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetSystemStatsResponse) GetTotalDatabases() int32 {
@@ -1719,7 +1719,7 @@ type DatabaseConfig struct {
 
 func (x *DatabaseConfig) Reset() {
 	*x = DatabaseConfig{}
-	mi := &file_knowledge_proto_msgTypes[24]
+	mi := &file_proto_knowledge_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1731,7 +1731,7 @@ func (x *DatabaseConfig) String() string {
 func (*DatabaseConfig) ProtoMessage() {}
 
 func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[24]
+	mi := &file_proto_knowledge_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,7 +1744,7 @@ func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseConfig.ProtoReflect.Descriptor instead.
 func (*DatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{24}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DatabaseConfig) GetId() string {
@@ -1795,7 +1795,7 @@ type DetectionThresholds struct {
 
 func (x *DetectionThresholds) Reset() {
 	*x = DetectionThresholds{}
-	mi := &file_knowledge_proto_msgTypes[25]
+	mi := &file_proto_knowledge_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1807,7 +1807,7 @@ func (x *DetectionThresholds) String() string {
 func (*DetectionThresholds) ProtoMessage() {}
 
 func (x *DetectionThresholds) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[25]
+	mi := &file_proto_knowledge_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1820,7 +1820,7 @@ func (x *DetectionThresholds) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionThresholds.ProtoReflect.Descriptor instead.
 func (*DetectionThresholds) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{25}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *DetectionThresholds) GetConnectionPoolCritical() float64 {
@@ -1869,7 +1869,7 @@ type SystemConfig struct {
 
 func (x *SystemConfig) Reset() {
 	*x = SystemConfig{}
-	mi := &file_knowledge_proto_msgTypes[26]
+	mi := &file_proto_knowledge_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1881,7 +1881,7 @@ func (x *SystemConfig) String() string {
 func (*SystemConfig) ProtoMessage() {}
 
 func (x *SystemConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[26]
+	mi := &file_proto_knowledge_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1894,7 +1894,7 @@ func (x *SystemConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemConfig.ProtoReflect.Descriptor instead.
 func (*SystemConfig) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{26}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SystemConfig) GetDatabase() *DatabaseConfig {
@@ -1929,7 +1929,7 @@ type SystemStatus struct {
 
 func (x *SystemStatus) Reset() {
 	*x = SystemStatus{}
-	mi := &file_knowledge_proto_msgTypes[27]
+	mi := &file_proto_knowledge_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1941,7 +1941,7 @@ func (x *SystemStatus) String() string {
 func (*SystemStatus) ProtoMessage() {}
 
 func (x *SystemStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[27]
+	mi := &file_proto_knowledge_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1954,7 +1954,7 @@ func (x *SystemStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemStatus.ProtoReflect.Descriptor instead.
 func (*SystemStatus) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{27}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *SystemStatus) GetConfigured() bool {
@@ -1986,7 +1986,7 @@ type GetSystemConfigRequest struct {
 
 func (x *GetSystemConfigRequest) Reset() {
 	*x = GetSystemConfigRequest{}
-	mi := &file_knowledge_proto_msgTypes[28]
+	mi := &file_proto_knowledge_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1998,7 +1998,7 @@ func (x *GetSystemConfigRequest) String() string {
 func (*GetSystemConfigRequest) ProtoMessage() {}
 
 func (x *GetSystemConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[28]
+	mi := &file_proto_knowledge_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2011,7 +2011,7 @@ func (x *GetSystemConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemConfigRequest.ProtoReflect.Descriptor instead.
 func (*GetSystemConfigRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{28}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{28}
 }
 
 type SaveSystemConfigRequest struct {
@@ -2023,7 +2023,7 @@ type SaveSystemConfigRequest struct {
 
 func (x *SaveSystemConfigRequest) Reset() {
 	*x = SaveSystemConfigRequest{}
-	mi := &file_knowledge_proto_msgTypes[29]
+	mi := &file_proto_knowledge_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2035,7 +2035,7 @@ func (x *SaveSystemConfigRequest) String() string {
 func (*SaveSystemConfigRequest) ProtoMessage() {}
 
 func (x *SaveSystemConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[29]
+	mi := &file_proto_knowledge_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2048,7 +2048,7 @@ func (x *SaveSystemConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveSystemConfigRequest.ProtoReflect.Descriptor instead.
 func (*SaveSystemConfigRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{29}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SaveSystemConfigRequest) GetConfig() *SystemConfig {
@@ -2066,7 +2066,7 @@ type GetSystemStatusRequest struct {
 
 func (x *GetSystemStatusRequest) Reset() {
 	*x = GetSystemStatusRequest{}
-	mi := &file_knowledge_proto_msgTypes[30]
+	mi := &file_proto_knowledge_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2078,7 @@ func (x *GetSystemStatusRequest) String() string {
 func (*GetSystemStatusRequest) ProtoMessage() {}
 
 func (x *GetSystemStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[30]
+	mi := &file_proto_knowledge_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2091,7 @@ func (x *GetSystemStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetSystemStatusRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{30}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{30}
 }
 
 type FlushAllDataRequest struct {
@@ -2102,7 +2102,7 @@ type FlushAllDataRequest struct {
 
 func (x *FlushAllDataRequest) Reset() {
 	*x = FlushAllDataRequest{}
-	mi := &file_knowledge_proto_msgTypes[31]
+	mi := &file_proto_knowledge_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2114,7 +2114,7 @@ func (x *FlushAllDataRequest) String() string {
 func (*FlushAllDataRequest) ProtoMessage() {}
 
 func (x *FlushAllDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[31]
+	mi := &file_proto_knowledge_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2127,7 +2127,7 @@ func (x *FlushAllDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlushAllDataRequest.ProtoReflect.Descriptor instead.
 func (*FlushAllDataRequest) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{31}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{31}
 }
 
 type FlushAllDataResponse struct {
@@ -2140,7 +2140,7 @@ type FlushAllDataResponse struct {
 
 func (x *FlushAllDataResponse) Reset() {
 	*x = FlushAllDataResponse{}
-	mi := &file_knowledge_proto_msgTypes[32]
+	mi := &file_proto_knowledge_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2152,7 +2152,7 @@ func (x *FlushAllDataResponse) String() string {
 func (*FlushAllDataResponse) ProtoMessage() {}
 
 func (x *FlushAllDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[32]
+	mi := &file_proto_knowledge_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2165,7 +2165,7 @@ func (x *FlushAllDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlushAllDataResponse.ProtoReflect.Descriptor instead.
 func (*FlushAllDataResponse) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{32}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *FlushAllDataResponse) GetSuccess() bool {
@@ -2193,7 +2193,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_knowledge_proto_msgTypes[33]
+	mi := &file_proto_knowledge_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2205,7 +2205,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_knowledge_proto_msgTypes[33]
+	mi := &file_proto_knowledge_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2218,7 +2218,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_knowledge_proto_rawDescGZIP(), []int{33}
+	return file_proto_knowledge_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *Response) GetSuccess() bool {
@@ -2235,11 +2235,11 @@ func (x *Response) GetMessage() string {
 	return ""
 }
 
-var File_knowledge_proto protoreflect.FileDescriptor
+var File_proto_knowledge_proto protoreflect.FileDescriptor
 
-const file_knowledge_proto_rawDesc = "" +
+const file_proto_knowledge_proto_rawDesc = "" +
 	"\n" +
-	"\x0fknowledge.proto\x12\tknowledge\"\xca\x01\n" +
+	"\x15proto/knowledge.proto\x12\tknowledge\"\xca\x01\n" +
 	"\x18RegisterDetectionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1a\n" +
@@ -2433,40 +2433,36 @@ const file_knowledge_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\">\n" +
 	"\bResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\x8f\v\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xc5\b\n" +
 	"\x10KnowledgeService\x12V\n" +
 	"\x11RegisterDetection\x12#.knowledge.RegisterDetectionRequest\x1a\x1c.knowledge.DetectionResponse\x12W\n" +
 	"\x11IsDetectionActive\x12\x1e.knowledge.DetectionKeyRequest\x1a\".knowledge.DetectionStatusResponse\x12Y\n" +
 	"\x13GetActiveDetections\x12 .knowledge.DatabaseFilterRequest\x1a .knowledge.DetectionListResponse\x12P\n" +
-	"\x15MarkDetectionResolved\x12\".knowledge.ResolveDetectionRequest\x1a\x13.knowledge.Response\x12M\n" +
-	"\x0eRegisterAction\x12 .knowledge.RegisterActionRequest\x1a\x19.knowledge.ActionResponse\x12I\n" +
+	"\x15MarkDetectionResolved\x12\".knowledge.ResolveDetectionRequest\x1a\x13.knowledge.Response\x12I\n" +
 	"\x12UpdateActionStatus\x12\x1e.knowledge.UpdateActionRequest\x1a\x13.knowledge.Response\x12T\n" +
-	"\x11GetPendingActions\x12 .knowledge.DatabaseFilterRequest\x1a\x1d.knowledge.ActionListResponse\x12S\n" +
-	"\x10RegisterDatabase\x12\".knowledge.RegisterDatabaseRequest\x1a\x1b.knowledge.DatabaseResponse\x12L\n" +
+	"\x11GetPendingActions\x12 .knowledge.DatabaseFilterRequest\x1a\x1d.knowledge.ActionListResponse\x12L\n" +
 	"\vGetDatabase\x12\x1d.knowledge.GetDatabaseRequest\x1a\x1e.knowledge.GetDatabaseResponse\x12Q\n" +
 	"\rListDatabases\x12\x1f.knowledge.ListDatabasesRequest\x1a\x1f.knowledge.DatabaseListResponse\x12S\n" +
 	"\x14UpdateDatabaseHealth\x12&.knowledge.UpdateDatabaseHealthRequest\x1a\x13.knowledge.Response\x12O\n" +
-	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12U\n" +
-	"\x0eGetSystemStats\x12 .knowledge.GetSystemStatsRequest\x1a!.knowledge.GetSystemStatsResponse\x12M\n" +
-	"\x0fGetSystemConfig\x12!.knowledge.GetSystemConfigRequest\x1a\x17.knowledge.SystemConfig\x12K\n" +
+	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12K\n" +
 	"\x10SaveSystemConfig\x12\".knowledge.SaveSystemConfigRequest\x1a\x13.knowledge.Response\x12M\n" +
 	"\x0fGetSystemStatus\x12!.knowledge.GetSystemStatusRequest\x1a\x17.knowledge.SystemStatus\x12O\n" +
 	"\fFlushAllData\x12\x1e.knowledge.FlushAllDataRequest\x1a\x1f.knowledge.FlushAllDataResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
 
 var (
-	file_knowledge_proto_rawDescOnce sync.Once
-	file_knowledge_proto_rawDescData []byte
+	file_proto_knowledge_proto_rawDescOnce sync.Once
+	file_proto_knowledge_proto_rawDescData []byte
 )
 
-func file_knowledge_proto_rawDescGZIP() []byte {
-	file_knowledge_proto_rawDescOnce.Do(func() {
-		file_knowledge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_knowledge_proto_rawDesc), len(file_knowledge_proto_rawDesc)))
+func file_proto_knowledge_proto_rawDescGZIP() []byte {
+	file_proto_knowledge_proto_rawDescOnce.Do(func() {
+		file_proto_knowledge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_knowledge_proto_rawDesc), len(file_proto_knowledge_proto_rawDesc)))
 	})
-	return file_knowledge_proto_rawDescData
+	return file_proto_knowledge_proto_rawDescData
 }
 
-var file_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
-var file_knowledge_proto_goTypes = []any{
+var file_proto_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_proto_knowledge_proto_goTypes = []any{
 	(*RegisterDetectionRequest)(nil),    // 0: knowledge.RegisterDetectionRequest
 	(*DetectionKeyRequest)(nil),         // 1: knowledge.DetectionKeyRequest
 	(*DetectionStatusResponse)(nil),     // 2: knowledge.DetectionStatusResponse
@@ -2505,7 +2501,7 @@ var file_knowledge_proto_goTypes = []any{
 	nil,                                 // 35: knowledge.GetDatabaseResponse.MetadataEntry
 	nil,                                 // 36: knowledge.SystemStatus.ServiceStatesEntry
 }
-var file_knowledge_proto_depIdxs = []int32{
+var file_proto_knowledge_proto_depIdxs = []int32{
 	6,  // 0: knowledge.DetectionListResponse.detections:type_name -> knowledge.Detection
 	12, // 1: knowledge.ActionListResponse.actions:type_name -> knowledge.Action
 	34, // 2: knowledge.RegisterDatabaseRequest.metadata:type_name -> knowledge.RegisterDatabaseRequest.MetadataEntry
@@ -2519,63 +2515,55 @@ var file_knowledge_proto_depIdxs = []int32{
 	1,  // 10: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
 	3,  // 11: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
 	7,  // 12: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
-	8,  // 13: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
-	10, // 14: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
-	3,  // 15: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
-	13, // 16: knowledge.KnowledgeService.RegisterDatabase:input_type -> knowledge.RegisterDatabaseRequest
-	15, // 17: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
-	17, // 18: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
-	20, // 19: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
-	21, // 20: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
-	22, // 21: knowledge.KnowledgeService.GetSystemStats:input_type -> knowledge.GetSystemStatsRequest
-	28, // 22: knowledge.KnowledgeService.GetSystemConfig:input_type -> knowledge.GetSystemConfigRequest
-	29, // 23: knowledge.KnowledgeService.SaveSystemConfig:input_type -> knowledge.SaveSystemConfigRequest
-	30, // 24: knowledge.KnowledgeService.GetSystemStatus:input_type -> knowledge.GetSystemStatusRequest
-	31, // 25: knowledge.KnowledgeService.FlushAllData:input_type -> knowledge.FlushAllDataRequest
-	4,  // 26: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
-	2,  // 27: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
-	5,  // 28: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
-	33, // 29: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
-	9,  // 30: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
-	33, // 31: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
-	11, // 32: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
-	14, // 33: knowledge.KnowledgeService.RegisterDatabase:output_type -> knowledge.DatabaseResponse
-	16, // 34: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
-	18, // 35: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
-	33, // 36: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
-	33, // 37: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
-	23, // 38: knowledge.KnowledgeService.GetSystemStats:output_type -> knowledge.GetSystemStatsResponse
-	26, // 39: knowledge.KnowledgeService.GetSystemConfig:output_type -> knowledge.SystemConfig
-	33, // 40: knowledge.KnowledgeService.SaveSystemConfig:output_type -> knowledge.Response
-	27, // 41: knowledge.KnowledgeService.GetSystemStatus:output_type -> knowledge.SystemStatus
-	32, // 42: knowledge.KnowledgeService.FlushAllData:output_type -> knowledge.FlushAllDataResponse
-	26, // [26:43] is the sub-list for method output_type
-	9,  // [9:26] is the sub-list for method input_type
+	10, // 13: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
+	3,  // 14: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
+	15, // 15: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
+	17, // 16: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
+	20, // 17: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
+	21, // 18: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
+	29, // 19: knowledge.KnowledgeService.SaveSystemConfig:input_type -> knowledge.SaveSystemConfigRequest
+	30, // 20: knowledge.KnowledgeService.GetSystemStatus:input_type -> knowledge.GetSystemStatusRequest
+	31, // 21: knowledge.KnowledgeService.FlushAllData:input_type -> knowledge.FlushAllDataRequest
+	4,  // 22: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
+	2,  // 23: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
+	5,  // 24: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
+	33, // 25: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
+	33, // 26: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
+	11, // 27: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
+	16, // 28: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
+	18, // 29: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
+	33, // 30: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
+	33, // 31: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
+	33, // 32: knowledge.KnowledgeService.SaveSystemConfig:output_type -> knowledge.Response
+	27, // 33: knowledge.KnowledgeService.GetSystemStatus:output_type -> knowledge.SystemStatus
+	32, // 34: knowledge.KnowledgeService.FlushAllData:output_type -> knowledge.FlushAllDataResponse
+	22, // [22:35] is the sub-list for method output_type
+	9,  // [9:22] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
 }
 
-func init() { file_knowledge_proto_init() }
-func file_knowledge_proto_init() {
-	if File_knowledge_proto != nil {
+func init() { file_proto_knowledge_proto_init() }
+func file_proto_knowledge_proto_init() {
+	if File_proto_knowledge_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowledge_proto_rawDesc), len(file_knowledge_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_knowledge_proto_rawDesc), len(file_proto_knowledge_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   37,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_knowledge_proto_goTypes,
-		DependencyIndexes: file_knowledge_proto_depIdxs,
-		MessageInfos:      file_knowledge_proto_msgTypes,
+		GoTypes:           file_proto_knowledge_proto_goTypes,
+		DependencyIndexes: file_proto_knowledge_proto_depIdxs,
+		MessageInfos:      file_proto_knowledge_proto_msgTypes,
 	}.Build()
-	File_knowledge_proto = out.File
-	file_knowledge_proto_goTypes = nil
-	file_knowledge_proto_depIdxs = nil
+	File_proto_knowledge_proto = out.File
+	file_proto_knowledge_proto_goTypes = nil
+	file_proto_knowledge_proto_depIdxs = nil
 }

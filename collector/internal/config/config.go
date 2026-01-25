@@ -10,13 +10,13 @@ import (
 )
 
 type Config struct {
-	// Database connection
+	// Database connection (loaded from Knowledge)
 	DBConnectionString string
 	DBAdapter          string
 	DatabaseID         string
 	DatabaseName       string
 
-	// Service addresses
+	// Service addresses (from env vars)
 	AnalyserAddress  string
 	NatsURL          string
 	KnowledgeAddress string
@@ -28,7 +28,9 @@ type Config struct {
 	EnableMetricsPublishing bool
 }
 
-func Load() (*Config, error) {
+// LoadBootstrap loads only service addresses needed to connect to Knowledge.
+// Database config will be fetched from Knowledge service.
+func LoadBootstrap() (*Config, error) {
 	// Try multiple .env locations
 	envPaths := []string{
 		".env",
@@ -50,12 +52,6 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
-		// Database (required)
-		DBConnectionString: os.Getenv("DB_CONNECTION_STRING"),
-		DBAdapter:          os.Getenv("DB_ADAPTER"),
-		DatabaseID:         os.Getenv("DATABASE_ID"),
-		DatabaseName:       os.Getenv("DATABASE_NAME"),
-
 		// Service addresses (with defaults)
 		AnalyserAddress:  getEnvOrDefault("ANALYSER_ADDRESS", "localhost:50051"),
 		NatsURL:          getEnvOrDefault("NATS_URL", "nats://localhost:4222"),
@@ -73,22 +69,26 @@ func Load() (*Config, error) {
 	}
 	config.CollectionInterval = interval
 
-	if err := config.Validate(); err != nil {
+	if err := config.ValidateBootstrap(); err != nil {
 		return nil, err
 	}
 
 	return config, nil
 }
 
-func (c *Config) Validate() error {
-	// Required fields
+// SetDatabaseConfig sets the database configuration fetched from Knowledge.
+func (c *Config) SetDatabaseConfig(connString, dbType, dbID, dbName string) {
+	c.DBConnectionString = connString
+	c.DBAdapter = dbType
+	c.DatabaseID = dbID
+	c.DatabaseName = dbName
+}
+
+// ValidateBootstrap validates only the bootstrap configuration.
+func (c *Config) ValidateBootstrap() error {
 	required := map[string]string{
-		"DB_CONNECTION_STRING": c.DBConnectionString,
-		"DB_ADAPTER":           c.DBAdapter,
-		"DATABASE_ID":          c.DatabaseID,
-		"DATABASE_NAME":        c.DatabaseName,
-		"ANALYSER_ADDRESS":     c.AnalyserAddress,
-		"KNOWLEDGE_ADDRESS":    c.KnowledgeAddress,
+		"ANALYSER_ADDRESS":  c.AnalyserAddress,
+		"KNOWLEDGE_ADDRESS": c.KnowledgeAddress,
 	}
 
 	for name, value := range required {
@@ -97,9 +97,30 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Validate collection interval
 	if c.CollectionInterval < 1*time.Second {
 		return fmt.Errorf("COLLECTION_INTERVAL must be at least 1 second")
+	}
+
+	return nil
+}
+
+// ValidateFull validates the complete configuration including database.
+func (c *Config) ValidateFull() error {
+	if err := c.ValidateBootstrap(); err != nil {
+		return err
+	}
+
+	required := map[string]string{
+		"DB_CONNECTION_STRING": c.DBConnectionString,
+		"DB_ADAPTER":           c.DBAdapter,
+		"DATABASE_ID":          c.DatabaseID,
+		"DATABASE_NAME":        c.DatabaseName,
+	}
+
+	for name, value := range required {
+		if value == "" {
+			return fmt.Errorf("%s is required", name)
+		}
 	}
 
 	return nil

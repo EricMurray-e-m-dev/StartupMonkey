@@ -1,11 +1,37 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { connect, StringCodec } = require('nats');
 const express = require('express');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+const path = require('path');
+
 const metricsStore = require('../stores/metricsStore');
 const detectionsStore = require('../stores/detectionsStore');
 const actionsStore = require('../stores/actionsStore');
 
 const sc = StringCodec();
+
+// Load Knowledge proto
+const PROTO_PATH = path.join(__dirname, '../../proto/knowledge.proto');
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+});
+const knowledgeProto = grpc.loadPackageDefinition(packageDefinition).knowledge;
+
+let knowledgeClient = null;
+
+function connectKnowledge() {
+    const knowledgeAddr = process.env.KNOWLEDGE_ADDRESS || 'localhost:50053';
+    knowledgeClient = new knowledgeProto.KnowledgeService(
+        knowledgeAddr,
+        grpc.credentials.createInsecure()
+    );
+    console.log('Knowledge client created for', knowledgeAddr);
+}
 
 async function startCollector() {
     try {
@@ -65,7 +91,9 @@ async function startCollector() {
 }
 
 const app = express();
+app.use(express.json());
 
+// Existing endpoints
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'healthy',
@@ -93,8 +121,78 @@ app.get('/actions', (req, res) => {
     res.json(all);
 });
 
+// ===== CONFIG ENDPOINTS (proxy to Knowledge) =====
+
+app.get('/config', (req, res) => {
+    if (!knowledgeClient) {
+        return res.status(503).json({ error: 'Knowledge service not connected' });
+    }
+
+    knowledgeClient.getSystemConfig({}, (err, response) => {
+        if (err) {
+            console.error('Failed to get config:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log('Serving system config');
+        res.json(response);
+    });
+});
+
+app.post('/config', (req, res) => {
+    if (!knowledgeClient) {
+        return res.status(503).json({ error: 'Knowledge service not connected' });
+    }
+
+    const config = req.body;
+    knowledgeClient.saveSystemConfig({ config }, (err, response) => {
+        if (err) {
+            console.error('Failed to save config:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log('Config saved');
+        res.json(response);
+    });
+});
+
+app.get('/status', (req, res) => {
+    if (!knowledgeClient) {
+        return res.status(503).json({ error: 'Knowledge service not connected' });
+    }
+
+    knowledgeClient.getSystemStatus({}, (err, response) => {
+        if (err) {
+            console.error('Failed to get status:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log('Serving system status');
+        res.json(response);
+    });
+});
+
+app.post('/flush', (req, res) => {
+    if (!knowledgeClient) {
+        return res.status(503).json({ error: 'Knowledge service not connected' });
+    }
+
+    knowledgeClient.flushAllData({}, (err, response) => {
+        if (err) {
+            console.error('Failed to flush data:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        // Also clear local stores
+        metricsStore.clear();
+        detectionsStore.clear();
+        actionsStore.clear();
+        
+        console.log('All data flushed');
+        res.json(response);
+    });
+});
+
 const PORT = 3001;
 
+connectKnowledge();
 startCollector().then(() => {
     app.listen(PORT, () => {
         console.log(`Collector HTTP server running on http://localhost:${PORT}`);

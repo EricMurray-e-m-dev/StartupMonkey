@@ -17,6 +17,10 @@ class DetectionsStore {
     getAll() {
         return this.detections;
     }
+
+    clear() {
+        this.detections = [];
+    }
 }
 
 module.exports = new DetectionsStore();

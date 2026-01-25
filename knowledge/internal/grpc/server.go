@@ -375,3 +375,93 @@ func (s *KnowledgeServer) GetSystemStats(ctx context.Context, req *pb.GetSystemS
 		UptimeSeconds:      0,
 	}, nil
 }
+
+// ===== [CONFIGURATION MANAGEMENT] =====
+
+// GetSystemConfig retrieves the system configuration
+func (s *KnowledgeServer) GetSystemConfig(ctx context.Context, req *pb.GetSystemConfigRequest) (*pb.SystemConfig, error) {
+	config, err := s.redisClient.GetSystemConfig(ctx)
+	if err != nil {
+		log.Printf("Failed to get system config: %v", err)
+		// Return empty config with defaults if not found
+		return &pb.SystemConfig{
+			Database: nil,
+			Thresholds: &pb.DetectionThresholds{
+				ConnectionPoolCritical:  0.8,
+				SequentialScanThreshold: 1000,
+				SequentialScanDelta:     100.0,
+				P95LatencyMs:            100.0,
+				CacheHitRateThreshold:   0.9,
+			},
+			OnboardingComplete: false,
+		}, nil
+	}
+
+	return config, nil
+}
+
+// SaveSystemConfig saves the system configuration
+func (s *KnowledgeServer) SaveSystemConfig(ctx context.Context, req *pb.SaveSystemConfigRequest) (*pb.Response, error) {
+	if req.Config == nil {
+		return &pb.Response{
+			Success: false,
+			Message: "Config cannot be nil",
+		}, nil
+	}
+
+	if err := s.redisClient.SaveSystemConfig(ctx, req.Config); err != nil {
+		log.Printf("Failed to save system config: %v", err)
+		return &pb.Response{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	log.Printf("System config saved (onboarding_complete: %v)", req.Config.OnboardingComplete)
+
+	return &pb.Response{
+		Success: true,
+		Message: "System configuration saved successfully",
+	}, nil
+}
+
+// GetSystemStatus returns the current system status
+func (s *KnowledgeServer) GetSystemStatus(ctx context.Context, req *pb.GetSystemStatusRequest) (*pb.SystemStatus, error) {
+	config, _ := s.redisClient.GetSystemConfig(ctx)
+
+	configured := false
+	onboardingComplete := false
+
+	if config != nil {
+		configured = config.Database != nil && config.Database.ConnectionString != ""
+		onboardingComplete = config.OnboardingComplete
+	}
+
+	// Service states would be populated by services reporting their status
+	// For now, return empty map - services will update this
+	serviceStates := make(map[string]string)
+
+	return &pb.SystemStatus{
+		Configured:         configured,
+		OnboardingComplete: onboardingComplete,
+		ServiceStates:      serviceStates,
+	}, nil
+}
+
+// FlushAllData clears all data from Redis
+func (s *KnowledgeServer) FlushAllData(ctx context.Context, req *pb.FlushAllDataRequest) (*pb.FlushAllDataResponse, error) {
+	if err := s.redisClient.FlushAll(ctx); err != nil {
+		log.Printf("Failed to flush all data: %v", err)
+		return &pb.FlushAllDataResponse{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	log.Printf("All data flushed from Redis")
+
+	return &pb.FlushAllDataResponse{
+		Success: true,
+		Message: "All data flushed successfully",
+	}, nil
+}

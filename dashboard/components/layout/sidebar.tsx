@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, AlertTriangle, Zap } from "lucide-react";
+import { Home, Activity, AlertTriangle, Zap, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -25,7 +25,7 @@ export function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 space-y-1 px-3 py-4">
                 {navigation.map((item) => {
-                    const isActive = pathName == item.href
+                    const isActive = pathName === item.href;
                     return (
                         <Link
                             key={item.name}
@@ -33,20 +33,32 @@ export function Sidebar() {
                             className={cn(
                                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                                 isActive
-                                ? "bg-sidebare-accent text-sidebar-accent-foreground"
-                                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                             )}
-                            >
-                                <item.Icon className="h-5 w-5" />
-                                {item.name}
-                            </Link>
+                        >
+                            <item.Icon className="h-5 w-5" />
+                            {item.name}
+                        </Link>
                     );
                 })}
             </nav>
 
-            {/* Footer */}
-            <div className="border-t p-4">
-                <p className="text-xs text-muted-foreground">
+            {/* Settings + Footer */}
+            <div className="border-t p-3">
+                <Link
+                    href="/settings"
+                    className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        pathName === "/settings"
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    )}
+                >
+                    <Settings className="h-5 w-5" />
+                    Settings
+                </Link>
+                <p className="mt-3 px-3 text-xs text-muted-foreground">
                     v0.0.5
                 </p>
             </div>

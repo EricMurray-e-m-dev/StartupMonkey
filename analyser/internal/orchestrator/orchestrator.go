@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/config"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/detector"
@@ -56,18 +57,14 @@ func NewOrchestrator(cfg *config.Config) *Orchestrator {
 	}
 }
 
-// Start initializes all service connections and prepares the orchestrator for metric analysis.
-// This method must be called before Run().
-//
-// Start connects to:
-//   - Detection engine (required - registers detectors with configured thresholds)
-//   - Knowledge service via gRPC (optional - for detection deduplication)
-//   - NATS event bus (optional - for publishing detections and subscribing to action results)
-//   - gRPC server (required - receives metrics from Collector)
-//
-// Returns an error if any required component fails to initialize.
 func (o *Orchestrator) Start() error {
 	log.Printf("Starting Analyser Orchestrator...")
+
+	// Connect to Knowledge first - we may need thresholds from there
+	o.connectKnowledge()
+
+	// Try to fetch thresholds from Knowledge (overrides defaults)
+	o.fetchThresholdsFromKnowledge()
 
 	// Initialize detection engine with configured thresholds
 	if err := o.initializeEngine(); err != nil {
@@ -77,9 +74,8 @@ func (o *Orchestrator) Start() error {
 	// Verification setup
 	o.initializeVerificationTracker()
 
-	// Connect to downstream services
-	o.connectKnowledge() // Optional - warnings logged on failure
-	o.connectNATS()      // Optional - warnings logged on failure
+	// Connect to NATS
+	o.connectNATS()
 
 	// Initialize gRPC server to receive metrics
 	if err := o.initializeGRPCServer(); err != nil {
@@ -88,6 +84,62 @@ func (o *Orchestrator) Start() error {
 
 	log.Printf("Analyser Orchestrator started successfully")
 	return nil
+}
+
+// fetchThresholdsFromKnowledge attempts to load detection thresholds from Knowledge service.
+// If successful, overrides the default/env var thresholds in config.
+// If Knowledge is unavailable or unconfigured, falls back to existing thresholds.
+func (o *Orchestrator) fetchThresholdsFromKnowledge() {
+	if o.knowledgeClient == nil {
+		log.Printf("Knowledge client unavailable - using default thresholds")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	config, err := o.knowledgeClient.GetSystemConfig(ctx)
+	if err != nil {
+		log.Printf("Failed to fetch config from Knowledge: %v - using default thresholds", err)
+		return
+	}
+
+	if config == nil || config.Thresholds == nil {
+		log.Printf("No thresholds configured in Knowledge - using default thresholds")
+		return
+	}
+
+	log.Printf("Applying thresholds from Knowledge service...")
+
+	thresholds := config.Thresholds
+
+	// Only override if values are set (non-zero)
+	if thresholds.ConnectionPoolCritical > 0 {
+		o.config.Thresholds.ConnectionPoolCritical = thresholds.ConnectionPoolCritical
+		log.Printf("  - Connection Pool Critical: %.2f", thresholds.ConnectionPoolCritical)
+	}
+
+	if thresholds.SequentialScanThreshold > 0 {
+		o.config.Thresholds.SequentialScanThreshold = int32(thresholds.SequentialScanThreshold)
+		log.Printf("  - Sequential Scan Threshold: %d", thresholds.SequentialScanThreshold)
+	}
+
+	if thresholds.SequentialScanDelta > 0 {
+		o.config.Thresholds.SequentialScanDeltaThreshold = thresholds.SequentialScanDelta
+		log.Printf("  - Sequential Scan Delta: %.1f", thresholds.SequentialScanDelta)
+	}
+
+	if thresholds.P95LatencyMs > 0 {
+		o.config.Thresholds.P95LatencyThresholdMs = thresholds.P95LatencyMs
+		log.Printf("  - P95 Latency: %.0fms", thresholds.P95LatencyMs)
+	}
+
+	if thresholds.CacheHitRateThreshold > 0 {
+		o.config.Thresholds.CacheHitRateThreshold = thresholds.CacheHitRateThreshold
+		log.Printf("  - Cache Hit Rate: %.2f", thresholds.CacheHitRateThreshold)
+	}
+
+	log.Printf("Thresholds loaded from Knowledge")
 }
 
 // initializeEngine creates the detection engine and registers all detectors with configured thresholds.

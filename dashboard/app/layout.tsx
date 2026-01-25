@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
+import OnboardingProvider from "@/components/providers/OnboardingProvider";
+import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = Geist({
@@ -37,18 +37,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex h-screen">
-            {/* Sidebar */}
-            <Sidebar />
-
-            {/* Main Content */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto p-6">
-                {children}
-              </main>
-            </div>
-          </div>
+          <OnboardingProvider>
+            <AppShell>
+              {children}
+            </AppShell>
+          </OnboardingProvider>
           <Toaster />
         </ThemeProvider>
       </body>

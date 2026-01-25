@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/knowledge/internal/models"
+	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
 func (c *Client) RegisterDetection(ctx context.Context, detection *models.Detection) error {
@@ -346,6 +347,51 @@ func (c *Client) UnregisterDatabase(ctx context.Context, id string) error {
 	// Remove from database list
 	if err := c.rdb.SRem(ctx, "databases:all", id).Err(); err != nil {
 		return fmt.Errorf("failed to remove from database list: %w", err)
+	}
+
+	return nil
+}
+
+// ===== [CONFIGURATION OPERATIONS] =====
+
+const systemConfigKey = "config:system"
+
+// GetSystemConfig retrieves the system configuration from Redis
+func (c *Client) GetSystemConfig(ctx context.Context) (*pb.SystemConfig, error) {
+	data, err := c.rdb.Get(ctx, systemConfigKey).Result()
+	if err != nil {
+		if err.Error() == "redis: nil" {
+			return nil, fmt.Errorf("config not found")
+		}
+		return nil, fmt.Errorf("failed to get system config: %w", err)
+	}
+
+	var config pb.SystemConfig
+	if err := json.Unmarshal([]byte(data), &config); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal system config: %w", err)
+	}
+
+	return &config, nil
+}
+
+// SaveSystemConfig saves the system configuration to Redis
+func (c *Client) SaveSystemConfig(ctx context.Context, config *pb.SystemConfig) error {
+	data, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal system config: %w", err)
+	}
+
+	if err := c.rdb.Set(ctx, systemConfigKey, data, 0).Err(); err != nil {
+		return fmt.Errorf("failed to store system config: %w", err)
+	}
+
+	return nil
+}
+
+// FlushAll clears all data from Redis
+func (c *Client) FlushAll(ctx context.Context) error {
+	if err := c.rdb.FlushDB(ctx).Err(); err != nil {
+		return fmt.Errorf("failed to flush database: %w", err)
 	}
 
 	return nil
