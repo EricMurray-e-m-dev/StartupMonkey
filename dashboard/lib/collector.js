@@ -128,7 +128,7 @@ app.get('/config', (req, res) => {
         return res.status(503).json({ error: 'Knowledge service not connected' });
     }
 
-    knowledgeClient.GetSystemConfig({}, (err, response) => {
+    knowledgeClient.getSystemConfig({}, (err, response) => {
         if (err) {
             console.error('Failed to get config:', err);
             return res.status(500).json({ error: err.message });
@@ -144,7 +144,7 @@ app.post('/config', (req, res) => {
     }
 
     const config = req.body;
-    knowledgeClient.SaveSystemConfig({ config }, (err, response) => {
+    knowledgeClient.saveSystemConfig({ config }, (err, response) => {
         if (err) {
             console.error('Failed to save config:', err);
             return res.status(500).json({ error: err.message });
@@ -159,7 +159,7 @@ app.get('/status', (req, res) => {
         return res.status(503).json({ error: 'Knowledge service not connected' });
     }
 
-    knowledgeClient.GetSystemStatus({}, (err, response) => {
+    knowledgeClient.getSystemStatus({}, (err, response) => {
         if (err) {
             console.error('Failed to get status:', err);
             return res.status(500).json({ error: err.message });
@@ -174,7 +174,7 @@ app.post('/flush', (req, res) => {
         return res.status(503).json({ error: 'Knowledge service not connected' });
     }
 
-    knowledgeClient.FlushAllData({}, (err, response) => {
+    knowledgeClient.flushAllData({}, (err, response) => {
         if (err) {
             console.error('Failed to flush data:', err);
             return res.status(500).json({ error: err.message });
