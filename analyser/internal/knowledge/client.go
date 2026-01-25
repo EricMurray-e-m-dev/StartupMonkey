@@ -76,6 +76,16 @@ func (k *KnowledgeClient) MarkDetectionResolved(ctx context.Context, detectionID
 	return nil
 }
 
+// GetSystemConfig fetches the system configuration from Knowledge service.
+func (k *KnowledgeClient) GetSystemConfig(ctx context.Context) (*pb.SystemConfig, error) {
+	resp, err := k.client.GetSystemConfig(ctx, &pb.GetSystemConfigRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("GetSystemConfig RPC failed: %w", err)
+	}
+
+	return resp, nil
+}
+
 func (k *KnowledgeClient) Close() error {
 	if k.conn != nil {
 		return k.conn.Close()
