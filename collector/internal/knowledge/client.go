@@ -153,3 +153,14 @@ func determineStatus(healthScore float64) string {
 	}
 	return "offline"
 }
+
+// GetSystemConfig fetches the system configuration from Knowledge service.
+// Returns nil if no configuration exists yet (onboarding not complete).
+func (c *Client) GetSystemConfig(ctx context.Context) (*pb.SystemConfig, error) {
+	resp, err := c.client.GetSystemConfig(ctx, &pb.GetSystemConfigRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("GetSystemConfig RPC failed: %w", err)
+	}
+
+	return resp, nil
+}

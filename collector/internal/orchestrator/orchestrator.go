@@ -17,15 +17,6 @@ import (
 
 // Orchestrator manages the Collector service lifecycle and coordinates
 // metric collection, normalization, and distribution to downstream services.
-//
-// Lifecycle:
-//  1. Start() - Initializes connections to database, Analyser, NATS, and Knowledge
-//  2. Run() - Begins periodic metric collection on configured interval
-//  3. Stop() - Gracefully closes all connections and resources
-//
-// The orchestrator implements graceful degradation:
-//   - NATS failure: Metrics still sent to Analyser (Dashboard unavailable)
-//   - Knowledge failure: Database not registered (Executor cannot deploy actions)
 type Orchestrator struct {
 	config *config.Config
 
@@ -34,13 +25,11 @@ type Orchestrator struct {
 	normaliser normaliser.Normaliser
 
 	// Downstream service connections
-	client          *grpcclient.MetricsClient // gRPC to Analyser
-	natsPublisher   *eventbus.Publisher       // NATS event bus for Dashboard
-	knowledgeClient *knowledge.Client         // Knowledge service client
+	client          *grpcclient.MetricsClient
+	natsPublisher   *eventbus.Publisher
+	knowledgeClient *knowledge.Client
 }
 
-// NewOrchestrator creates a new Orchestrator instance with the provided configuration.
-// The orchestrator is not started until Start() is called.
 func NewOrchestrator(cfg *config.Config) *Orchestrator {
 	return &Orchestrator{
 		config: cfg,
@@ -48,19 +37,20 @@ func NewOrchestrator(cfg *config.Config) *Orchestrator {
 }
 
 // Start initializes all service connections and prepares the orchestrator for metric collection.
-// This method must be called before Run().
-//
-// Start connects to:
-//   - Target database (required)
-//   - Analyser service via gRPC (required)
-//   - NATS event bus (optional - for Dashboard real-time metrics)
-//   - Knowledge service via gRPC (optional - for database registration)
-//
-// Returns an error if any required connection fails.
-func (o *Orchestrator) Start() error {
+func (o *Orchestrator) Start(ctx context.Context) error {
 	log.Printf("Starting Collector Orchestrator...")
 
-	// Initialize database connection
+	// Connect to Knowledge first - we need config from there
+	if err := o.connectKnowledge(); err != nil {
+		return fmt.Errorf("failed to connect to Knowledge: %w", err)
+	}
+
+	// Wait for system config from Knowledge (user must complete onboarding)
+	if err := o.waitForConfig(ctx); err != nil {
+		return fmt.Errorf("failed to get config from Knowledge: %w", err)
+	}
+
+	// Now we have database config, connect to database
 	if err := o.connectDatabase(); err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -70,14 +60,81 @@ func (o *Orchestrator) Start() error {
 		return fmt.Errorf("failed to connect to Analyser: %w", err)
 	}
 
-	o.connectNATS()      // Optional - warnings logged on failure
-	o.connectKnowledge() // Optional - warnings logged on failure
+	o.connectNATS()
+
+	// Register database with Knowledge
+	o.registerDatabase()
 
 	log.Printf("Collector Orchestrator started successfully")
 	return nil
 }
 
-// connectDatabase establishes connection to the target database and performs health check.
+// connectKnowledge establishes gRPC connection to Knowledge service.
+func (o *Orchestrator) connectKnowledge() error {
+	client, err := knowledge.NewClient(o.config.KnowledgeAddress)
+	if err != nil {
+		return fmt.Errorf("failed to connect: %w", err)
+	}
+
+	o.knowledgeClient = client
+	log.Printf("Connected to Knowledge service")
+	return nil
+}
+
+// waitForConfig polls Knowledge for system configuration.
+// Blocks until configuration is available (onboarding complete).
+func (o *Orchestrator) waitForConfig(ctx context.Context) error {
+	log.Printf("Waiting for system configuration from Knowledge...")
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+
+		case <-ticker.C:
+			config, err := o.knowledgeClient.GetSystemConfig(ctx)
+			if err != nil {
+				log.Printf("Failed to get config: %v (retrying...)", err)
+				continue
+			}
+
+			if config == nil || config.Database == nil || config.Database.ConnectionString == "" {
+				log.Printf("Awaiting configuration... (complete onboarding in Dashboard)")
+				continue
+			}
+
+			if !config.OnboardingComplete {
+				log.Printf("Awaiting configuration... (onboarding not complete)")
+				continue
+			}
+
+			// Config received - apply to local config
+			log.Printf("Configuration received from Knowledge")
+			o.config.SetDatabaseConfig(
+				config.Database.ConnectionString,
+				config.Database.Type,
+				config.Database.Id,
+				config.Database.Name,
+			)
+
+			if err := o.config.ValidateFull(); err != nil {
+				log.Printf("Invalid config from Knowledge: %v (retrying...)", err)
+				continue
+			}
+
+			log.Printf("  Database ID: %s", o.config.DatabaseID)
+			log.Printf("  Database Type: %s", o.config.DBAdapter)
+			log.Printf("  Database Name: %s", o.config.DatabaseName)
+
+			return nil
+		}
+	}
+}
+
+// connectDatabase establishes connection to the target database.
 func (o *Orchestrator) connectDatabase() error {
 	log.Printf("Connecting to database (adapter: %s, id: %s)", o.config.DBAdapter, o.config.DatabaseID)
 
@@ -101,7 +158,6 @@ func (o *Orchestrator) connectDatabase() error {
 }
 
 // connectAnalyser establishes gRPC connection to the Analyser service.
-// This is a required connection - failure will prevent metric streaming.
 func (o *Orchestrator) connectAnalyser() error {
 	log.Printf("Connecting to Analyser at: %s", o.config.AnalyserAddress)
 
@@ -114,8 +170,7 @@ func (o *Orchestrator) connectAnalyser() error {
 	return nil
 }
 
-// connectNATS establishes connection to NATS event bus for real-time Dashboard metrics.
-// This is an optional connection - failure logs a warning but does not prevent startup.
+// connectNATS establishes connection to NATS event bus.
 func (o *Orchestrator) connectNATS() {
 	if o.config.NatsURL == "" {
 		log.Printf("NATS URL not configured, skipping connection")
@@ -126,7 +181,7 @@ func (o *Orchestrator) connectNATS() {
 
 	publisher, err := eventbus.NewPublisher(o.config.NatsURL)
 	if err != nil {
-		log.Printf("Warning: failed to connect to NATS - Dashboard real-time metrics unavailable: %v", err)
+		log.Printf("Warning: failed to connect to NATS: %v", err)
 		return
 	}
 
@@ -134,19 +189,8 @@ func (o *Orchestrator) connectNATS() {
 	log.Printf("Connected to NATS")
 }
 
-// connectKnowledge establishes gRPC connection to Knowledge service and registers the database.
-// This is an optional connection - failure logs a warning but does not prevent startup.
-// Without Knowledge registration, Executor cannot fetch connection strings for autonomous actions.
-func (o *Orchestrator) connectKnowledge() {
-	client, err := knowledge.NewClient(o.config.KnowledgeAddress)
-	if err != nil {
-		log.Printf("Warning: failed to connect to Knowledge service: %v", err)
-		return
-	}
-
-	o.knowledgeClient = client
-
-	// Register database with Knowledge
+// registerDatabase registers the database with Knowledge service.
+func (o *Orchestrator) registerDatabase() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -157,17 +201,12 @@ func (o *Orchestrator) connectKnowledge() {
 		DatabaseName:     o.config.DatabaseName,
 	}
 
-	if err := client.RegisterDatabase(ctx, info); err != nil {
+	if err := o.knowledgeClient.RegisterDatabase(ctx, info); err != nil {
 		log.Printf("Warning: failed to register database with Knowledge: %v", err)
-		log.Printf("Executor will not be able to deploy autonomous actions without database registration")
 	}
 }
 
 // Run starts the periodic metric collection loop.
-// Metrics are collected at the configured interval and sent to Analyser and NATS.
-//
-// The loop continues until the provided context is cancelled.
-// Any errors during collection are logged but do not stop the loop.
 func (o *Orchestrator) Run(ctx context.Context) error {
 	log.Printf("Starting metric collection (interval: %v)", o.config.CollectionInterval)
 
@@ -179,7 +218,6 @@ func (o *Orchestrator) Run(ctx context.Context) error {
 		log.Printf("Error in initial collection cycle: %v", err)
 	}
 
-	// Continue periodic collection
 	for {
 		select {
 		case <-ctx.Done():
@@ -194,22 +232,16 @@ func (o *Orchestrator) Run(ctx context.Context) error {
 	}
 }
 
-// collectAndSend performs a single metric collection cycle:
-//  1. Collect raw metrics from database
-//  2. Normalize metrics to standard format
-//  3. Send to Analyser via gRPC
-//  4. Publish to NATS for Dashboard (if connected)
+// collectAndSend performs a single metric collection cycle.
 func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 	log.Printf("--- Collection Cycle Start ---")
 
-	// Collect raw metrics from database
 	log.Printf("Collecting metrics from database...")
 	rawMetrics, err := o.adapter.CollectMetrics()
 	if err != nil {
 		return fmt.Errorf("metric collection failed: %w", err)
 	}
 
-	// Normalize metrics to standard format
 	log.Printf("Normalising metrics...")
 	normalised, err := o.normaliser.Normalise(rawMetrics)
 	if err != nil {
@@ -218,10 +250,8 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 
 	log.Printf("Metrics normalised - Health Score: %.2f, Available: %v", normalised.HealthScore, normalised.AvailableMetrics)
 
-	// Convert to protobuf for gRPC transmission
 	snapshot := o.toProtobuf(normalised)
 
-	// Send to Analyser (required)
 	log.Printf("Sending metrics to Analyser...")
 	ack, err := o.client.StreamMetrics(ctx, []*pb.MetricSnapshot{snapshot})
 	if err != nil {
@@ -230,7 +260,6 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 
 	log.Printf("Metrics sent successfully - Ack: %d metrics, status: %s", ack.TotalMetrics, ack.Status)
 
-	// Publish to NATS for Dashboard (optional)
 	if o.natsPublisher != nil {
 		if err := o.natsPublisher.PublishMetrics(normalised); err != nil {
 			log.Printf("Warning: failed to publish metrics to NATS: %v", err)
@@ -243,31 +272,26 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 	return nil
 }
 
-// Stop gracefully closes all connections and releases resources.
-// This method should be called during application shutdown.
+// Stop gracefully closes all connections.
 func (o *Orchestrator) Stop() error {
 	log.Printf("Stopping Orchestrator...")
 
-	// Close gRPC connection to Analyser
 	if o.client != nil {
 		if err := o.client.Close(); err != nil {
 			log.Printf("Error closing Analyser connection: %v", err)
 		}
 	}
 
-	// Close NATS connection
 	if o.natsPublisher != nil {
 		o.natsPublisher.Close()
 	}
 
-	// Close Knowledge client (handles its own gRPC connection)
 	if o.knowledgeClient != nil {
 		if err := o.knowledgeClient.Close(); err != nil {
 			log.Printf("Error closing Knowledge client: %v", err)
 		}
 	}
 
-	// Close database connection
 	if o.adapter != nil {
 		if err := o.adapter.Close(); err != nil {
 			log.Printf("Error closing database adapter: %v", err)
@@ -278,39 +302,32 @@ func (o *Orchestrator) Stop() error {
 	return nil
 }
 
-// toProtobuf converts normalized metrics to protobuf format for gRPC transmission.
+// toProtobuf converts normalized metrics to protobuf format.
 func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSnapshot {
 	snapshot := &pb.MetricSnapshot{
-		// Metadata
 		DatabaseId:   n.DatabaseID,
 		DatabaseType: n.DatabaseType,
 		Timestamp:    n.Timestamp,
 
-		// Health scores
 		HealthScore:      n.HealthScore,
 		ConnectionHealth: n.ConnectionHealth,
 		QueryHealth:      n.QueryHealth,
 		StorageHealth:    n.StorageHealth,
 		CacheHealth:      n.CacheHealth,
 
-		// Context
 		AvailableMetrics: n.AvailableMetrics,
 		MetricDeltas:     n.MetricDeltas,
 		TimeDeltaSeconds: &n.TimeDeltaSeconds,
 
-		// Extended metrics
 		ExtendedMetrics: n.ExtendedMetrics,
 		Labels:          n.Labels,
 
-		// Measurements
 		Measurements: &pb.Measurements{
-			// Connections
 			ActiveConnections:  n.Measurements.ActiveConnections,
 			IdleConnections:    n.Measurements.IdleConnections,
 			MaxConnections:     n.Measurements.MaxConnections,
 			WaitingConnections: n.Measurements.WaitingConnections,
 
-			// Queries
 			AvgQueryLatencyMs: n.Measurements.AvgQueryLatencyMs,
 			P50QueryLatencyMs: n.Measurements.P50QueryLatencyMs,
 			P95QueryLatencyMs: n.Measurements.P95QueryLatencyMs,
@@ -318,12 +335,10 @@ func (o *Orchestrator) toProtobuf(n *normaliser.NormalisedMetrics) *pb.MetricSna
 			SlowQueryCount:    n.Measurements.SlowQueryCount,
 			SequentialScans:   n.Measurements.SequentialScans,
 
-			// Storage
 			UsedStorageBytes:  n.Measurements.UsedStorageBytes,
 			TotalStorageBytes: n.Measurements.TotalStorageBytes,
 			FreeStorageBytes:  n.Measurements.FreeStorageBytes,
 
-			// Cache
 			CacheHitRate:   n.Measurements.CacheHitRate,
 			CacheHitCount:  n.Measurements.CacheHitCount,
 			CacheMissCount: n.Measurements.CacheMissCount,
