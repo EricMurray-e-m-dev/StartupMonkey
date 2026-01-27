@@ -1863,6 +1863,7 @@ type SystemConfig struct {
 	Database           *DatabaseConfig        `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"` // Single DB for MVP
 	Thresholds         *DetectionThresholds   `protobuf:"bytes,2,opt,name=thresholds,proto3" json:"thresholds,omitempty"`
 	OnboardingComplete bool                   `protobuf:"varint,3,opt,name=onboarding_complete,json=onboardingComplete,proto3" json:"onboarding_complete,omitempty"`
+	ExecutionMode      string                 `protobuf:"bytes,4,opt,name=execution_mode,json=executionMode,proto3" json:"execution_mode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1916,6 +1917,13 @@ func (x *SystemConfig) GetOnboardingComplete() bool {
 		return x.OnboardingComplete
 	}
 	return false
+}
+
+func (x *SystemConfig) GetExecutionMode() string {
+	if x != nil {
+		return x.ExecutionMode
+	}
+	return ""
 }
 
 type SystemStatus struct {
@@ -2407,13 +2415,14 @@ const file_proto_knowledge_proto_rawDesc = "" +
 	"\x19sequential_scan_threshold\x18\x02 \x01(\x03R\x17sequentialScanThreshold\x122\n" +
 	"\x15sequential_scan_delta\x18\x03 \x01(\x01R\x13sequentialScanDelta\x12$\n" +
 	"\x0ep95_latency_ms\x18\x04 \x01(\x01R\fp95LatencyMs\x127\n" +
-	"\x18cache_hit_rate_threshold\x18\x05 \x01(\x01R\x15cacheHitRateThreshold\"\xb6\x01\n" +
+	"\x18cache_hit_rate_threshold\x18\x05 \x01(\x01R\x15cacheHitRateThreshold\"\xdd\x01\n" +
 	"\fSystemConfig\x125\n" +
 	"\bdatabase\x18\x01 \x01(\v2\x19.knowledge.DatabaseConfigR\bdatabase\x12>\n" +
 	"\n" +
 	"thresholds\x18\x02 \x01(\v2\x1e.knowledge.DetectionThresholdsR\n" +
 	"thresholds\x12/\n" +
-	"\x13onboarding_complete\x18\x03 \x01(\bR\x12onboardingComplete\"\xf4\x01\n" +
+	"\x13onboarding_complete\x18\x03 \x01(\bR\x12onboardingComplete\x12%\n" +
+	"\x0eexecution_mode\x18\x04 \x01(\tR\rexecutionMode\"\xf4\x01\n" +
 	"\fSystemStatus\x12\x1e\n" +
 	"\n" +
 	"configured\x18\x01 \x01(\bR\n" +

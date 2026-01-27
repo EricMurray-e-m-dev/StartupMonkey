@@ -238,6 +238,7 @@ message SystemConfig {
   DatabaseConfig database = 1; // Single DB for MVP
   DetectionThresholds thresholds = 2;
   bool onboarding_complete = 3;
+  string execution_mode = 4;
 }
 
 message SystemStatus {
