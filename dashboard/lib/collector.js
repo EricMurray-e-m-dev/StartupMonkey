@@ -190,6 +190,45 @@ app.post('/flush', (req, res) => {
     });
 });
 
+app.post('/actions/:id/approve', async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Publish approval to NATS for Executor to pick up
+        const nc = await connect({ servers: process.env.NATS_URL || 'nats://localhost:4222' });
+        const sc = StringCodec();
+        
+        nc.publish('actions.approve', sc.encode(JSON.stringify({ action_id: id })));
+        await nc.flush();
+        await nc.close();
+        
+        console.log('Action approval published:', id);
+        res.json({ success: true, message: 'Action approved' });
+    } catch (err) {
+        console.error('Failed to approve action:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/actions/:id/reject', async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        const nc = await connect({ servers: process.env.NATS_URL || 'nats://localhost:4222' });
+        const sc = StringCodec();
+        
+        nc.publish('actions.reject', sc.encode(JSON.stringify({ action_id: id })));
+        await nc.flush();
+        await nc.close();
+        
+        console.log('Action rejection published:', id);
+        res.json({ success: true, message: 'Action rejected' });
+    } catch (err) {
+        console.error('Failed to reject action:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = 3001;
 
 connectKnowledge();

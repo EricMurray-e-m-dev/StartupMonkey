@@ -29,6 +29,7 @@ interface SystemConfig {
     database: DatabaseConfig | null;
     thresholds: DetectionThresholds | null;
     onboarding_complete: boolean;
+    execution_mode?: string;
 }
 
 const DEFAULT_THRESHOLDS: DetectionThresholds = {
@@ -44,6 +45,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [flushing, setFlushing] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [executionMode, setExecutionMode] = useState("autonomous");
 
     const [database, setDatabase] = useState<DatabaseConfig>({
         id: "",
@@ -71,6 +73,10 @@ export default function SettingsPage() {
             if (config.thresholds) {
                 setThresholds(config.thresholds);
             }
+
+            if (config.execution_mode) {
+                setExecutionMode(config.execution_mode);
+            }
         } catch (error) {
             console.error("Failed to fetch config:", error);
             setMessage({ type: "error", text: "Failed to load configuration" });
@@ -84,10 +90,11 @@ export default function SettingsPage() {
         setMessage(null);
 
         try {
-            const config: SystemConfig = {
+            const config = {
                 database,
                 thresholds,
                 onboarding_complete: true,
+                execution_mode: executionMode,
             };
 
             const response = await fetch("/api/config", {
@@ -223,6 +230,45 @@ export default function SettingsPage() {
                         />
                         <p className="text-xs text-muted-foreground">
                             Changes require Collector restart to take effect
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Execution Mode */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Execution Mode</CardTitle>
+                    <CardDescription>
+                        Control how StartupMonkey responds to detected issues
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="exec-mode">Mode</Label>
+                        <Select
+                            value={executionMode}
+                            onValueChange={setExecutionMode}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="autonomous">
+                                    Autonomous - Execute actions automatically
+                                </SelectItem>
+                                <SelectItem value="approval">
+                                    Approval - Wait for user approval before executing
+                                </SelectItem>
+                                <SelectItem value="observe">
+                                    Observe - Detect issues only, no actions taken
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                            {executionMode === "autonomous" && "Actions will be executed immediately when issues are detected."}
+                            {executionMode === "approval" && "Actions will be queued and require your approval in the Actions page."}
+                            {executionMode === "observe" && "Issues will be detected and logged, but no actions will be taken."}
                         </p>
                     </div>
                 </CardContent>
