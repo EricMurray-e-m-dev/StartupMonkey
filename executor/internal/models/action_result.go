@@ -33,9 +33,20 @@ type ActionMetadata struct {
 
 const (
 	StatusQueued                = "queued"
+	StatusSuggested             = "suggested"        // Observe mode - recommendation only
+	StatusPendingApproval       = "pending_approval" // Approval mode - waiting for user
+	StatusApproved              = "approved"         // User approved, ready to execute
+	StatusRejected              = "rejected"         // User rejected
 	StatusExecuting             = "executing"
 	StatusCompleted             = "completed"
 	StatusFailed                = "failed"
 	StatusPendingImplementation = "pending_implementation"
 	StatusRolledBack            = "rolled_back"
+)
+
+// Execution modes
+const (
+	ModeObserve    = "observe"    // Detect only, no execution
+	ModeApproval   = "approval"   // Detect, wait for approval
+	ModeAutonomous = "autonomous" // Detect and execute immediately
 )
