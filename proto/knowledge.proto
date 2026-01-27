@@ -15,6 +15,8 @@ service KnowledgeService {
   // Marks a detection as resolved, removing it from the active detections list
   rpc MarkDetectionResolved(ResolveDetectionRequest) returns (Response);
 
+  // Registers a new action in the knowledge base
+  rpc RegisterAction(RegisterActionRequest) returns (ActionResponse);
   // Updates the status of an existing action (e.g., pending, completed, failed)
   rpc UpdateActionStatus(UpdateActionRequest) returns (Response);
   // Retrieves all pending actions, optionally filtered by database
@@ -29,6 +31,8 @@ service KnowledgeService {
   // Removes a database from the registry
   rpc UnregisterDatabase(UnregisterDatabaseRequest) returns (Response);
 
+  // Retrieves the current system configuration
+  rpc GetSystemConfig(GetSystemConfigRequest) returns (SystemConfig);
   // Saves or updates the system configuration settings
   rpc SaveSystemConfig(SaveSystemConfigRequest) returns (Response);
   // Retrieves the current operational status of the system

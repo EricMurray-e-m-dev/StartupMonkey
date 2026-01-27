@@ -2442,18 +2442,20 @@ const file_proto_knowledge_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\">\n" +
 	"\bResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xc5\b\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xe3\t\n" +
 	"\x10KnowledgeService\x12V\n" +
 	"\x11RegisterDetection\x12#.knowledge.RegisterDetectionRequest\x1a\x1c.knowledge.DetectionResponse\x12W\n" +
 	"\x11IsDetectionActive\x12\x1e.knowledge.DetectionKeyRequest\x1a\".knowledge.DetectionStatusResponse\x12Y\n" +
 	"\x13GetActiveDetections\x12 .knowledge.DatabaseFilterRequest\x1a .knowledge.DetectionListResponse\x12P\n" +
-	"\x15MarkDetectionResolved\x12\".knowledge.ResolveDetectionRequest\x1a\x13.knowledge.Response\x12I\n" +
+	"\x15MarkDetectionResolved\x12\".knowledge.ResolveDetectionRequest\x1a\x13.knowledge.Response\x12M\n" +
+	"\x0eRegisterAction\x12 .knowledge.RegisterActionRequest\x1a\x19.knowledge.ActionResponse\x12I\n" +
 	"\x12UpdateActionStatus\x12\x1e.knowledge.UpdateActionRequest\x1a\x13.knowledge.Response\x12T\n" +
 	"\x11GetPendingActions\x12 .knowledge.DatabaseFilterRequest\x1a\x1d.knowledge.ActionListResponse\x12L\n" +
 	"\vGetDatabase\x12\x1d.knowledge.GetDatabaseRequest\x1a\x1e.knowledge.GetDatabaseResponse\x12Q\n" +
 	"\rListDatabases\x12\x1f.knowledge.ListDatabasesRequest\x1a\x1f.knowledge.DatabaseListResponse\x12S\n" +
 	"\x14UpdateDatabaseHealth\x12&.knowledge.UpdateDatabaseHealthRequest\x1a\x13.knowledge.Response\x12O\n" +
-	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12K\n" +
+	"\x12UnregisterDatabase\x12$.knowledge.UnregisterDatabaseRequest\x1a\x13.knowledge.Response\x12M\n" +
+	"\x0fGetSystemConfig\x12!.knowledge.GetSystemConfigRequest\x1a\x17.knowledge.SystemConfig\x12K\n" +
 	"\x10SaveSystemConfig\x12\".knowledge.SaveSystemConfigRequest\x1a\x13.knowledge.Response\x12M\n" +
 	"\x0fGetSystemStatus\x12!.knowledge.GetSystemStatusRequest\x1a\x17.knowledge.SystemStatus\x12O\n" +
 	"\fFlushAllData\x12\x1e.knowledge.FlushAllDataRequest\x1a\x1f.knowledge.FlushAllDataResponseB3Z1github.com/EricMurray-e-m-dev/StartupMonkey/protob\x06proto3"
@@ -2524,30 +2526,34 @@ var file_proto_knowledge_proto_depIdxs = []int32{
 	1,  // 10: knowledge.KnowledgeService.IsDetectionActive:input_type -> knowledge.DetectionKeyRequest
 	3,  // 11: knowledge.KnowledgeService.GetActiveDetections:input_type -> knowledge.DatabaseFilterRequest
 	7,  // 12: knowledge.KnowledgeService.MarkDetectionResolved:input_type -> knowledge.ResolveDetectionRequest
-	10, // 13: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
-	3,  // 14: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
-	15, // 15: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
-	17, // 16: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
-	20, // 17: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
-	21, // 18: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
-	29, // 19: knowledge.KnowledgeService.SaveSystemConfig:input_type -> knowledge.SaveSystemConfigRequest
-	30, // 20: knowledge.KnowledgeService.GetSystemStatus:input_type -> knowledge.GetSystemStatusRequest
-	31, // 21: knowledge.KnowledgeService.FlushAllData:input_type -> knowledge.FlushAllDataRequest
-	4,  // 22: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
-	2,  // 23: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
-	5,  // 24: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
-	33, // 25: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
-	33, // 26: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
-	11, // 27: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
-	16, // 28: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
-	18, // 29: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
-	33, // 30: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
-	33, // 31: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
-	33, // 32: knowledge.KnowledgeService.SaveSystemConfig:output_type -> knowledge.Response
-	27, // 33: knowledge.KnowledgeService.GetSystemStatus:output_type -> knowledge.SystemStatus
-	32, // 34: knowledge.KnowledgeService.FlushAllData:output_type -> knowledge.FlushAllDataResponse
-	22, // [22:35] is the sub-list for method output_type
-	9,  // [9:22] is the sub-list for method input_type
+	8,  // 13: knowledge.KnowledgeService.RegisterAction:input_type -> knowledge.RegisterActionRequest
+	10, // 14: knowledge.KnowledgeService.UpdateActionStatus:input_type -> knowledge.UpdateActionRequest
+	3,  // 15: knowledge.KnowledgeService.GetPendingActions:input_type -> knowledge.DatabaseFilterRequest
+	15, // 16: knowledge.KnowledgeService.GetDatabase:input_type -> knowledge.GetDatabaseRequest
+	17, // 17: knowledge.KnowledgeService.ListDatabases:input_type -> knowledge.ListDatabasesRequest
+	20, // 18: knowledge.KnowledgeService.UpdateDatabaseHealth:input_type -> knowledge.UpdateDatabaseHealthRequest
+	21, // 19: knowledge.KnowledgeService.UnregisterDatabase:input_type -> knowledge.UnregisterDatabaseRequest
+	28, // 20: knowledge.KnowledgeService.GetSystemConfig:input_type -> knowledge.GetSystemConfigRequest
+	29, // 21: knowledge.KnowledgeService.SaveSystemConfig:input_type -> knowledge.SaveSystemConfigRequest
+	30, // 22: knowledge.KnowledgeService.GetSystemStatus:input_type -> knowledge.GetSystemStatusRequest
+	31, // 23: knowledge.KnowledgeService.FlushAllData:input_type -> knowledge.FlushAllDataRequest
+	4,  // 24: knowledge.KnowledgeService.RegisterDetection:output_type -> knowledge.DetectionResponse
+	2,  // 25: knowledge.KnowledgeService.IsDetectionActive:output_type -> knowledge.DetectionStatusResponse
+	5,  // 26: knowledge.KnowledgeService.GetActiveDetections:output_type -> knowledge.DetectionListResponse
+	33, // 27: knowledge.KnowledgeService.MarkDetectionResolved:output_type -> knowledge.Response
+	9,  // 28: knowledge.KnowledgeService.RegisterAction:output_type -> knowledge.ActionResponse
+	33, // 29: knowledge.KnowledgeService.UpdateActionStatus:output_type -> knowledge.Response
+	11, // 30: knowledge.KnowledgeService.GetPendingActions:output_type -> knowledge.ActionListResponse
+	16, // 31: knowledge.KnowledgeService.GetDatabase:output_type -> knowledge.GetDatabaseResponse
+	18, // 32: knowledge.KnowledgeService.ListDatabases:output_type -> knowledge.DatabaseListResponse
+	33, // 33: knowledge.KnowledgeService.UpdateDatabaseHealth:output_type -> knowledge.Response
+	33, // 34: knowledge.KnowledgeService.UnregisterDatabase:output_type -> knowledge.Response
+	26, // 35: knowledge.KnowledgeService.GetSystemConfig:output_type -> knowledge.SystemConfig
+	33, // 36: knowledge.KnowledgeService.SaveSystemConfig:output_type -> knowledge.Response
+	27, // 37: knowledge.KnowledgeService.GetSystemStatus:output_type -> knowledge.SystemStatus
+	32, // 38: knowledge.KnowledgeService.FlushAllData:output_type -> knowledge.FlushAllDataResponse
+	24, // [24:39] is the sub-list for method output_type
+	9,  // [9:24] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
