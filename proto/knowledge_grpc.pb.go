@@ -23,12 +23,14 @@ const (
 	KnowledgeService_IsDetectionActive_FullMethodName     = "/knowledge.KnowledgeService/IsDetectionActive"
 	KnowledgeService_GetActiveDetections_FullMethodName   = "/knowledge.KnowledgeService/GetActiveDetections"
 	KnowledgeService_MarkDetectionResolved_FullMethodName = "/knowledge.KnowledgeService/MarkDetectionResolved"
+	KnowledgeService_RegisterAction_FullMethodName        = "/knowledge.KnowledgeService/RegisterAction"
 	KnowledgeService_UpdateActionStatus_FullMethodName    = "/knowledge.KnowledgeService/UpdateActionStatus"
 	KnowledgeService_GetPendingActions_FullMethodName     = "/knowledge.KnowledgeService/GetPendingActions"
 	KnowledgeService_GetDatabase_FullMethodName           = "/knowledge.KnowledgeService/GetDatabase"
 	KnowledgeService_ListDatabases_FullMethodName         = "/knowledge.KnowledgeService/ListDatabases"
 	KnowledgeService_UpdateDatabaseHealth_FullMethodName  = "/knowledge.KnowledgeService/UpdateDatabaseHealth"
 	KnowledgeService_UnregisterDatabase_FullMethodName    = "/knowledge.KnowledgeService/UnregisterDatabase"
+	KnowledgeService_GetSystemConfig_FullMethodName       = "/knowledge.KnowledgeService/GetSystemConfig"
 	KnowledgeService_SaveSystemConfig_FullMethodName      = "/knowledge.KnowledgeService/SaveSystemConfig"
 	KnowledgeService_GetSystemStatus_FullMethodName       = "/knowledge.KnowledgeService/GetSystemStatus"
 	KnowledgeService_FlushAllData_FullMethodName          = "/knowledge.KnowledgeService/FlushAllData"
@@ -48,6 +50,8 @@ type KnowledgeServiceClient interface {
 	GetActiveDetections(ctx context.Context, in *DatabaseFilterRequest, opts ...grpc.CallOption) (*DetectionListResponse, error)
 	// Marks a detection as resolved, removing it from the active detections list
 	MarkDetectionResolved(ctx context.Context, in *ResolveDetectionRequest, opts ...grpc.CallOption) (*Response, error)
+	// Registers a new action in the knowledge base
+	RegisterAction(ctx context.Context, in *RegisterActionRequest, opts ...grpc.CallOption) (*ActionResponse, error)
 	// Updates the status of an existing action (e.g., pending, completed, failed)
 	UpdateActionStatus(ctx context.Context, in *UpdateActionRequest, opts ...grpc.CallOption) (*Response, error)
 	// Retrieves all pending actions, optionally filtered by database
@@ -60,6 +64,8 @@ type KnowledgeServiceClient interface {
 	UpdateDatabaseHealth(ctx context.Context, in *UpdateDatabaseHealthRequest, opts ...grpc.CallOption) (*Response, error)
 	// Removes a database from the registry
 	UnregisterDatabase(ctx context.Context, in *UnregisterDatabaseRequest, opts ...grpc.CallOption) (*Response, error)
+	// Retrieves the current system configuration
+	GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error)
 	// Saves or updates the system configuration settings
 	SaveSystemConfig(ctx context.Context, in *SaveSystemConfigRequest, opts ...grpc.CallOption) (*Response, error)
 	// Retrieves the current operational status of the system
@@ -110,6 +116,16 @@ func (c *knowledgeServiceClient) MarkDetectionResolved(ctx context.Context, in *
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, KnowledgeService_MarkDetectionResolved_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) RegisterAction(ctx context.Context, in *RegisterActionRequest, opts ...grpc.CallOption) (*ActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ActionResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_RegisterAction_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +192,16 @@ func (c *knowledgeServiceClient) UnregisterDatabase(ctx context.Context, in *Unr
 	return out, nil
 }
 
+func (c *knowledgeServiceClient) GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SystemConfig)
+	err := c.cc.Invoke(ctx, KnowledgeService_GetSystemConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *knowledgeServiceClient) SaveSystemConfig(ctx context.Context, in *SaveSystemConfigRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
@@ -220,6 +246,8 @@ type KnowledgeServiceServer interface {
 	GetActiveDetections(context.Context, *DatabaseFilterRequest) (*DetectionListResponse, error)
 	// Marks a detection as resolved, removing it from the active detections list
 	MarkDetectionResolved(context.Context, *ResolveDetectionRequest) (*Response, error)
+	// Registers a new action in the knowledge base
+	RegisterAction(context.Context, *RegisterActionRequest) (*ActionResponse, error)
 	// Updates the status of an existing action (e.g., pending, completed, failed)
 	UpdateActionStatus(context.Context, *UpdateActionRequest) (*Response, error)
 	// Retrieves all pending actions, optionally filtered by database
@@ -232,6 +260,8 @@ type KnowledgeServiceServer interface {
 	UpdateDatabaseHealth(context.Context, *UpdateDatabaseHealthRequest) (*Response, error)
 	// Removes a database from the registry
 	UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error)
+	// Retrieves the current system configuration
+	GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error)
 	// Saves or updates the system configuration settings
 	SaveSystemConfig(context.Context, *SaveSystemConfigRequest) (*Response, error)
 	// Retrieves the current operational status of the system
@@ -260,6 +290,9 @@ func (UnimplementedKnowledgeServiceServer) GetActiveDetections(context.Context, 
 func (UnimplementedKnowledgeServiceServer) MarkDetectionResolved(context.Context, *ResolveDetectionRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarkDetectionResolved not implemented")
 }
+func (UnimplementedKnowledgeServiceServer) RegisterAction(context.Context, *RegisterActionRequest) (*ActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterAction not implemented")
+}
 func (UnimplementedKnowledgeServiceServer) UpdateActionStatus(context.Context, *UpdateActionRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateActionStatus not implemented")
 }
@@ -277,6 +310,9 @@ func (UnimplementedKnowledgeServiceServer) UpdateDatabaseHealth(context.Context,
 }
 func (UnimplementedKnowledgeServiceServer) UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnregisterDatabase not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystemConfig not implemented")
 }
 func (UnimplementedKnowledgeServiceServer) SaveSystemConfig(context.Context, *SaveSystemConfigRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveSystemConfig not implemented")
@@ -376,6 +412,24 @@ func _KnowledgeService_MarkDetectionResolved_Handler(srv interface{}, ctx contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KnowledgeServiceServer).MarkDetectionResolved(ctx, req.(*ResolveDetectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_RegisterAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).RegisterAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_RegisterAction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).RegisterAction(ctx, req.(*RegisterActionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -488,6 +542,24 @@ func _KnowledgeService_UnregisterDatabase_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KnowledgeService_GetSystemConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSystemConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).GetSystemConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_GetSystemConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).GetSystemConfig(ctx, req.(*GetSystemConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KnowledgeService_SaveSystemConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveSystemConfigRequest)
 	if err := dec(in); err != nil {
@@ -566,6 +638,10 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _KnowledgeService_MarkDetectionResolved_Handler,
 		},
 		{
+			MethodName: "RegisterAction",
+			Handler:    _KnowledgeService_RegisterAction_Handler,
+		},
+		{
 			MethodName: "UpdateActionStatus",
 			Handler:    _KnowledgeService_UpdateActionStatus_Handler,
 		},
@@ -588,6 +664,10 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnregisterDatabase",
 			Handler:    _KnowledgeService_UnregisterDatabase_Handler,
+		},
+		{
+			MethodName: "GetSystemConfig",
+			Handler:    _KnowledgeService_GetSystemConfig_Handler,
 		},
 		{
 			MethodName: "SaveSystemConfig",
