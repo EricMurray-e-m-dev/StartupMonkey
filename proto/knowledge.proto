@@ -22,6 +22,8 @@ service KnowledgeService {
   // Retrieves all pending actions, optionally filtered by database
   rpc GetPendingActions(DatabaseFilterRequest) returns (ActionListResponse);
 
+  // Registers a new database with the knowledge service
+  rpc RegisterDatabase(RegisterDatabaseRequest) returns (DatabaseResponse);
   // Retrieves detailed information about a specific registered database
   rpc GetDatabase(GetDatabaseRequest) returns (GetDatabaseResponse);
   // Lists all registered databases in the system

@@ -1,4 +1,4 @@
-export type ActionStatus = 'queued' | 'executing' | 'completed' | 'failed' | 'rolled_back';
+export type ActionStatus = 'queued' | 'executing' | 'completed' | 'failed' | 'rolled_back' | 'suggested' | 'pending_approval' | 'rejected';
 
 export interface ActionResult {
     action_id: string;

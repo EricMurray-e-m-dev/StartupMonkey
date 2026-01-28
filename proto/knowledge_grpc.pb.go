@@ -26,6 +26,7 @@ const (
 	KnowledgeService_RegisterAction_FullMethodName        = "/knowledge.KnowledgeService/RegisterAction"
 	KnowledgeService_UpdateActionStatus_FullMethodName    = "/knowledge.KnowledgeService/UpdateActionStatus"
 	KnowledgeService_GetPendingActions_FullMethodName     = "/knowledge.KnowledgeService/GetPendingActions"
+	KnowledgeService_RegisterDatabase_FullMethodName      = "/knowledge.KnowledgeService/RegisterDatabase"
 	KnowledgeService_GetDatabase_FullMethodName           = "/knowledge.KnowledgeService/GetDatabase"
 	KnowledgeService_ListDatabases_FullMethodName         = "/knowledge.KnowledgeService/ListDatabases"
 	KnowledgeService_UpdateDatabaseHealth_FullMethodName  = "/knowledge.KnowledgeService/UpdateDatabaseHealth"
@@ -56,6 +57,8 @@ type KnowledgeServiceClient interface {
 	UpdateActionStatus(ctx context.Context, in *UpdateActionRequest, opts ...grpc.CallOption) (*Response, error)
 	// Retrieves all pending actions, optionally filtered by database
 	GetPendingActions(ctx context.Context, in *DatabaseFilterRequest, opts ...grpc.CallOption) (*ActionListResponse, error)
+	// Registers a new database with the knowledge service
+	RegisterDatabase(ctx context.Context, in *RegisterDatabaseRequest, opts ...grpc.CallOption) (*DatabaseResponse, error)
 	// Retrieves detailed information about a specific registered database
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*GetDatabaseResponse, error)
 	// Lists all registered databases in the system
@@ -146,6 +149,16 @@ func (c *knowledgeServiceClient) GetPendingActions(ctx context.Context, in *Data
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ActionListResponse)
 	err := c.cc.Invoke(ctx, KnowledgeService_GetPendingActions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *knowledgeServiceClient) RegisterDatabase(ctx context.Context, in *RegisterDatabaseRequest, opts ...grpc.CallOption) (*DatabaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DatabaseResponse)
+	err := c.cc.Invoke(ctx, KnowledgeService_RegisterDatabase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +265,8 @@ type KnowledgeServiceServer interface {
 	UpdateActionStatus(context.Context, *UpdateActionRequest) (*Response, error)
 	// Retrieves all pending actions, optionally filtered by database
 	GetPendingActions(context.Context, *DatabaseFilterRequest) (*ActionListResponse, error)
+	// Registers a new database with the knowledge service
+	RegisterDatabase(context.Context, *RegisterDatabaseRequest) (*DatabaseResponse, error)
 	// Retrieves detailed information about a specific registered database
 	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
 	// Lists all registered databases in the system
@@ -298,6 +313,9 @@ func (UnimplementedKnowledgeServiceServer) UpdateActionStatus(context.Context, *
 }
 func (UnimplementedKnowledgeServiceServer) GetPendingActions(context.Context, *DatabaseFilterRequest) (*ActionListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPendingActions not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) RegisterDatabase(context.Context, *RegisterDatabaseRequest) (*DatabaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterDatabase not implemented")
 }
 func (UnimplementedKnowledgeServiceServer) GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDatabase not implemented")
@@ -466,6 +484,24 @@ func _KnowledgeService_GetPendingActions_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KnowledgeServiceServer).GetPendingActions(ctx, req.(*DatabaseFilterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KnowledgeService_RegisterDatabase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterDatabaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).RegisterDatabase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_RegisterDatabase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).RegisterDatabase(ctx, req.(*RegisterDatabaseRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -648,6 +684,10 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPendingActions",
 			Handler:    _KnowledgeService_GetPendingActions_Handler,
+		},
+		{
+			MethodName: "RegisterDatabase",
+			Handler:    _KnowledgeService_RegisterDatabase_Handler,
 		},
 		{
 			MethodName: "GetDatabase",
