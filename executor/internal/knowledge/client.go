@@ -68,6 +68,30 @@ func (k *Client) GetPendingActions(ctx context.Context, databaseID string) ([]*p
 	return resp.Actions, nil
 }
 
+// GetSystemConfig fetches the system configuration from Knowledge service.
+func (c *Client) GetSystemConfig(ctx context.Context) (*pb.SystemConfig, error) {
+	resp, err := c.client.GetSystemConfig(ctx, &pb.GetSystemConfigRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("GetSystemConfig RPC failed: %w", err)
+	}
+	return resp, nil
+}
+
+// GetExecutionMode fetches just the execution mode, with default fallback.
+func (c *Client) GetExecutionMode(ctx context.Context) string {
+	config, err := c.GetSystemConfig(ctx)
+	if err != nil {
+		log.Printf("Warning: failed to get execution mode, defaulting to autonomous: %v", err)
+		return "autonomous"
+	}
+
+	if config.ExecutionMode == "" {
+		return "autonomous" // Default for backwards compatibility
+	}
+
+	return config.ExecutionMode
+}
+
 func (k *Client) GetServiceClient() pb.KnowledgeServiceClient {
 	return k.client
 }

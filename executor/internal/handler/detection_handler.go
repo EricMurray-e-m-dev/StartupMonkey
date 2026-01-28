@@ -40,6 +40,10 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 	ctx := context.Background()
 
+	// Check execution mode
+	executionMode := h.getExecutionMode(ctx)
+	log.Printf("	Execution Mode: %s", executionMode)
+
 	if h.knowledgeClient != nil {
 		if isDuplicate, err := h.checkForDuplicateActions(ctx, detection); err != nil {
 			log.Printf("warning failed to check duplicate actions: %v", err)
@@ -59,13 +63,29 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 
 	h.storeActionObject(actionID, action)
 
+	// Determine initial status based on execution mode
+	var initialStatus string
+	var message string
+
+	switch executionMode {
+	case models.ModeObserve:
+		initialStatus = models.StatusSuggested
+		message = fmt.Sprintf("Suggested action: %s (observe mode)", detection.ActionType)
+	case models.ModeApproval:
+		initialStatus = models.StatusPendingApproval
+		message = fmt.Sprintf("Action pending approval: %s", detection.ActionType)
+	default: // autonomous
+		initialStatus = models.StatusQueued
+		message = fmt.Sprintf("Action queued: %s", detection.ActionType)
+	}
+
 	result := &models.ActionResult{
 		ActionID:    actionID,
 		DetectionID: detection.DetectionID,
 		ActionType:  detection.ActionType,
 		DatabaseID:  detection.DatabaseID,
-		Status:      models.StatusQueued,
-		Message:     fmt.Sprintf("Action queued: %s", detection.ActionType),
+		Status:      initialStatus,
+		Message:     message,
 		CreatedAt:   time.Now(),
 	}
 
@@ -85,9 +105,89 @@ func (h *DetectionHandler) HandleDetection(detection *models.Detection) (*models
 		}
 	}
 
-	log.Printf("Action queued: %s (ID: %s)", detection.ActionType, result.ActionID)
+	log.Printf("Action %s: %s (ID: %s)", initialStatus, detection.ActionType, result.ActionID)
 
+	// Only execute immediately in autonomous mode
+	if executionMode == models.ModeAutonomous {
+		go h.executeAction(action, detection)
+	}
+
+	return result, nil
+}
+
+func (h *DetectionHandler) getExecutionMode(ctx context.Context) string {
+	if h.knowledgeClient == nil {
+		return models.ModeAutonomous // Default if no Knowledge client
+	}
+	return h.knowledgeClient.GetExecutionMode(ctx)
+}
+
+// ApproveAction approves a pending action and executes it
+func (h *DetectionHandler) ApproveAction(actionID string) (*models.ActionResult, error) {
+	result, err := h.GetActionStatus(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("action not found: %w", err)
+	}
+
+	if result.Status != models.StatusPendingApproval {
+		return nil, fmt.Errorf("action not pending approval, current status: %s", result.Status)
+	}
+
+	action, err := h.getActionObject(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("action object not found: %w", err)
+	}
+
+	// Update status to approved/queued
+	result.Status = models.StatusQueued
+	result.Message = "Action approved by user"
+	h.storeAction(result)
+
+	ctx := context.Background()
+	h.updateActionStatusInKnowledge(ctx, result)
+
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(result)
+	}
+
+	log.Printf("Action approved: %s", actionID)
+
+	// Create detection from stored result for executeAction
+	detection := &models.Detection{
+		DetectionID: result.DetectionID,
+		ActionType:  result.ActionType,
+		DatabaseID:  result.DatabaseID,
+	}
+
+	// Execute the action
 	go h.executeAction(action, detection)
+
+	return result, nil
+}
+
+// RejectAction rejects a pending action
+func (h *DetectionHandler) RejectAction(actionID string) (*models.ActionResult, error) {
+	result, err := h.GetActionStatus(actionID)
+	if err != nil {
+		return nil, fmt.Errorf("action not found: %w", err)
+	}
+
+	if result.Status != models.StatusPendingApproval {
+		return nil, fmt.Errorf("action not pending approval, current status: %s", result.Status)
+	}
+
+	result.Status = models.StatusRejected
+	result.Message = "Action rejected by user"
+	h.storeAction(result)
+
+	ctx := context.Background()
+	h.updateActionStatusInKnowledge(ctx, result)
+
+	if h.natsPublisher != nil {
+		h.natsPublisher.PublishActionStatus(result)
+	}
+
+	log.Printf("Action rejected: %s", actionID)
 
 	return result, nil
 }

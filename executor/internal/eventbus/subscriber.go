@@ -26,15 +26,27 @@ type RollbackProcessor interface {
 	RollbackAction(actionID string) (*models.ActionResult, error)
 }
 
+type ApprovalRequest struct {
+	ActionID string `json:"action_id"`
+}
+
+type ApprovalProcessor interface {
+	ApproveAction(actionID string) (*models.ActionResult, error)
+	RejectAction(actionID string) (*models.ActionResult, error)
+}
+
 type Subscriber struct {
 	conn              *nats.Conn
 	detectionSub      *nats.Subscription
 	rollbackSub       *nats.Subscription
+	approveSub        *nats.Subscription
+	rejectSub         *nats.Subscription
 	processor         DetectionProcessor
 	rollbackProcessor RollbackProcessor
+	approvalProcessor ApprovalProcessor
 }
 
-func NewSubscriber(natsURL string, processor DetectionProcessor, rollbackProcessor RollbackProcessor) (*Subscriber, error) {
+func NewSubscriber(natsURL string, processor DetectionProcessor, rollbackProcessor RollbackProcessor, approvalProcessor ApprovalProcessor) (*Subscriber, error) {
 	conn, err := nats.Connect(natsURL,
 		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(10),
@@ -51,6 +63,7 @@ func NewSubscriber(natsURL string, processor DetectionProcessor, rollbackProcess
 		conn:              conn,
 		processor:         processor,
 		rollbackProcessor: rollbackProcessor,
+		approvalProcessor: approvalProcessor,
 	}, nil
 }
 
@@ -77,6 +90,27 @@ func (s *Subscriber) Start() error {
 			return err
 		}
 		log.Printf("Subscribed to 'rollback.requested'")
+	}
+
+	// Approval subscriptions
+	if s.approvalProcessor != nil {
+		log.Printf("Subscribing to 'actions.approve'")
+		s.approveSub, err = s.conn.Subscribe("actions.approve", func(msg *nats.Msg) {
+			s.handleApproveMessage(msg)
+		})
+		if err != nil {
+			return err
+		}
+		log.Printf("Subscribed to 'actions.approve'")
+
+		log.Printf("Subscribing to 'actions.reject'")
+		s.rejectSub, err = s.conn.Subscribe("actions.reject", func(msg *nats.Msg) {
+			s.handleRejectMessage(msg)
+		})
+		if err != nil {
+			return err
+		}
+		log.Printf("Subscribed to 'actions.reject'")
 	}
 
 	return nil
@@ -122,12 +156,58 @@ func (s *Subscriber) handleRollbackMessage(msg *nats.Msg) {
 	log.Printf("Autonomous rollback completed: %s -> %s", request.ActionID, result.Status)
 }
 
+func (s *Subscriber) handleApproveMessage(msg *nats.Msg) {
+	log.Printf("Received approval request from event bus (%d bytes)", len(msg.Data))
+
+	var request ApprovalRequest
+	if err := json.Unmarshal(msg.Data, &request); err != nil {
+		log.Printf("Failed to unmarshal approval request: %v", err)
+		return
+	}
+
+	log.Printf("Processing action approval: %s", request.ActionID)
+
+	result, err := s.approvalProcessor.ApproveAction(request.ActionID)
+	if err != nil {
+		log.Printf("Action approval failed: %v", err)
+		return
+	}
+
+	log.Printf("Action approved and executing: %s -> %s", request.ActionID, result.Status)
+}
+
+func (s *Subscriber) handleRejectMessage(msg *nats.Msg) {
+	log.Printf("Received rejection request from event bus (%d bytes)", len(msg.Data))
+
+	var request ApprovalRequest
+	if err := json.Unmarshal(msg.Data, &request); err != nil {
+		log.Printf("Failed to unmarshal rejection request: %v", err)
+		return
+	}
+
+	log.Printf("Processing action rejection: %s", request.ActionID)
+
+	result, err := s.approvalProcessor.RejectAction(request.ActionID)
+	if err != nil {
+		log.Printf("Action rejection failed: %v", err)
+		return
+	}
+
+	log.Printf("Action rejected: %s -> %s", request.ActionID, result.Status)
+}
+
 func (s *Subscriber) Close() {
 	if s.detectionSub != nil {
 		s.detectionSub.Unsubscribe()
 	}
 	if s.rollbackSub != nil {
 		s.rollbackSub.Unsubscribe()
+	}
+	if s.approveSub != nil {
+		s.approveSub.Unsubscribe()
+	}
+	if s.rejectSub != nil {
+		s.rejectSub.Unsubscribe()
 	}
 
 	if s.conn != nil {

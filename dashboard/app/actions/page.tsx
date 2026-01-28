@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle, ExternalLink } from "lucide-react";
+import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle, ExternalLink, Eye, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 import { useActions } from "@/hooks/useActions";
 import { ActionResult } from "@/types/actions";
@@ -51,8 +51,10 @@ export default function ActionsPage() {
         );
     }
 
-    // Calculate stats (exclude rolled_back actions)
-    const activeActions = actions.filter(a => a.status !== 'rolled_back');
+    // Calculate stats (exclude rolled_back and rejected actions from main counts)
+    const activeActions = actions.filter(a => a.status !== 'rolled_back' && a.status !== 'rejected');
+    const suggestedCount = activeActions.filter(a => a.status === 'suggested').length;
+    const pendingApprovalCount = activeActions.filter(a => a.status === 'pending_approval').length;
     const queuedCount = activeActions.filter(a => a.status === 'queued').length;
     const executingCount = activeActions.filter(a => a.status === 'executing').length;
     const completedCount = activeActions.filter(a => a.status === 'completed').length;
@@ -69,7 +71,19 @@ export default function ActionsPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-6">
+                <SummaryCard
+                    title="Suggested"
+                    value={suggestedCount}
+                    icon={<Eye className="h-4 w-4 text-slate-500" />}
+                    variant="suggested"
+                />
+                <SummaryCard
+                    title="Pending"
+                    value={pendingApprovalCount}
+                    icon={<Clock className="h-4 w-4 text-orange-500" />}
+                    variant="pending"
+                />
                 <SummaryCard
                     title="Queued"
                     value={queuedCount}
@@ -125,7 +139,7 @@ function SummaryCard({
     title: string; 
     value: number; 
     icon: React.ReactNode;
-    variant: 'queued' | 'executing' | 'completed' | 'failed';
+    variant: 'suggested' | 'pending' | 'queued' | 'executing' | 'completed' | 'failed';
 }) {
     return (
         <Card>
@@ -143,6 +157,8 @@ function SummaryCard({
 // Action Card Component
 function ActionCard({ action }: { action: ActionResult }) {
     const [isRollingBack, setIsRollingBack] = useState(false);
+    const [isApproving, setIsApproving] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
 
     const handleRollback = async () => {
         setIsRollingBack(true);
@@ -175,9 +191,76 @@ function ActionCard({ action }: { action: ActionResult }) {
         } finally {
             setIsRollingBack(false);
         }
-    }
+    };
+
+    const handleApprove = async () => {
+        setIsApproving(true);
+    
+        try {
+            const response = await fetch(`/api/actions/${action.action_id}/approve`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Approval failed');
+            }
+
+            toast.success('Action approved', {
+                description: `${action.action_type} is now executing`,
+            });
+        } catch (error) {
+            console.error("Approval error:", error);
+            toast.error('Approval failed', {
+                description: error instanceof Error ? error.message : 'Unknown Error',
+            });
+        } finally {
+            setIsApproving(false);
+        }
+    };
+
+    const handleReject = async () => {
+        setIsRejecting(true);
+    
+        try {
+            const response = await fetch(`/api/actions/${action.action_id}/reject`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Rejection failed');
+            }
+
+            toast.success('Action rejected', {
+                description: `${action.action_type} has been rejected`,
+            });
+        } catch (error) {
+            console.error("Rejection error:", error);
+            toast.error('Rejection failed', {
+                description: error instanceof Error ? error.message : 'Unknown Error',
+            });
+        } finally {
+            setIsRejecting(false);
+        }
+    };
 
     const statusConfig = {
+        suggested: {
+            variant: 'secondary' as const,
+            icon: <Eye className="h-5 w-5 text-slate-600" />,
+            bgClass: 'bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800'
+        },
+        pending_approval: {
+            variant: 'default' as const,
+            icon: <Clock className="h-5 w-5 text-orange-600" />,
+            bgClass: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900'
+        },
+        rejected: {
+            variant: 'secondary' as const,
+            icon: <ThumbsDown className="h-5 w-5 text-gray-600" />,
+            bgClass: 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800'
+        },
         queued: {
             variant: 'secondary' as const,
             icon: <Clock className="h-5 w-5 text-blue-600" />,
@@ -205,11 +288,12 @@ function ActionCard({ action }: { action: ActionResult }) {
         }
     };
 
-    const config = statusConfig[action.status as keyof typeof statusConfig];
+    const config = statusConfig[action.status as keyof typeof statusConfig] || statusConfig.queued;
 
     // Check action type
     const isRecommendation = action.action_type === 'recommendation' || action.action_type === 'cache_optimization_recommendation';
     const isConfigTuning = action.action_type === 'tune_config_high_latency';
+    const isPendingApproval = action.status === 'pending_approval';
 
     return (
         <Card className={config.bgClass}>
@@ -231,8 +315,43 @@ function ActionCard({ action }: { action: ActionResult }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Badge variant={config.variant}>
-                            {action.status}
+                            {action.status.replace(/_/g, ' ')}
                         </Badge>
+                        
+                        {/* Approve/Reject buttons for pending_approval */}
+                        {isPendingApproval && (
+                            <>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={handleApprove}
+                                    disabled={isApproving || isRejecting}
+                                    className="bg-green-600 hover:bg-green-700"
+                                >
+                                    {isApproving ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <ThumbsUp className="h-4 w-4" />
+                                    )}
+                                    <span className="ml-2">Approve</span>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleReject}
+                                    disabled={isApproving || isRejecting}
+                                >
+                                    {isRejecting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <ThumbsDown className="h-4 w-4" />
+                                    )}
+                                    <span className="ml-2">Reject</span>
+                                </Button>
+                            </>
+                        )}
+
+                        {/* Rollback button for completed actions */}
                         {action.status === 'completed' && action.can_rollback && !isRecommendation && (
                             <Button
                                 variant="outline"
@@ -258,6 +377,16 @@ function ActionCard({ action }: { action: ActionResult }) {
                         {action.message}
                     </p>
                 </div>
+
+                {/* Observe mode hint */}
+                {action.status === 'suggested' && (
+                    <Alert className="bg-slate-100 dark:bg-slate-900 border-slate-300">
+                        <Eye className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                            Observe mode: This action was suggested but not executed. Switch to Approval or Autonomous mode in Settings to enable execution.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Error (if failed) */}
                 {action.error && (
