@@ -59,7 +59,7 @@ export function Sidebar() {
                     Settings
                 </Link>
                 <p className="mt-3 px-3 text-xs text-muted-foreground">
-                    v0.0.5
+                    v0.2.0
                 </p>
             </div>
         </div>
