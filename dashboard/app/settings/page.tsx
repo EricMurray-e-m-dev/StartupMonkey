@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DatabaseConfig {
@@ -46,6 +46,7 @@ export default function SettingsPage() {
     const [flushing, setFlushing] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [executionMode, setExecutionMode] = useState("autonomous");
+    const [unavailableFeatures, setUnavailableFeatures] = useState<string[]>([]);
 
     const [database, setDatabase] = useState<DatabaseConfig>({
         id: "",
@@ -59,6 +60,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetchConfig();
+        fetchHealthStatus();
     }, []);
 
     const fetchConfig = async () => {
@@ -82,6 +84,20 @@ export default function SettingsPage() {
             setMessage({ type: "error", text: "Failed to load configuration" });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchHealthStatus = async () => {
+        try {
+            const response = await fetch("/api/health");
+            if (response.ok) {
+                const health = await response.json();
+                if (health.unavailable_features) {
+                    setUnavailableFeatures(health.unavailable_features);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch health status:", error);
         }
     };
 
@@ -171,6 +187,36 @@ export default function SettingsPage() {
                     )}
                     <AlertDescription>{message.text}</AlertDescription>
                 </Alert>
+            )}
+
+            {/* Unavailable Features Warning */}
+            {unavailableFeatures.length > 0 && (
+                <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-amber-700 dark:text-amber-500 flex items-center gap-2 text-base">
+                            <AlertTriangle className="h-4 w-4" />
+                            Limited Functionality
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-amber-800 dark:text-amber-400 mb-2">
+                            The following extensions could not be enabled:
+                        </p>
+                        <ul className="text-sm text-amber-700 dark:text-amber-500 list-disc list-inside space-y-1">
+                            {unavailableFeatures.map((feature) => (
+                                <li key={feature}>
+                                    <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">{feature}</code>
+                                    {feature === "pg_stat_statements" && (
+                                        <span className="text-muted-foreground"> — Required for slow query analysis and index recommendations</span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="text-xs text-muted-foreground mt-3">
+                            Add to postgresql.conf: <code className="bg-muted px-1 rounded">shared_preload_libraries = &apos;pg_stat_statements&apos;</code> and restart PostgreSQL.
+                        </p>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Database Configuration */}

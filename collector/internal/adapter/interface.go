@@ -11,6 +11,7 @@ type MetricAdapter interface {
 	CollectMetrics() (*RawMetrics, error)
 	Close() error
 	HealthCheck() error
+	GetUnavailableFeatures() []string
 }
 
 var (
