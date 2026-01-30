@@ -10,6 +10,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/eventbus"
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/health"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/knowledge"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
@@ -153,6 +154,8 @@ func (o *Orchestrator) connectDatabase() error {
 	}
 
 	o.normaliser = normaliser.NewNormaliser(o.config.DBAdapter)
+	health.SetUnavailableFeatures(o.adapter.GetUnavailableFeatures())
+
 	log.Printf("Database connected and healthy")
 	return nil
 }

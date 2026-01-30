@@ -165,6 +165,14 @@ func (p *PostgresAdapter) HealthCheck() error {
 	return nil
 }
 
+func (p *PostgresAdapter) GetUnavailableFeatures() []string {
+	var features []string
+	if !p.pgStatStatementsAvailable {
+		features = append(features, "pg_stat_statements")
+	}
+	return features
+}
+
 func (p *PostgresAdapter) getActiveConnections(ctx context.Context) (int32, error) {
 	var count int32
 	query := "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'"
