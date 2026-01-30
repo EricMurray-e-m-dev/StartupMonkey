@@ -12,9 +12,10 @@ import (
 )
 
 type PostgresAdapter struct {
-	connectionString string
-	databaseId       string
-	pool             *pgxpool.Pool
+	connectionString          string
+	databaseId                string
+	pool                      *pgxpool.Pool
+	pgStatStatementsAvailable bool
 }
 
 // Postgres-specific metrics
@@ -42,6 +43,13 @@ func (p *PostgresAdapter) Connect() error {
 	}
 
 	p.pool = pool
+
+	// Ensure pg_stat_statements is available
+	if err := p.ensurePgStatStatements(ctx); err != nil {
+		log.Printf("Warning: pg_stat_statements setup issue: %v", err)
+		// Don't fail connection - graceful degradation
+	}
+
 	return nil
 }
 
@@ -284,6 +292,9 @@ func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TabelScanStat, e
 }
 
 func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName string) ([]string, error) {
+	if !p.pgStatStatementsAvailable {
+		return nil, fmt.Errorf("pg_stat_statements not available")
+	}
 	//log.Printf("Analysing Queries from table %s", tableName)
 	query := `
 		SELECT 
@@ -368,4 +379,42 @@ func extractFilteredColumns(query string) []string {
 	}
 
 	return columns
+}
+
+func (p *PostgresAdapter) ensurePgStatStatements(ctx context.Context) error {
+	var exists bool
+	err := p.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'
+		)
+	`).Scan(&exists)
+
+	if err != nil {
+		p.pgStatStatementsAvailable = false
+		return fmt.Errorf("failed to check pg_stat_statements: %w", err)
+	}
+
+	if exists {
+		p.pgStatStatementsAvailable = true
+		return nil
+	}
+
+	// Check if preloaded before attempting creation
+	var sharedLibs string
+	_ = p.pool.QueryRow(ctx, `SHOW shared_preload_libraries`).Scan(&sharedLibs)
+
+	if !strings.Contains(sharedLibs, "pg_stat_statements") {
+		p.pgStatStatementsAvailable = false
+		return fmt.Errorf("pg_stat_statements not in shared_preload_libraries")
+	}
+
+	_, err = p.pool.Exec(ctx, `CREATE EXTENSION IF NOT EXISTS pg_stat_statements`)
+	if err != nil {
+		p.pgStatStatementsAvailable = false
+		return fmt.Errorf("failed to create extension: %w", err)
+	}
+
+	p.pgStatStatementsAvailable = true
+	log.Printf("pg_stat_statements extension enabled")
+	return nil
 }
