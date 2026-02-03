@@ -176,11 +176,12 @@ func (p *PostgresAdapter) GetSlowQueries(ctx context.Context, thresholdMs float6
 func (p *PostgresAdapter) GetCapabilities() Capabilities {
 	return Capabilities{
 		SupportsIndexes:              true,
-		SupportsConcurrentIndexes:    true, // Postgres 8.2+
+		SupportsConcurrentIndexes:    true,
 		SupportsUniqueIndex:          true,
 		SupportsMultiColumnIndex:     true,
 		SupportsConfigTuning:         true,
 		SupportsRuntimeConfigChanges: true,
+		SupportsVacuum:               true,
 	}
 }
 
@@ -237,4 +238,32 @@ func analyseQuery(query string) (issueType string, recommendation string) {
 
 	// Default
 	return "high_latency", "Review query execution plan with EXPLAIN ANALYZE"
+}
+
+func (p *PostgresAdapter) VacuumTable(ctx context.Context, tableName string) error {
+	// VACUUM cannot run inside a transaction, so we use a simple connection
+	query := fmt.Sprintf("VACUUM ANALYZE %s", tableName)
+
+	_, err := p.pool.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to vacuum table %s: %w", tableName, err)
+	}
+
+	return nil
+}
+
+func (p *PostgresAdapter) GetDeadTuples(ctx context.Context, tableName string) (int64, error) {
+	query := `
+		SELECT n_dead_tup 
+		FROM pg_stat_user_tables 
+		WHERE relname = $1
+	`
+
+	var deadTuples int64
+	err := p.pool.QueryRow(ctx, query, tableName).Scan(&deadTuples)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get dead tuples for %s: %w", tableName, err)
+	}
+
+	return deadTuples, nil
 }
