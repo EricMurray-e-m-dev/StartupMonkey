@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,12 +19,20 @@ type PostgresAdapter struct {
 	pgStatStatementsAvailable bool
 }
 
-// Postgres-specific metrics
 type TabelScanStat struct {
 	TableName  string
 	SeqScans   int64
 	SeqTupRead int64
 	IdxScans   int64
+}
+
+type TableBloatStat struct {
+	TableName      string
+	LiveTuples     int64
+	DeadTuples     int64
+	BloatRatio     float64
+	LastVacuum     *time.Time
+	LastAutoVacuum *time.Time
 }
 
 func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
@@ -136,6 +145,26 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 			fmt.Printf("warning: could not analyse queries: %v\n", err)
 		} else if len(recommendedColumns) > 0 {
 			metrics.Labels["pg.recommended_index_column"] = recommendedColumns[0]
+		}
+	}
+
+	// Table bloat stats
+	bloatStats, err := p.getTableBloat(ctx)
+	if err != nil {
+		fmt.Printf("failed to get table bloat stats: %v\n", err)
+	} else if len(bloatStats) > 0 {
+		for _, table := range bloatStats {
+			prefix := fmt.Sprintf("pg.table.%s", table.TableName)
+			metrics.ExtendedMetrics[prefix+".live_tuples"] = float64(table.LiveTuples)
+			metrics.ExtendedMetrics[prefix+".dead_tuples"] = float64(table.DeadTuples)
+			metrics.ExtendedMetrics[prefix+".bloat_ratio"] = table.BloatRatio
+		}
+
+		// Track worst bloated table
+		worstBloat := bloatStats[0]
+		if worstBloat.BloatRatio > 0.1 { // Only flag if > 10% bloat
+			metrics.Labels["pg.worst_bloat_table"] = worstBloat.TableName
+			metrics.ExtendedMetrics["pg.worst_bloat_ratio"] = worstBloat.BloatRatio
 		}
 	}
 
@@ -425,4 +454,40 @@ func (p *PostgresAdapter) ensurePgStatStatements(ctx context.Context) error {
 	p.pgStatStatementsAvailable = true
 	log.Printf("pg_stat_statements extension enabled")
 	return nil
+}
+
+func (p *PostgresAdapter) getTableBloat(ctx context.Context) ([]TableBloatStat, error) {
+	query := `
+		SELECT 
+			relname,
+			n_live_tup,
+			n_dead_tup,
+			last_vacuum,
+			last_autovacuum
+		FROM pg_stat_user_tables
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+		AND n_live_tup > 0
+		ORDER BY n_dead_tup DESC
+		LIMIT 10
+	`
+
+	rows, err := p.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query table bloat: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []TableBloatStat
+	for rows.Next() {
+		var s TableBloatStat
+		if err := rows.Scan(&s.TableName, &s.LiveTuples, &s.DeadTuples, &s.LastVacuum, &s.LastAutoVacuum); err != nil {
+			return nil, err
+		}
+		if s.LiveTuples > 0 {
+			s.BloatRatio = float64(s.DeadTuples) / float64(s.LiveTuples)
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }
