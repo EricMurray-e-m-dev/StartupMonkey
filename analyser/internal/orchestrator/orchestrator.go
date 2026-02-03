@@ -162,6 +162,7 @@ func (o *Orchestrator) initializeEngine() error {
 }
 
 // registerDetectors registers all available detectors with the engine and applies configured thresholds.
+// registerDetectors registers all available detectors with the engine and applies configured thresholds.
 func (o *Orchestrator) registerDetectors() {
 	log.Printf("Registering detectors with configured thresholds...")
 
@@ -196,6 +197,11 @@ func (o *Orchestrator) registerDetectors() {
 	log.Printf("  - Cache Miss: hit_rate_threshold=%.2f (%.0f%%)",
 		o.config.Thresholds.CacheHitRateThreshold,
 		o.config.Thresholds.CacheHitRateThreshold*100)
+
+	// Table Bloat Detector
+	tableBloatDetector := detector.NewTableBloatDetector()
+	o.engine.RegisterDetector(tableBloatDetector)
+	log.Printf("  - Table Bloat: threshold=10%%")
 }
 
 // initializeVerificationTracker creates the verification tracker for autonomous rollback.
