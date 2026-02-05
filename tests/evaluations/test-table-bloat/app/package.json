@@ -1,0 +1,9 @@
+{
+  "name": "bloat-generator",
+  "version": "1.0.0",
+  "description": "Generates table bloat for testing",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
