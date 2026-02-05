@@ -12,6 +12,8 @@ type DatabaseAdapter interface {
 	GetCurrentConfig(ctx context.Context, parameters []string) (map[string]string, error)
 	SetConfig(ctx context.Context, changes map[string]string) error
 	GetSlowQueries(ctx context.Context, thresholdMs float64, limit int) ([]SlowQuery, error)
+	VacuumTable(ctx context.Context, tableName string) error
+	GetDeadTuples(ctx context.Context, tableName string) (int64, error)
 	GetCapabilities() Capabilities
 	Close() error
 }
@@ -39,6 +41,7 @@ type Capabilities struct {
 	SupportsMultiColumnIndex     bool `json:"supports_multi_column_index"`
 	SupportsConfigTuning         bool `json:"supports_config_tuning"`
 	SupportsRuntimeConfigChanges bool `json:"supports_runtime_config_changes"`
+	SupportsVacuum               bool `json:"supports_vacuum"`
 }
 
 var (

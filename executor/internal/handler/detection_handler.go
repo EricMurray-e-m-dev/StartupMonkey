@@ -332,6 +332,34 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 			fmt.Sprintf("Action '%s' is not yet implemented. This action has been queued for future implementation.", detection.ActionType),
 		), nil
 
+	case "vacuum_table":
+		if h.knowledgeClient == nil {
+			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
+		}
+
+		dbResp, err := h.knowledgeClient.GetServiceClient().GetDatabase(ctx, &pb.GetDatabaseRequest{
+			DatabaseId: detection.DatabaseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch database connection from Knowledge: %w", err)
+		}
+
+		if !dbResp.Found {
+			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
+		}
+
+		adapter, err := database.NewPostgresAdapter(ctx, dbResp.ConnectionString, detection.DatabaseID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database adapter: %w", err)
+		}
+
+		tableName, ok := detection.ActionMetaData["table_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing table_name in detection metadata")
+		}
+
+		return actions.NewVacuumTableAction(metadata, adapter, tableName), nil
+
 	default:
 		return nil, fmt.Errorf("action type not implemented yet: %s", detection.ActionType)
 	}
