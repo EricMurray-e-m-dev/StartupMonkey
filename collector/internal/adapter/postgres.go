@@ -161,8 +161,9 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 		}
 
 		// Track worst bloated table
+		// Track worst bloated table
 		worstBloat := bloatStats[0]
-		if worstBloat.BloatRatio > 0.1 { // Only flag if > 10% bloat
+		if worstBloat.DeadTuples > 0 {
 			metrics.Labels["pg.worst_bloat_table"] = worstBloat.TableName
 			metrics.ExtendedMetrics["pg.worst_bloat_ratio"] = worstBloat.BloatRatio
 		}
