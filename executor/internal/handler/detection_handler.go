@@ -360,6 +360,45 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 
 		return actions.NewVacuumTableAction(metadata, adapter, tableName), nil
 
+	case "terminate_query":
+		if h.knowledgeClient == nil {
+			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
+		}
+
+		dbResp, err := h.knowledgeClient.GetServiceClient().GetDatabase(ctx, &pb.GetDatabaseRequest{
+			DatabaseId: detection.DatabaseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch database connection from Knowledge: %w", err)
+		}
+
+		if !dbResp.Found {
+			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
+		}
+
+		adapter, err := database.NewPostgresAdapter(ctx, dbResp.ConnectionString, detection.DatabaseID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database adapter: %w", err)
+		}
+
+		pidStr, ok := detection.ActionMetaData["pid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing pid in detection metadata")
+		}
+
+		var pid int32
+		if _, err := fmt.Sscanf(pidStr, "%d", &pid); err != nil {
+			return nil, fmt.Errorf("invalid pid format: %s", pidStr)
+		}
+
+		username := getStringFromMap(detection.ActionMetaData, "username", "unknown")
+		graceful := true
+		if g, ok := detection.ActionMetaData["graceful"].(bool); ok {
+			graceful = g
+		}
+
+		return actions.NewTerminateQueryAction(metadata, adapter, pid, username, graceful), nil
+
 	default:
 		return nil, fmt.Errorf("action type not implemented yet: %s", detection.ActionType)
 	}

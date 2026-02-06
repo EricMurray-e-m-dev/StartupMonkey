@@ -67,6 +67,10 @@ func (m *MockDatabaseAdapter) Close() error {
 	return nil
 }
 
+func (m *MockDatabaseAdapter) TerminateQuery(ctx context.Context, pid int32, graceful bool) error {
+	return nil
+}
+
 func TestVacuumTableAction_ExecuteSuccess(t *testing.T) {
 	mock := &MockDatabaseAdapter{
 		Capabilities: database.Capabilities{SupportsVacuum: true},

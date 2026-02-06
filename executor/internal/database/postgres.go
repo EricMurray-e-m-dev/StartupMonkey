@@ -182,6 +182,7 @@ func (p *PostgresAdapter) GetCapabilities() Capabilities {
 		SupportsConfigTuning:         true,
 		SupportsRuntimeConfigChanges: true,
 		SupportsVacuum:               true,
+		SupportsQueryTermination:     true,
 	}
 }
 
@@ -266,4 +267,28 @@ func (p *PostgresAdapter) GetDeadTuples(ctx context.Context, tableName string) (
 	}
 
 	return deadTuples, nil
+}
+
+func (p *PostgresAdapter) TerminateQuery(ctx context.Context, pid int32, graceful bool) error {
+	var success bool
+	var query string
+
+	if graceful {
+		// pg_cancel_backend sends SIGINT - query can handle cancellation gracefully
+		query = "SELECT pg_cancel_backend($1)"
+	} else {
+		// pg_terminate_backend sends SIGTERM - forceful termination
+		query = "SELECT pg_terminate_backend($1)"
+	}
+
+	err := p.pool.QueryRow(ctx, query, pid).Scan(&success)
+	if err != nil {
+		return fmt.Errorf("failed to terminate query: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("failed to terminate PID %d: process not found or permission denied", pid)
+	}
+
+	return nil
 }

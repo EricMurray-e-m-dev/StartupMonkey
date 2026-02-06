@@ -14,6 +14,7 @@ type DatabaseAdapter interface {
 	GetSlowQueries(ctx context.Context, thresholdMs float64, limit int) ([]SlowQuery, error)
 	VacuumTable(ctx context.Context, tableName string) error
 	GetDeadTuples(ctx context.Context, tableName string) (int64, error)
+	TerminateQuery(ctx context.Context, pid int32, graceful bool) error
 	GetCapabilities() Capabilities
 	Close() error
 }
@@ -42,6 +43,7 @@ type Capabilities struct {
 	SupportsConfigTuning         bool `json:"supports_config_tuning"`
 	SupportsRuntimeConfigChanges bool `json:"supports_runtime_config_changes"`
 	SupportsVacuum               bool `json:"supports_vacuum"`
+	SupportsQueryTermination     bool `json:"supports_query_termination"`
 }
 
 var (
