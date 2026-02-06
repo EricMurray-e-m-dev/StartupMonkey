@@ -35,6 +35,16 @@ type TableBloatStat struct {
 	LastAutoVacuum *time.Time
 }
 
+type LongRunningQuery struct {
+	PID          int32
+	Username     string
+	DatabaseName string
+	Query        string
+	State        string
+	DurationSecs float64
+	WaitEvent    *string
+}
+
 func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
 	return &PostgresAdapter{
 		connectionString: connectionString,
@@ -166,6 +176,22 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 		if worstBloat.DeadTuples > 0 {
 			metrics.Labels["pg.worst_bloat_table"] = worstBloat.TableName
 			metrics.ExtendedMetrics["pg.worst_bloat_ratio"] = worstBloat.BloatRatio
+		}
+	}
+
+	// Long-running queries
+	longQueries, err := p.getLongRunningQueries(ctx, 10.0) // 10 second threshold for collection
+	if err != nil {
+		fmt.Printf("failed to get long-running queries: %v\n", err)
+	} else {
+		metrics.ExtendedMetrics["pg.long_running_query_count"] = float64(len(longQueries))
+
+		if len(longQueries) > 0 {
+			worst := longQueries[0]
+			metrics.Labels["pg.longest_query_pid"] = fmt.Sprintf("%d", worst.PID)
+			metrics.Labels["pg.longest_query_user"] = worst.Username
+			metrics.Labels["pg.longest_query_text"] = worst.Query
+			metrics.ExtendedMetrics["pg.longest_query_duration_secs"] = worst.DurationSecs
 		}
 	}
 
@@ -491,4 +517,42 @@ func (p *PostgresAdapter) getTableBloat(ctx context.Context) ([]TableBloatStat, 
 	}
 
 	return stats, nil
+}
+
+func (p *PostgresAdapter) getLongRunningQueries(ctx context.Context, thresholdSecs float64) ([]LongRunningQuery, error) {
+	query := `
+		SELECT 
+			pid,
+			usename,
+			datname,
+			LEFT(query, 200) as query,
+			state,
+			EXTRACT(EPOCH FROM (now() - query_start)) as duration_secs,
+			wait_event_type
+		FROM pg_stat_activity
+		WHERE state = 'active'
+		AND query NOT LIKE 'autovacuum:%'
+		AND pid != pg_backend_pid()
+		AND query_start IS NOT NULL
+		AND EXTRACT(EPOCH FROM (now() - query_start)) > $1
+		ORDER BY duration_secs DESC
+		LIMIT 10
+	`
+
+	rows, err := p.pool.Query(ctx, query, thresholdSecs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query long-running queries: %w", err)
+	}
+	defer rows.Close()
+
+	var queries []LongRunningQuery
+	for rows.Next() {
+		var q LongRunningQuery
+		if err := rows.Scan(&q.PID, &q.Username, &q.DatabaseName, &q.Query, &q.State, &q.DurationSecs, &q.WaitEvent); err != nil {
+			return nil, err
+		}
+		queries = append(queries, q)
+	}
+
+	return queries, nil
 }
