@@ -24,7 +24,7 @@ type Config struct {
 }
 
 // DetectionThresholds contains configurable thresholds for each detector.
-// These can be adjusted based on environment (dev/staging/prod) or via Dashboard in future.
+// These can be adjusted via Dashboard.
 type DetectionThresholds struct {
 	// Connection Pool Detector
 	ConnectionPoolWarning  float64 // e.g., 0.7 = 70% utilization
@@ -40,6 +40,12 @@ type DetectionThresholds struct {
 
 	// Cache Miss Detector
 	CacheHitRateThreshold float64 // Minimum cache hit rate (0.0-1.0)
+
+	// Table Bloat Detector
+	TableBloatThreshold float64 // Dead tuple ratio (0.0-1.0), e.g., 0.1 = 10%
+
+	// Long Running Query Detector
+	LongRunningQueryThresholdSecs float64 // Query duration in seconds
 }
 
 // Load reads configuration from environment variables and .env file.
@@ -74,7 +80,7 @@ func Load() (*Config, error) {
 		// Feature flags
 		EnableAllDetectors: getEnvOrDefault("ENABLE_ALL_DETECTORS", "true") == "true",
 
-		// Default thresholds (can be overridden by env vars)
+		// Default thresholds
 		Thresholds: DetectionThresholds{
 			// Connection Pool (changed from 0.8 to 0.1 for local testing)
 			ConnectionPoolWarning:  parseFloatOrDefault("THRESHOLD_CONNECTION_POOL_WARNING", 0.7),
@@ -90,6 +96,12 @@ func Load() (*Config, error) {
 
 			// Cache Miss
 			CacheHitRateThreshold: parseFloatOrDefault("THRESHOLD_CACHE_HIT_RATE", 0.8),
+
+			// Table Bloat
+			TableBloatThreshold: parseFloatOrDefault("THRESHOLD_TABLE_BLOAT", 0.1),
+
+			// Long Running Query
+			LongRunningQueryThresholdSecs: parseFloatOrDefault("THRESHOLD_LONG_QUERY_SECS", 30.0),
 		},
 	}
 

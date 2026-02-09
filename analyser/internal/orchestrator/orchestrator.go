@@ -200,8 +200,15 @@ func (o *Orchestrator) registerDetectors() {
 
 	// Table Bloat Detector
 	tableBloatDetector := detector.NewTableBloatDetector()
+	tableBloatDetector.SetThreshold(o.config.Thresholds.TableBloatThreshold)
 	o.engine.RegisterDetector(tableBloatDetector)
-	log.Printf("  - Table Bloat: threshold=10%%")
+	log.Printf("  - Table Bloat: threshold=%.0f%%", o.config.Thresholds.TableBloatThreshold*100)
+
+	// Long Running Query Detector
+	longQueryDetector := detector.NewLongRunningQueryDetector()
+	longQueryDetector.SetThreshold(o.config.Thresholds.LongRunningQueryThresholdSecs)
+	o.engine.RegisterDetector(longQueryDetector)
+	log.Printf("  - Long Running Query: threshold=%.0fs", o.config.Thresholds.LongRunningQueryThresholdSecs)
 }
 
 // initializeVerificationTracker creates the verification tracker for autonomous rollback.
