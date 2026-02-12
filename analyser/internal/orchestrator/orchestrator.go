@@ -209,6 +209,12 @@ func (o *Orchestrator) registerDetectors() {
 	longQueryDetector.SetThreshold(o.config.Thresholds.LongRunningQueryThresholdSecs)
 	o.engine.RegisterDetector(longQueryDetector)
 	log.Printf("  - Long Running Query: threshold=%.0fs", o.config.Thresholds.LongRunningQueryThresholdSecs)
+
+	// Idle Transaction Detector
+	idleTxnDetector := detector.NewIdleTransactionDetector()
+	idleTxnDetector.SetThreshold(o.config.Thresholds.IdleTransactionThresholdSecs)
+	o.engine.RegisterDetector(idleTxnDetector)
+	log.Printf("  - Idle Transaction: threshold=%.0fs", o.config.Thresholds.IdleTransactionThresholdSecs)
 }
 
 // initializeVerificationTracker creates the verification tracker for autonomous rollback.

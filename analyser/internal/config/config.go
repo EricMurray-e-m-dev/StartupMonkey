@@ -46,6 +46,9 @@ type DetectionThresholds struct {
 
 	// Long Running Query Detector
 	LongRunningQueryThresholdSecs float64 // Query duration in seconds
+
+	// Idle Transaction Detector
+	IdleTransactionThresholdSecs float64 // Idle in transaction duration in seconds
 }
 
 // Load reads configuration from environment variables and .env file.
@@ -102,6 +105,9 @@ func Load() (*Config, error) {
 
 			// Long Running Query
 			LongRunningQueryThresholdSecs: parseFloatOrDefault("THRESHOLD_LONG_QUERY_SECS", 30.0),
+
+			// Idle Transaction
+			IdleTransactionThresholdSecs: parseFloatOrDefault("THRESHOLD_IDLE_TXN_SECS", 300.0),
 		},
 	}
 
