@@ -45,6 +45,14 @@ type LongRunningQuery struct {
 	WaitEvent    *string
 }
 
+type IdleTransaction struct {
+	PID              int32
+	Username         string
+	DatabaseName     string
+	Query            string
+	IdleDurationSecs float64
+}
+
 func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
 	return &PostgresAdapter{
 		connectionString: connectionString,
@@ -192,6 +200,22 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 			metrics.Labels["pg.longest_query_user"] = worst.Username
 			metrics.Labels["pg.longest_query_text"] = worst.Query
 			metrics.ExtendedMetrics["pg.longest_query_duration_secs"] = worst.DurationSecs
+		}
+	}
+
+	// Idle transactions
+	idleTransactions, err := p.getIdleTransactions(ctx, 60.0) // 1 minute threshold for collection
+	if err != nil {
+		fmt.Printf("failed to get idle transactions: %v\n", err)
+	} else {
+		metrics.ExtendedMetrics["pg.idle_transaction_count"] = float64(len(idleTransactions))
+
+		if len(idleTransactions) > 0 {
+			worst := idleTransactions[0]
+			metrics.Labels["pg.idle_txn_pid"] = fmt.Sprintf("%d", worst.PID)
+			metrics.Labels["pg.idle_txn_user"] = worst.Username
+			metrics.Labels["pg.idle_txn_query"] = worst.Query
+			metrics.ExtendedMetrics["pg.idle_txn_duration_secs"] = worst.IdleDurationSecs
 		}
 	}
 
@@ -555,4 +579,39 @@ func (p *PostgresAdapter) getLongRunningQueries(ctx context.Context, thresholdSe
 	}
 
 	return queries, nil
+}
+
+func (p *PostgresAdapter) getIdleTransactions(ctx context.Context, thresholdSecs float64) ([]IdleTransaction, error) {
+	query := `
+		SELECT 
+			pid,
+			usename,
+			datname,
+			LEFT(COALESCE(query, ''), 200) as query,
+			EXTRACT(EPOCH FROM (now() - state_change)) as idle_duration_secs
+		FROM pg_stat_activity
+		WHERE state = 'idle in transaction'
+		AND pid != pg_backend_pid()
+		AND state_change IS NOT NULL
+		AND EXTRACT(EPOCH FROM (now() - state_change)) > $1
+		ORDER BY idle_duration_secs DESC
+		LIMIT 10
+	`
+
+	rows, err := p.pool.Query(ctx, query, thresholdSecs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query idle transactions: %w", err)
+	}
+	defer rows.Close()
+
+	var transactions []IdleTransaction
+	for rows.Next() {
+		var t IdleTransaction
+		if err := rows.Scan(&t.PID, &t.Username, &t.DatabaseName, &t.Query, &t.IdleDurationSecs); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, t)
+	}
+
+	return transactions, nil
 }
