@@ -12,6 +12,7 @@ import (
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/health"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/knowledge"
+	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/system"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
@@ -243,6 +244,16 @@ func (o *Orchestrator) collectAndSend(ctx context.Context) error {
 	rawMetrics, err := o.adapter.CollectMetrics()
 	if err != nil {
 		return fmt.Errorf("metric collection failed: %w", err)
+	}
+
+	// Collect system metrics
+	sysMetrics, err := system.Collect()
+	if err != nil {
+		log.Printf("Warning: failed to collect system metrics: %v", err)
+	} else {
+		for k, v := range sysMetrics.ToExtendedMetrics() {
+			rawMetrics.ExtendedMetrics[k] = v
+		}
 	}
 
 	log.Printf("Normalising metrics...")
