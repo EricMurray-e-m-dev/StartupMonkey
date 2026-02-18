@@ -24,6 +24,9 @@ const knowledgeProto = grpc.loadPackageDefinition(packageDefinition).knowledge;
 
 let knowledgeClient = null;
 
+// Webhook configuration cache
+let webhookConfig = null;
+
 function connectKnowledge() {
     const knowledgeAddr = process.env.KNOWLEDGE_ADDRESS || 'localhost:50053';
     knowledgeClient = new knowledgeProto.KnowledgeService(
@@ -31,6 +34,87 @@ function connectKnowledge() {
         grpc.credentials.createInsecure()
     );
     console.log('Knowledge client created for', knowledgeAddr);
+}
+
+// Fetch webhook config periodically
+function fetchWebhookConfig() {
+    if (!knowledgeClient) return;
+    
+    knowledgeClient.getSystemConfig({}, (err, response) => {
+        if (err) {
+            // Only log if it's not a connection refused error (expected during startup)
+            if (!err.message.includes('UNAVAILABLE')) {
+                console.error('Failed to fetch webhook config:', err.message);
+            }
+            return;
+        }
+        if (response && response.webhook) {
+            webhookConfig = response.webhook;
+        }
+    });
+}
+
+// Send webhook notification
+async function sendWebhook(eventType, payload) {
+    if (!webhookConfig || !webhookConfig.enabled || !webhookConfig.url) {
+        return;
+    }
+
+    if (!webhookConfig.events || !webhookConfig.events.includes(eventType)) {
+        return;
+    }
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        if (webhookConfig.auth_header) {
+            headers['Authorization'] = webhookConfig.auth_header;
+        }
+
+        // Check if Discord webhook
+        const isDiscord = webhookConfig.url.includes('discord.com/api/webhooks');
+
+        let body;
+        if (isDiscord) {
+            // Discord format
+            body = JSON.stringify({
+                embeds: [{
+                    title: `StartupMonkey: ${eventType}`,
+                    description: payload.title || payload.message || JSON.stringify(payload).slice(0, 200),
+                    color: eventType.includes('failed') ? 15158332 : eventType.includes('completed') ? 3066993 : 3447003,
+                    fields: [
+                        { name: 'Database', value: payload.database_id || 'N/A', inline: true },
+                        { name: 'Type', value: payload.action_type || payload.detector_name || 'N/A', inline: true },
+                        { name: 'Status', value: payload.status || payload.severity || 'N/A', inline: true },
+                    ],
+                    timestamp: new Date().toISOString(),
+                }]
+            });
+        } else {
+            // Generic format
+            body = JSON.stringify({
+                event: eventType,
+                timestamp: new Date().toISOString(),
+                data: payload,
+            });
+        }
+
+        const response = await fetch(webhookConfig.url, {
+            method: 'POST',
+            headers,
+            body,
+        });
+
+        if (!response.ok) {
+            console.error(`Webhook failed: ${response.status} ${response.statusText}`);
+        } else {
+            console.log(`Webhook sent: ${eventType}`);
+        }
+    } catch (err) {
+        console.error('Webhook error:', err.message);
+    }
 }
 
 async function startCollector() {
@@ -62,6 +146,9 @@ async function startCollector() {
                     const data = JSON.parse(sc.decode(msg.data));
                     detectionsStore.add(data);
                     console.log('Stored detection:', data.title);
+                    
+                    // Send webhook
+                    sendWebhook('detection.created', data);
                 } catch (err) {
                     console.error('Error processing detection:', err);
                 }
@@ -76,6 +163,18 @@ async function startCollector() {
                     const data = JSON.parse(sc.decode(msg.data));
                     actionsStore.addOrUpdate(data);
                     console.log('Stored action:', data.action_id, data.status);
+                    
+                    // Send webhook based on status
+                    const status = data.status?.toLowerCase();
+                    if (status === 'queued') {
+                        sendWebhook('action.queued', data);
+                    } else if (status === 'completed') {
+                        sendWebhook('action.completed', data);
+                    } else if (status === 'failed') {
+                        sendWebhook('action.failed', data);
+                    } else if (status === 'rolled_back' || status === 'rolledback') {
+                        sendWebhook('action.rolledback', data);
+                    }
                 } catch (err) {
                     console.error('Error processing action:', err);
                 }
@@ -150,6 +249,10 @@ app.post('/config', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         console.log('Config saved');
+        
+        // Refresh webhook config immediately after save
+        fetchWebhookConfig();
+        
         res.json(response);
     });
 });
@@ -232,6 +335,13 @@ app.post('/actions/:id/reject', async (req, res) => {
 const PORT = 3001;
 
 connectKnowledge();
+
+// Initial webhook config fetch after a short delay (let Knowledge connect first)
+setTimeout(fetchWebhookConfig, 2000);
+
+// Refresh webhook config every 30 seconds
+setInterval(fetchWebhookConfig, 30000);
+
 startCollector().then(() => {
     app.listen(PORT, () => {
         console.log(`Collector HTTP server running on http://localhost:${PORT}`);

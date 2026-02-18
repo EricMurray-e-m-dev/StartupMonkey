@@ -40,6 +40,36 @@ const DEFAULT_THRESHOLDS: DetectionThresholds = {
     cache_hit_rate_threshold: 0.9,
 };
 
+interface WebhookConfig {
+    url: string;
+    auth_header: string;
+    enabled: boolean;
+    events: string[];
+}
+
+interface SystemConfig {
+    database: DatabaseConfig | null;
+    thresholds: DetectionThresholds | null;
+    onboarding_complete: boolean;
+    execution_mode?: string;
+    webhook?: WebhookConfig | null;
+}
+
+const DEFAULT_WEBHOOK: WebhookConfig = {
+    url: "",
+    auth_header: "",
+    enabled: false,
+    events: ["detection.created", "action.completed", "action.failed"],
+};
+
+const WEBHOOK_EVENTS = [
+    { id: "detection.created", label: "Detection Created" },
+    { id: "action.queued", label: "Action Queued" },
+    { id: "action.completed", label: "Action Completed" },
+    { id: "action.failed", label: "Action Failed" },
+    { id: "action.rolledback", label: "Action Rolled Back" },
+];
+
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -57,6 +87,7 @@ export default function SettingsPage() {
     });
 
     const [thresholds, setThresholds] = useState<DetectionThresholds>(DEFAULT_THRESHOLDS);
+    const [webhook, setWebhook] = useState<WebhookConfig>(DEFAULT_WEBHOOK);
 
     useEffect(() => {
         fetchConfig();
@@ -64,28 +95,32 @@ export default function SettingsPage() {
     }, []);
 
     const fetchConfig = async () => {
-        try {
-            const response = await fetch("/api/config");
-            const config: SystemConfig = await response.json();
+    try {
+        const response = await fetch("/api/config");
+        const config: SystemConfig = await response.json();
 
-            if (config.database) {
-                setDatabase(config.database);
-            }
-
-            if (config.thresholds) {
-                setThresholds(config.thresholds);
-            }
-
-            if (config.execution_mode) {
-                setExecutionMode(config.execution_mode);
-            }
-        } catch (error) {
-            console.error("Failed to fetch config:", error);
-            setMessage({ type: "error", text: "Failed to load configuration" });
-        } finally {
-            setLoading(false);
+        if (config.database) {
+            setDatabase(config.database);
         }
-    };
+
+        if (config.thresholds) {
+            setThresholds(config.thresholds);
+        }
+
+        if (config.execution_mode) {
+            setExecutionMode(config.execution_mode);
+        }
+
+        if (config.webhook) {
+            setWebhook(config.webhook);
+        }
+    } catch (error) {
+        console.error("Failed to fetch config:", error);
+        setMessage({ type: "error", text: "Failed to load configuration" });
+    } finally {
+        setLoading(false);
+    }
+};
 
     const fetchHealthStatus = async () => {
         try {
@@ -102,31 +137,32 @@ export default function SettingsPage() {
     };
 
     const handleSave = async () => {
-        setSaving(true);
-        setMessage(null);
+    setSaving(true);
+    setMessage(null);
 
-        try {
-            const config = {
-                database,
-                thresholds,
-                onboarding_complete: true,
-                execution_mode: executionMode,
-            };
+    try {
+        const config = {
+            database,
+            thresholds,
+            onboarding_complete: true,
+            execution_mode: executionMode,
+            webhook,
+        };
 
-            const response = await fetch("/api/config", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(config),
-            });
+        const response = await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(config),
+        });
 
-            if (!response.ok) {
-                throw new Error("Failed to save configuration");
-            }
+        if (!response.ok) {
+            throw new Error("Failed to save configuration");
+        }
 
-            setMessage({
-                type: "success",
-                text: "Configuration saved. Restart Collector and Analyser to apply changes.",
-            });
+        setMessage({
+            type: "success",
+            text: "Configuration saved. Restart Collector and Analyser to apply changes.",
+        });
         } catch (error) {
             console.error("Failed to save config:", error);
             setMessage({ type: "error", text: "Failed to save configuration" });
@@ -168,6 +204,15 @@ export default function SettingsPage() {
             </div>
         );
     }
+
+    const toggleWebhookEvent = (eventId: string) => {
+        setWebhook((prev) => ({
+            ...prev,
+            events: prev.events.includes(eventId)
+                ? prev.events.filter((e) => e !== eventId)
+                : [...prev.events, eventId],
+        }));
+    };
 
     return (
         <div className="space-y-6 max-w-4xl">
@@ -425,6 +470,85 @@ export default function SettingsPage() {
                             <p className="text-xs text-muted-foreground">
                                 Alert when cache hit rate drops below this
                             </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Webhook Configuration */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Webhook Notifications</CardTitle>
+                    <CardDescription>
+                        Send HTTP notifications when events occur
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="webhook-enabled"
+                            checked={webhook.enabled}
+                            onChange={(e) =>
+                                setWebhook((prev) => ({ ...prev, enabled: e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor="webhook-enabled">Enable webhooks</Label>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="webhook-url">Webhook URL</Label>
+                        <Input
+                            id="webhook-url"
+                            type="url"
+                            placeholder="https://your-server.com/webhook"
+                            value={webhook.url}
+                            onChange={(e) =>
+                                setWebhook((prev) => ({ ...prev, url: e.target.value }))
+                            }
+                            disabled={!webhook.enabled}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="webhook-auth">Authorization Header (optional)</Label>
+                        <Input
+                            id="webhook-auth"
+                            type="password"
+                            placeholder="Bearer your-token-here"
+                            value={webhook.auth_header}
+                            onChange={(e) =>
+                                setWebhook((prev) => ({ ...prev, auth_header: e.target.value }))
+                            }
+                            disabled={!webhook.enabled}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Sent as the Authorization header with each request
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Events</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {WEBHOOK_EVENTS.map((event) => (
+                                <div key={event.id} className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id={`event-${event.id}`}
+                                        checked={webhook.events.includes(event.id)}
+                                        onChange={() => toggleWebhookEvent(event.id)}
+                                        disabled={!webhook.enabled}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <Label
+                                        htmlFor={`event-${event.id}`}
+                                        className={!webhook.enabled ? "text-muted-foreground" : ""}
+                                    >
+                                        {event.label}
+                                    </Label>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </CardContent>
