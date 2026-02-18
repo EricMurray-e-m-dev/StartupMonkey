@@ -2,6 +2,8 @@ github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251127093529-f85c
 github.com/EricMurray-e-m-dev/StartupMonkey/collector v0.0.0-20251127093529-f85c41ea1483/go.mod h1:5r410LxZeDPfVQQIeYL5fxeSM5dayRQIuL1nAPPqN7g=
 github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260128142943-0898ad662534 h1:kgBMmY0AYNMHXc6w5U0y/a3tbF22v6cX8ESc3svBrNA=
 github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260128142943-0898ad662534/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260218142428-9c0457d3eb42 h1:nKz/8X1sG3Ozapb19dHcFKH0qxw5cY9KQsXWuO+s3Uc=
+github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260218142428-9c0457d3eb42/go.mod h1:WspHrF7sLoATU0qaDOsq1ULuZbAHiFo8kkBlaDzsHWw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
