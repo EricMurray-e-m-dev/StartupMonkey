@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/collector
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260128142943-0898ad662534
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260218142428-9c0457d3eb42
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.47.0
