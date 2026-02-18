@@ -241,10 +241,11 @@ message DetectionThresholds {
 }
 
 message SystemConfig {
-  DatabaseConfig database = 1; // Single DB for MVP
+  DatabaseConfig database = 1;
   DetectionThresholds thresholds = 2;
   bool onboarding_complete = 3;
   string execution_mode = 4;
+  WebhookConfig webhook = 5;
 }
 
 message SystemStatus {
@@ -266,6 +267,13 @@ message FlushAllDataRequest {}
 message FlushAllDataResponse {
   bool success = 1;
   string message = 2;
+}
+
+message WebhookConfig {
+  string url = 1;
+  string auth_header = 2; // Optional: "Bearer xxx" or custom header value
+  bool enabled = 3;
+  repeated string events = 4; // e.g., ["detection.created", "action.completed"]
 }
 
 // Generic response
