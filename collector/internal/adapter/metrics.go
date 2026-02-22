@@ -1,28 +1,31 @@
+// Package adapter provides database-specific metric collection implementations.
 package adapter
 
 import "time"
 
+// RawMetrics contains unprocessed metrics collected from a database.
+// These are normalised before being sent to the Analyser service.
 type RawMetrics struct {
-	// Metadata: identifies the source and collection time
+	// Metadata
 	DatabaseID   string
 	DatabaseType string
 	Timestamp    int64
 
-	// Optional Metrics: Not every database will have each
+	// Core metric categories (nil if not available for this database type)
 	Connections *ConnectionMetrics
 	Queries     *QueryMetrics
 	Storage     *StorageMetrics
 	Cache       *CacheMetrics
 
-	// Extensible fields: database-specific data
+	// Extensible fields for database-specific data
 	ExtendedMetrics map[string]float64
 	Labels          map[string]string
 
-	// For databases that expose structured logs
+	// Structured logs (future use)
 	Logs []LogEntry
 }
 
-// Track connection pools if DB has them
+// ConnectionMetrics tracks database connection pool statistics.
 type ConnectionMetrics struct {
 	Active  *int32
 	Idle    *int32
@@ -30,7 +33,7 @@ type ConnectionMetrics struct {
 	Waiting *int32
 }
 
-// QueryMetrics tracks query performance
+// QueryMetrics tracks query performance statistics.
 type QueryMetrics struct {
 	QueriesPerSecond *float64
 	AvgLatencyMs     *float64
@@ -38,10 +41,10 @@ type QueryMetrics struct {
 	P95LatencyMs     *float64
 	P99LatencyMs     *float64
 	SlowQueries      []SlowQuery
-	SequentialScans  *int32 // PG Concept
+	SequentialScans  *int32
 }
 
-// Storage tracks disk usage
+// StorageMetrics tracks database disk usage.
 type StorageMetrics struct {
 	TotalSizeBytes *int64
 	UsedSizeBytes  *int64
@@ -50,7 +53,7 @@ type StorageMetrics struct {
 	TableSizeBytes *int64
 }
 
-// Cache tracks caching
+// CacheMetrics tracks database caching performance.
 type CacheMetrics struct {
 	HitRate        *float64
 	HitCount       *int64
@@ -58,7 +61,7 @@ type CacheMetrics struct {
 	CacheSizeBytes *int64
 }
 
-// SlowQuery is a query that exceeds performance threshold
+// SlowQuery represents a query that exceeded performance thresholds.
 type SlowQuery struct {
 	Query      string
 	DurationMs float64
@@ -66,7 +69,7 @@ type SlowQuery struct {
 	Source     string
 }
 
-// Log represents a DB log entry
+// LogEntry represents a structured database log entry.
 type LogEntry struct {
 	Timestamp int64
 	Level     string
@@ -74,6 +77,7 @@ type LogEntry struct {
 	Metadata  map[string]string
 }
 
+// NewRawMetrics creates a new RawMetrics instance with initialised maps.
 func NewRawMetrics(databaseID, databaseType string) *RawMetrics {
 	return &RawMetrics{
 		DatabaseID:      databaseID,

@@ -1,9 +1,11 @@
+// Package adapter provides database-specific metric collection implementations.
 package adapter
 
-func NewAdapter(adapterType string, connectionString string, databaseId string) (MetricAdapter, error) {
+// NewAdapter creates a MetricAdapter for the specified database type.
+func NewAdapter(adapterType string, connectionString string, databaseID string) (MetricAdapter, error) {
 	switch adapterType {
 	case "postgres", "postgresql":
-		return NewPostgresAdapter(connectionString, databaseId), nil
+		return NewPostgresAdapter(connectionString, databaseID), nil
 	default:
 		return nil, ErrUnsupportedDatabase
 	}

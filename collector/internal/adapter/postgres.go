@@ -1,3 +1,4 @@
+// Package adapter provides database-specific metric collection implementations.
 package adapter
 
 import (
@@ -12,20 +13,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresAdapter implements MetricAdapter for PostgreSQL databases.
 type PostgresAdapter struct {
 	connectionString          string
-	databaseId                string
+	databaseID                string
 	pool                      *pgxpool.Pool
 	pgStatStatementsAvailable bool
 }
 
-type TabelScanStat struct {
+// TableScanStat holds sequential and index scan statistics for a table.
+type TableScanStat struct {
 	TableName  string
 	SeqScans   int64
 	SeqTupRead int64
 	IdxScans   int64
 }
 
+// TableBloatStat holds dead tuple and vacuum statistics for a table.
 type TableBloatStat struct {
 	TableName      string
 	LiveTuples     int64
@@ -35,6 +39,7 @@ type TableBloatStat struct {
 	LastAutoVacuum *time.Time
 }
 
+// LongRunningQuery holds information about a query running longer than expected.
 type LongRunningQuery struct {
 	PID          int32
 	Username     string
@@ -45,6 +50,7 @@ type LongRunningQuery struct {
 	WaitEvent    *string
 }
 
+// IdleTransaction holds information about a transaction idle in transaction state.
 type IdleTransaction struct {
 	PID              int32
 	Username         string
@@ -53,14 +59,16 @@ type IdleTransaction struct {
 	IdleDurationSecs float64
 }
 
-func NewPostgresAdapter(connectionString string, databaseId string) *PostgresAdapter {
+// NewPostgresAdapter creates a new PostgreSQL adapter.
+func NewPostgresAdapter(connectionString string, databaseID string) *PostgresAdapter {
 	return &PostgresAdapter{
 		connectionString: connectionString,
-		databaseId:       databaseId,
+		databaseID:       databaseID,
 		pool:             nil,
 	}
 }
 
+// Connect establishes a connection pool to the PostgreSQL database.
 func (p *PostgresAdapter) Connect() error {
 	ctx := context.Background()
 
@@ -71,24 +79,23 @@ func (p *PostgresAdapter) Connect() error {
 
 	p.pool = pool
 
-	// Ensure pg_stat_statements is available
 	if err := p.ensurePgStatStatements(ctx); err != nil {
 		log.Printf("Warning: pg_stat_statements setup issue: %v", err)
-		// Don't fail connection - graceful degradation
 	}
 
 	return nil
 }
 
+// CollectMetrics gathers all available metrics from the PostgreSQL database.
 func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	if p.pool == nil {
 		return nil, ErrNotConnected
 	}
 
 	ctx := context.Background()
+	metrics := NewRawMetrics(p.databaseID, "postgresql")
 
-	metrics := NewRawMetrics(p.databaseId, "postgresql")
-
+	// Connection metrics
 	activeConn, err := p.getActiveConnections(ctx)
 	if err != nil {
 		return nil, err
@@ -108,9 +115,9 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 		Active: &activeConn,
 		Idle:   &idleConn,
 		Max:    &maxConn,
-		// Waiting nil - Need additional query
 	}
 
+	// Storage metrics
 	dbSizeBytes, err := p.getDatabaseSizeBytes(ctx)
 	if err != nil {
 		return nil, err
@@ -118,22 +125,22 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 
 	metrics.Storage = &StorageMetrics{
 		UsedSizeBytes: &dbSizeBytes,
-		// Total nil - need filesystem query
-		// Free space same
 	}
 
 	dbSizeMB := float64(dbSizeBytes) / (1024 * 1024)
 	metrics.ExtendedMetrics["pg.database_size_mb"] = dbSizeMB
 
+	// Cache metrics
 	cacheHitRate, err := p.getCacheHitRate(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	metrics.Cache = &CacheMetrics{
 		HitRate: &cacheHitRate,
-		//Hit/Miss nil
 	}
 
+	// Query metrics
 	seqScans, err := p.getSequentialScans(ctx)
 	if err != nil {
 		return nil, err
@@ -143,9 +150,10 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 		SequentialScans: &seqScans,
 	}
 
+	// Table scan statistics
 	tableStats, err := p.getTableScans(ctx)
 	if err != nil {
-		fmt.Printf("failed to get table stats: %v\n", err)
+		log.Printf("Warning: failed to get table stats: %v", err)
 	} else if len(tableStats) > 0 {
 		worstTable := tableStats[0]
 
@@ -160,16 +168,16 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 
 		recommendedColumns, err := p.analyseSlowQueries(ctx, worstTable.TableName)
 		if err != nil {
-			fmt.Printf("warning: could not analyse queries: %v\n", err)
+			log.Printf("Warning: could not analyse queries: %v", err)
 		} else if len(recommendedColumns) > 0 {
 			metrics.Labels["pg.recommended_index_column"] = recommendedColumns[0]
 		}
 	}
 
-	// Table bloat stats
+	// Table bloat statistics
 	bloatStats, err := p.getTableBloat(ctx)
 	if err != nil {
-		fmt.Printf("failed to get table bloat stats: %v\n", err)
+		log.Printf("Warning: failed to get table bloat stats: %v", err)
 	} else if len(bloatStats) > 0 {
 		for _, table := range bloatStats {
 			prefix := fmt.Sprintf("pg.table.%s", table.TableName)
@@ -178,8 +186,6 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 			metrics.ExtendedMetrics[prefix+".bloat_ratio"] = table.BloatRatio
 		}
 
-		// Track worst bloated table
-		// Track worst bloated table
 		worstBloat := bloatStats[0]
 		if worstBloat.DeadTuples > 0 {
 			metrics.Labels["pg.worst_bloat_table"] = worstBloat.TableName
@@ -188,9 +194,9 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	}
 
 	// Long-running queries
-	longQueries, err := p.getLongRunningQueries(ctx, 10.0) // 10 second threshold for collection
+	longQueries, err := p.getLongRunningQueries(ctx, 10.0)
 	if err != nil {
-		fmt.Printf("failed to get long-running queries: %v\n", err)
+		log.Printf("Warning: failed to get long-running queries: %v", err)
 	} else {
 		metrics.ExtendedMetrics["pg.long_running_query_count"] = float64(len(longQueries))
 
@@ -204,9 +210,9 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	}
 
 	// Idle transactions
-	idleTransactions, err := p.getIdleTransactions(ctx, 60.0) // 1 minute threshold for collection
+	idleTransactions, err := p.getIdleTransactions(ctx, 60.0)
 	if err != nil {
-		fmt.Printf("failed to get idle transactions: %v\n", err)
+		log.Printf("Warning: failed to get idle transactions: %v", err)
 	} else {
 		metrics.ExtendedMetrics["pg.idle_transaction_count"] = float64(len(idleTransactions))
 
@@ -220,9 +226,9 @@ func (p *PostgresAdapter) CollectMetrics() (*RawMetrics, error) {
 	}
 
 	return metrics, nil
-
 }
 
+// Close closes the database connection pool.
 func (p *PostgresAdapter) Close() error {
 	if p.pool != nil {
 		p.pool.Close()
@@ -231,20 +237,21 @@ func (p *PostgresAdapter) Close() error {
 	return nil
 }
 
+// HealthCheck verifies the database connection is alive.
 func (p *PostgresAdapter) HealthCheck() error {
 	if p.pool == nil {
 		return ErrNotConnected
 	}
 
 	ctx := context.Background()
-	err := p.pool.Ping(ctx)
-	if err != nil {
+	if err := p.pool.Ping(ctx); err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
 
 	return nil
 }
 
+// GetUnavailableFeatures returns a list of features that are not available.
 func (p *PostgresAdapter) GetUnavailableFeatures() []string {
 	var features []string
 	if !p.pgStatStatementsAvailable {
@@ -257,8 +264,7 @@ func (p *PostgresAdapter) getActiveConnections(ctx context.Context) (int32, erro
 	var count int32
 	query := "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&count)
-	if err != nil {
+	if err := p.pool.QueryRow(ctx, query).Scan(&count); err != nil {
 		return 0, fmt.Errorf("failed to get active connections: %w", err)
 	}
 
@@ -269,8 +275,7 @@ func (p *PostgresAdapter) getIdleConnections(ctx context.Context) (int32, error)
 	var count int32
 	query := "SELECT count(*) FROM pg_stat_activity WHERE state = 'idle'"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&count)
-	if err != nil {
+	if err := p.pool.QueryRow(ctx, query).Scan(&count); err != nil {
 		return 0, fmt.Errorf("failed to get idle connections: %w", err)
 	}
 
@@ -281,8 +286,7 @@ func (p *PostgresAdapter) getMaxConnections(ctx context.Context) (int32, error) 
 	var countString string
 	query := "SHOW max_connections"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&countString)
-	if err != nil {
+	if err := p.pool.QueryRow(ctx, query).Scan(&countString); err != nil {
 		return 0, fmt.Errorf("failed to get max connections: %w", err)
 	}
 
@@ -298,9 +302,8 @@ func (p *PostgresAdapter) getDatabaseSizeBytes(ctx context.Context) (int64, erro
 	var sizeBytes int64
 	query := "SELECT pg_database_size(current_database())"
 
-	err := p.pool.QueryRow(ctx, query).Scan(&sizeBytes)
-	if err != nil {
-		return 00, fmt.Errorf("failed to get db size: %w", err)
+	if err := p.pool.QueryRow(ctx, query).Scan(&sizeBytes); err != nil {
+		return 0, fmt.Errorf("failed to get db size: %w", err)
 	}
 
 	return sizeBytes, nil
@@ -317,8 +320,7 @@ func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) 
 		WHERE datname = current_database()
 	`
 
-	err := p.pool.QueryRow(ctx, query).Scan(&blkReads, &blksHit)
-	if err != nil {
+	if err := p.pool.QueryRow(ctx, query).Scan(&blkReads, &blksHit); err != nil {
 		return 0, fmt.Errorf("failed to get cache stats: %w", err)
 	}
 
@@ -327,39 +329,37 @@ func (p *PostgresAdapter) getCacheHitRate(ctx context.Context) (float64, error) 
 		return 0, nil
 	}
 
-	hitRate := float64(blksHit) / float64(total)
-	return hitRate, nil
+	return float64(blksHit) / float64(total), nil
 }
 
 func (p *PostgresAdapter) getSequentialScans(ctx context.Context) (int32, error) {
 	var seqScans int64
 	query := `
-        SELECT COALESCE(SUM(seq_scan), 0)
-        FROM pg_stat_user_tables
-        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-    `
+		SELECT COALESCE(SUM(seq_scan), 0)
+		FROM pg_stat_user_tables
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+	`
 
-	err := p.pool.QueryRow(ctx, query).Scan(&seqScans)
-	if err != nil {
+	if err := p.pool.QueryRow(ctx, query).Scan(&seqScans); err != nil {
 		return 0, fmt.Errorf("failed to get sequential scans: %w", err)
 	}
 
 	return int32(seqScans), nil
 }
 
-func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TabelScanStat, error) {
+func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TableScanStat, error) {
 	query := `
-        SELECT 
-            relname,
-            seq_scan,
-            seq_tup_read,
-            idx_scan
-        FROM pg_stat_user_tables
-        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-        AND seq_scan > 0
-        ORDER BY seq_scan DESC
-        LIMIT 10
-    `
+		SELECT 
+			relname,
+			seq_scan,
+			seq_tup_read,
+			idx_scan
+		FROM pg_stat_user_tables
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+		AND seq_scan > 0
+		ORDER BY seq_scan DESC
+		LIMIT 10
+	`
 
 	rows, err := p.pool.Query(ctx, query)
 	if err != nil {
@@ -367,9 +367,9 @@ func (p *PostgresAdapter) getTableScans(ctx context.Context) ([]TabelScanStat, e
 	}
 	defer rows.Close()
 
-	var stats []TabelScanStat
+	var stats []TableScanStat
 	for rows.Next() {
-		var s TabelScanStat
+		var s TableScanStat
 		if err := rows.Scan(&s.TableName, &s.SeqScans, &s.SeqTupRead, &s.IdxScans); err != nil {
 			return nil, err
 		}
@@ -383,7 +383,7 @@ func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName stri
 	if !p.pgStatStatementsAvailable {
 		return nil, fmt.Errorf("pg_stat_statements not available")
 	}
-	//log.Printf("Analysing Queries from table %s", tableName)
+
 	query := `
 		SELECT 
 			query,
@@ -398,7 +398,6 @@ func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName stri
 	`
 
 	pattern := fmt.Sprintf("%%FROM %s%%", tableName)
-	//log.Printf("search pattern: %s", pattern)
 
 	rows, err := p.pool.Query(ctx, query, pattern)
 	if err != nil {
@@ -407,10 +406,8 @@ func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName stri
 	defer rows.Close()
 
 	columnFrequency := make(map[string]int)
-	rowCount := 0
 
 	for rows.Next() {
-		rowCount++
 		var sqlQuery string
 		var calls int64
 		var meanExecTime, totalExecTime float64
@@ -419,25 +416,16 @@ func (p *PostgresAdapter) analyseSlowQueries(ctx context.Context, tableName stri
 			continue
 		}
 
-		log.Printf("found query (calls = %d): %s\n", calls, sqlQuery)
-
 		columns := extractFilteredColumns(sqlQuery)
-		//log.Printf("Extracted columns: %v\n", columns)
-
 		for _, col := range columns {
 			columnFrequency[col] += int(calls)
 		}
 	}
 
-	//log.Printf("processed %d queries", rowCount)
-	//log.Printf("column freq: %v'\n", columnFrequency)
-
 	var recommendedColumns []string
 	for col := range columnFrequency {
 		recommendedColumns = append(recommendedColumns, col)
 	}
-
-	//log.Printf("recommended cols: %v\n", recommendedColumns)
 
 	return recommendedColumns, nil
 }
@@ -487,7 +475,6 @@ func (p *PostgresAdapter) ensurePgStatStatements(ctx context.Context) error {
 		return nil
 	}
 
-	// Check if preloaded before attempting creation
 	var sharedLibs string
 	_ = p.pool.QueryRow(ctx, `SHOW shared_preload_libraries`).Scan(&sharedLibs)
 
