@@ -32,6 +32,8 @@ service KnowledgeService {
   rpc UpdateDatabaseHealth(UpdateDatabaseHealthRequest) returns (Response);
   // Removes a database from the registry
   rpc UnregisterDatabase(UnregisterDatabaseRequest) returns (Response);
+  // Updates database configuration (enable/disable, connection string, etc.)
+  rpc UpdateDatabase(UpdateDatabaseRequest) returns (Response);
 
   // Retrieves the current system configuration
   rpc GetSystemConfig(GetSystemConfigRequest) returns (SystemConfig);
@@ -143,6 +145,7 @@ message RegisterDatabaseRequest {
   string version = 7;
   int64 registered_at = 8;
   map<string, string> metadata = 9;
+  bool enabled = 10;
 }
 
 message DatabaseResponse {
@@ -168,10 +171,11 @@ message GetDatabaseResponse {
   string status = 11;
   double health_score = 12;
   map<string, string> metadata = 13;
+  bool enabled = 14;
 }
 
 message ListDatabasesRequest {
-  // Filter criteria for listing databases
+  bool enabled_only = 1; // Filter to only return enabled databases
 }
 
 message DatabaseListResponse {
@@ -189,6 +193,8 @@ message RegisteredDatabase {
   int64 last_seen = 8;
   string status = 9;
   double health_score = 10;
+  bool enabled = 11;
+  string connection_string = 12;
 }
 
 message UpdateDatabaseHealthRequest {
@@ -196,6 +202,13 @@ message UpdateDatabaseHealthRequest {
   int64 last_seen = 2;
   string status = 3;
   double health_score = 4;
+}
+
+message UpdateDatabaseRequest {
+  string database_id = 1;
+  string connection_string = 2;
+  string database_name = 3;
+  bool enabled = 4;
 }
 
 message UnregisterDatabaseRequest {
@@ -224,24 +237,23 @@ message GetSystemStatsResponse {
 }
 
 // Configuration management messages
-message DatabaseConfig {
-  string id = 1;
-  string name = 2;
-  string connection_string = 3;
-  string type = 4; // postgres, mysql, sqlite
-  bool enabled = 5;
+message DetectionThresholds {
+  double connection_pool_critical = 1;
+  int64 sequential_scan_threshold = 2;
+  double sequential_scan_delta = 3;
+  double p95_latency_ms = 4;
+  double cache_hit_rate_threshold = 5;
 }
 
-message DetectionThresholds {
-  double connection_pool_critical = 1; // e.g., 0.8 = 80%
-  int64 sequential_scan_threshold = 2; // e.g., 1000
-  double sequential_scan_delta = 3; // e.g., 100.0
-  double p95_latency_ms = 4; // e.g., 100.0
-  double cache_hit_rate_threshold = 5; // e.g., 0.9 = 90%
+message WebhookConfig {
+  string url = 1;
+  string auth_header = 2;
+  bool enabled = 3;
+  repeated string events = 4;
 }
 
 message SystemConfig {
-  DatabaseConfig database = 1;
+  reserved 1;  // Previously DatabaseConfig, now managed via RegisterDatabase RPC
   DetectionThresholds thresholds = 2;
   bool onboarding_complete = 3;
   string execution_mode = 4;
@@ -251,7 +263,7 @@ message SystemConfig {
 message SystemStatus {
   bool configured = 1;
   bool onboarding_complete = 2;
-  map<string, string> service_states = 3;  // e.g., {"collector": "connected"}
+  map<string, string> service_states = 3;
 }
 
 message GetSystemConfigRequest {}
@@ -267,13 +279,6 @@ message FlushAllDataRequest {}
 message FlushAllDataResponse {
   bool success = 1;
   string message = 2;
-}
-
-message WebhookConfig {
-  string url = 1;
-  string auth_header = 2; // Optional: "Bearer xxx" or custom header value
-  bool enabled = 3;
-  repeated string events = 4; // e.g., ["detection.created", "action.completed"]
 }
 
 // Generic response
