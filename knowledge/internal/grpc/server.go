@@ -1,3 +1,5 @@
+// KnowledgeServer is a gRPC server implementation for managing knowledge base operations.
+// It provides methods for handling detections, actions, databases, system configurations, and system status.
 package grpc
 
 import (
@@ -216,6 +218,7 @@ func (s *KnowledgeServer) RegisterDatabase(ctx context.Context, req *pb.Register
 		Status:           "healthy",
 		HealthScore:      1.0,
 		Metadata:         req.Metadata,
+		Enabled:          req.Enabled,
 	}
 
 	if err := s.redisClient.RegisterDatabase(ctx, database); err != nil {
@@ -226,7 +229,7 @@ func (s *KnowledgeServer) RegisterDatabase(ctx context.Context, req *pb.Register
 		}, err
 	}
 
-	log.Printf("Database registered: %s (type: %s)", database.ID, database.DatabaseType)
+	log.Printf("Database registered: %s (type: %s, enabled: %v)", database.ID, database.DatabaseType, database.Enabled)
 
 	return &pb.DatabaseResponse{
 		Success: true,
@@ -260,6 +263,7 @@ func (s *KnowledgeServer) GetDatabase(ctx context.Context, req *pb.GetDatabaseRe
 		Status:           database.Status,
 		HealthScore:      database.HealthScore,
 		Metadata:         database.Metadata,
+		Enabled:          database.Enabled,
 	}, nil
 }
 
@@ -273,24 +277,69 @@ func (s *KnowledgeServer) ListDatabases(ctx context.Context, req *pb.ListDatabas
 
 	pbDatabases := make([]*pb.RegisteredDatabase, 0, len(databases))
 	for _, d := range databases {
+		// Filter by enabled_only if requested
+		if req.EnabledOnly && !d.Enabled {
+			continue
+		}
+
 		pbDatabases = append(pbDatabases, &pb.RegisteredDatabase{
-			DatabaseId:   d.ID,
-			DatabaseType: d.DatabaseType,
-			DatabaseName: d.DatabaseName,
-			Host:         d.Host,
-			Port:         d.Port,
-			Version:      d.Version,
-			RegisteredAt: d.RegisteredAt.Unix(),
-			LastSeen:     d.LastSeen.Unix(),
-			Status:       d.Status,
-			HealthScore:  d.HealthScore,
+			DatabaseId:       d.ID,
+			DatabaseType:     d.DatabaseType,
+			DatabaseName:     d.DatabaseName,
+			Host:             d.Host,
+			Port:             d.Port,
+			Version:          d.Version,
+			RegisteredAt:     d.RegisteredAt.Unix(),
+			LastSeen:         d.LastSeen.Unix(),
+			Status:           d.Status,
+			HealthScore:      d.HealthScore,
+			Enabled:          d.Enabled,
+			ConnectionString: d.ConnectionString,
 		})
 	}
 
-	log.Printf("Listed %d databases", len(databases))
+	log.Printf("Listed %d databases (enabled_only: %v)", len(pbDatabases), req.EnabledOnly)
 
 	return &pb.DatabaseListResponse{
 		Databases: pbDatabases,
+	}, nil
+}
+
+// UpdateDatabase simple update for a database saved in knowledge
+func (s *KnowledgeServer) UpdateDatabase(ctx context.Context, req *pb.UpdateDatabaseRequest) (*pb.Response, error) {
+	// Get existing database
+	database, err := s.redisClient.GetDatabase(ctx, req.DatabaseId)
+	if err != nil {
+		log.Printf("Failed to get database for update: %v", err)
+		return &pb.Response{
+			Success: false,
+			Message: "Database not found",
+		}, err
+	}
+
+	// Update fields if provided
+	if req.ConnectionString != "" {
+		database.ConnectionString = req.ConnectionString
+	}
+	if req.DatabaseName != "" {
+		database.DatabaseName = req.DatabaseName
+	}
+	database.Enabled = req.Enabled
+
+	// Save updated database
+	if err := s.redisClient.RegisterDatabase(ctx, database); err != nil {
+		log.Printf("Failed to update database: %v", err)
+		return &pb.Response{
+			Success: false,
+			Message: err.Error(),
+		}, err
+	}
+
+	log.Printf("Database updated: %s (enabled: %v)", req.DatabaseId, req.Enabled)
+
+	return &pb.Response{
+		Success: true,
+		Message: "Database updated successfully",
 	}, nil
 }
 
@@ -385,7 +434,6 @@ func (s *KnowledgeServer) GetSystemConfig(ctx context.Context, req *pb.GetSystem
 		log.Printf("Failed to get system config: %v", err)
 		// Return empty config with defaults if not found
 		return &pb.SystemConfig{
-			Database: nil,
 			Thresholds: &pb.DetectionThresholds{
 				ConnectionPoolCritical:  0.8,
 				SequentialScanThreshold: 1000,
@@ -428,21 +476,26 @@ func (s *KnowledgeServer) SaveSystemConfig(ctx context.Context, req *pb.SaveSyst
 // GetSystemStatus returns the current system status
 func (s *KnowledgeServer) GetSystemStatus(ctx context.Context, req *pb.GetSystemStatusRequest) (*pb.SystemStatus, error) {
 	config, _ := s.redisClient.GetSystemConfig(ctx)
+	databases, _ := s.redisClient.ListDatabases(ctx)
 
-	configured := false
+	// Check if any enabled databases exist
+	hasEnabledDB := false
+	for _, db := range databases {
+		if db.Enabled {
+			hasEnabledDB = true
+			break
+		}
+	}
+
 	onboardingComplete := false
-
 	if config != nil {
-		configured = config.Database != nil && config.Database.ConnectionString != ""
 		onboardingComplete = config.OnboardingComplete
 	}
 
-	// Service states would be populated by services reporting their status
-	// For now, return empty map - services will update this
 	serviceStates := make(map[string]string)
 
 	return &pb.SystemStatus{
-		Configured:         configured,
+		Configured:         hasEnabledDB,
 		OnboardingComplete: onboardingComplete,
 		ServiceStates:      serviceStates,
 	}, nil
