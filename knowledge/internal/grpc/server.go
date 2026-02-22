@@ -1,5 +1,5 @@
-// KnowledgeServer is a gRPC server implementation for managing knowledge base operations.
-// It provides methods for handling detections, actions, databases, system configurations, and system status.
+// Package grpc provides the gRPC server implementation for the Knowledge service.
+// It manages detections, actions, databases, system configurations, and system status.
 package grpc
 
 import (
@@ -12,18 +12,24 @@ import (
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
+// KnowledgeServer implements the KnowledgeService gRPC interface.
 type KnowledgeServer struct {
 	pb.UnimplementedKnowledgeServiceServer
 	redisClient *redis.Client
+	startTime   time.Time
 }
 
+// NewKnowledgeServer creates a new KnowledgeServer instance.
 func NewKnowledgeServer(redisClient *redis.Client) *KnowledgeServer {
 	return &KnowledgeServer{
 		redisClient: redisClient,
+		startTime:   time.Now(),
 	}
 }
 
-// RegisterDetection registers a new detection in the knowledge base
+// ===== [DETECTION OPERATIONS] =====
+
+// RegisterDetection registers a new detection in the knowledge base.
 func (s *KnowledgeServer) RegisterDetection(ctx context.Context, req *pb.RegisterDetectionRequest) (*pb.DetectionResponse, error) {
 	detection := &models.Detection{
 		ID:         req.Id,
@@ -35,7 +41,7 @@ func (s *KnowledgeServer) RegisterDetection(ctx context.Context, req *pb.Registe
 		Value:      req.Value,
 		CreatedAt:  time.Unix(req.CreatedAt, 0),
 		LastSeen:   time.Now(),
-		TTL:        0, // No TTL for active detections
+		TTL:        0,
 	}
 
 	if err := s.redisClient.RegisterDetection(ctx, detection); err != nil {
@@ -43,7 +49,7 @@ func (s *KnowledgeServer) RegisterDetection(ctx context.Context, req *pb.Registe
 		return &pb.DetectionResponse{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Detection registered: %s (key: %s)", detection.ID, detection.Key)
@@ -55,21 +61,19 @@ func (s *KnowledgeServer) RegisterDetection(ctx context.Context, req *pb.Registe
 	}, nil
 }
 
-// IsDetectionActive checks if a detection with the given key is active
+// IsDetectionActive checks if a detection with the given key is active.
 func (s *KnowledgeServer) IsDetectionActive(ctx context.Context, req *pb.DetectionKeyRequest) (*pb.DetectionStatusResponse, error) {
 	isActive, err := s.redisClient.IsDetectionActive(ctx, req.Key)
 	if err != nil {
 		log.Printf("Failed to check detection status: %v", err)
 		return &pb.DetectionStatusResponse{
 			IsActive: false,
-		}, err
+		}, nil
 	}
 
-	// Get detection ID if active
 	detectionID := ""
 	if isActive {
-		keyMapping := "detection_key:" + req.Key
-		detectionID, _ = s.redisClient.GetClient().Get(ctx, keyMapping).Result()
+		detectionID, _ = s.redisClient.GetDetectionIDByKey(ctx, req.Key)
 	}
 
 	return &pb.DetectionStatusResponse{
@@ -78,14 +82,14 @@ func (s *KnowledgeServer) IsDetectionActive(ctx context.Context, req *pb.Detecti
 	}, nil
 }
 
-// GetActiveDetections returns all active detections for a database
+// GetActiveDetections returns all active detections for a database.
 func (s *KnowledgeServer) GetActiveDetections(ctx context.Context, req *pb.DatabaseFilterRequest) (*pb.DetectionListResponse, error) {
 	detections, err := s.redisClient.GetActiveDetections(ctx, req.DatabaseId)
 	if err != nil {
 		log.Printf("Failed to get active detections: %v", err)
 		return &pb.DetectionListResponse{
 			Detections: []*pb.Detection{},
-		}, err
+		}, nil
 	}
 
 	pbDetections := make([]*pb.Detection, 0, len(detections))
@@ -110,14 +114,14 @@ func (s *KnowledgeServer) GetActiveDetections(ctx context.Context, req *pb.Datab
 	}, nil
 }
 
-// MarkDetectionResolved marks a detection as resolved
+// MarkDetectionResolved marks a detection as resolved.
 func (s *KnowledgeServer) MarkDetectionResolved(ctx context.Context, req *pb.ResolveDetectionRequest) (*pb.Response, error) {
 	if err := s.redisClient.MarkDetectionResolved(ctx, req.DetectionId, req.Solution); err != nil {
 		log.Printf("Failed to mark detection resolved: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Detection resolved: %s (solution: %s)", req.DetectionId, req.Solution)
@@ -128,8 +132,9 @@ func (s *KnowledgeServer) MarkDetectionResolved(ctx context.Context, req *pb.Res
 	}, nil
 }
 
-// ===== [ACTIONS OPERATIONS] =====
+// ===== [ACTION OPERATIONS] =====
 
+// RegisterAction registers a new action in the knowledge base.
 func (s *KnowledgeServer) RegisterAction(ctx context.Context, req *pb.RegisterActionRequest) (*pb.ActionResponse, error) {
 	action := &models.Action{
 		ID:          req.Id,
@@ -146,7 +151,7 @@ func (s *KnowledgeServer) RegisterAction(ctx context.Context, req *pb.RegisterAc
 		return &pb.ActionResponse{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Action registered: %s (type: %s, detection: %s)", action.ID, action.ActionType, action.DetectionID)
@@ -158,13 +163,14 @@ func (s *KnowledgeServer) RegisterAction(ctx context.Context, req *pb.RegisterAc
 	}, nil
 }
 
+// UpdateActionStatus updates the status of an existing action.
 func (s *KnowledgeServer) UpdateActionStatus(ctx context.Context, req *pb.UpdateActionRequest) (*pb.Response, error) {
 	if err := s.redisClient.UpdateActionStatus(ctx, req.ActionId, models.ActionStatus(req.Status), req.Message, req.Error); err != nil {
 		log.Printf("Failed to update action status: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Action status updated %s => %s", req.ActionId, req.Status)
@@ -175,13 +181,14 @@ func (s *KnowledgeServer) UpdateActionStatus(ctx context.Context, req *pb.Update
 	}, nil
 }
 
+// GetPendingActions retrieves all pending actions, optionally filtered by database.
 func (s *KnowledgeServer) GetPendingActions(ctx context.Context, req *pb.DatabaseFilterRequest) (*pb.ActionListResponse, error) {
 	actions, err := s.redisClient.GetPendingActions(ctx, req.DatabaseId)
 	if err != nil {
 		log.Printf("Failed to get pending actions: %v", err)
 		return &pb.ActionListResponse{
 			Actions: []*pb.Action{},
-		}, err
+		}, nil
 	}
 
 	pbActions := make([]*pb.Action, 0, len(actions))
@@ -203,7 +210,9 @@ func (s *KnowledgeServer) GetPendingActions(ctx context.Context, req *pb.Databas
 	}, nil
 }
 
-// RegisterDatabase registers a new database in the knowledge base
+// ===== [DATABASE OPERATIONS] =====
+
+// RegisterDatabase registers a new database in the knowledge base.
 func (s *KnowledgeServer) RegisterDatabase(ctx context.Context, req *pb.RegisterDatabaseRequest) (*pb.DatabaseResponse, error) {
 	database := &models.Database{
 		ID:               req.DatabaseId,
@@ -226,7 +235,7 @@ func (s *KnowledgeServer) RegisterDatabase(ctx context.Context, req *pb.Register
 		return &pb.DatabaseResponse{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Database registered: %s (type: %s, enabled: %v)", database.ID, database.DatabaseType, database.Enabled)
@@ -237,7 +246,7 @@ func (s *KnowledgeServer) RegisterDatabase(ctx context.Context, req *pb.Register
 	}, nil
 }
 
-// GetDatabase retrieves database connection info
+// GetDatabase retrieves database connection info by ID.
 func (s *KnowledgeServer) GetDatabase(ctx context.Context, req *pb.GetDatabaseRequest) (*pb.GetDatabaseResponse, error) {
 	database, err := s.redisClient.GetDatabase(ctx, req.DatabaseId)
 	if err != nil {
@@ -246,7 +255,7 @@ func (s *KnowledgeServer) GetDatabase(ctx context.Context, req *pb.GetDatabaseRe
 			return &pb.GetDatabaseResponse{Found: false}, nil
 		}
 		log.Printf("Failed to get database: %v", err)
-		return &pb.GetDatabaseResponse{Found: false}, err
+		return &pb.GetDatabaseResponse{Found: false}, nil
 	}
 
 	return &pb.GetDatabaseResponse{
@@ -267,17 +276,16 @@ func (s *KnowledgeServer) GetDatabase(ctx context.Context, req *pb.GetDatabaseRe
 	}, nil
 }
 
-// ListDatabases returns all registered databases
+// ListDatabases returns all registered databases.
 func (s *KnowledgeServer) ListDatabases(ctx context.Context, req *pb.ListDatabasesRequest) (*pb.DatabaseListResponse, error) {
 	databases, err := s.redisClient.ListDatabases(ctx)
 	if err != nil {
 		log.Printf("Failed to list databases: %v", err)
-		return &pb.DatabaseListResponse{}, err
+		return &pb.DatabaseListResponse{}, nil
 	}
 
 	pbDatabases := make([]*pb.RegisteredDatabase, 0, len(databases))
 	for _, d := range databases {
-		// Filter by enabled_only if requested
 		if req.EnabledOnly && !d.Enabled {
 			continue
 		}
@@ -305,19 +313,17 @@ func (s *KnowledgeServer) ListDatabases(ctx context.Context, req *pb.ListDatabas
 	}, nil
 }
 
-// UpdateDatabase simple update for a database saved in knowledge
+// UpdateDatabase updates an existing database configuration.
 func (s *KnowledgeServer) UpdateDatabase(ctx context.Context, req *pb.UpdateDatabaseRequest) (*pb.Response, error) {
-	// Get existing database
 	database, err := s.redisClient.GetDatabase(ctx, req.DatabaseId)
 	if err != nil {
 		log.Printf("Failed to get database for update: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: "Database not found",
-		}, err
+		}, nil
 	}
 
-	// Update fields if provided
 	if req.ConnectionString != "" {
 		database.ConnectionString = req.ConnectionString
 	}
@@ -326,13 +332,12 @@ func (s *KnowledgeServer) UpdateDatabase(ctx context.Context, req *pb.UpdateData
 	}
 	database.Enabled = req.Enabled
 
-	// Save updated database
 	if err := s.redisClient.RegisterDatabase(ctx, database); err != nil {
 		log.Printf("Failed to update database: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Database updated: %s (enabled: %v)", req.DatabaseId, req.Enabled)
@@ -343,14 +348,14 @@ func (s *KnowledgeServer) UpdateDatabase(ctx context.Context, req *pb.UpdateData
 	}, nil
 }
 
-// UpdateDatabaseHealth updates health status
+// UpdateDatabaseHealth updates the health status of a registered database.
 func (s *KnowledgeServer) UpdateDatabaseHealth(ctx context.Context, req *pb.UpdateDatabaseHealthRequest) (*pb.Response, error) {
 	if err := s.redisClient.UpdateDatabaseHealth(ctx, req.DatabaseId, req.LastSeen, req.Status, req.HealthScore); err != nil {
 		log.Printf("Failed to update database health: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Database health updated: %s (status: %s, score: %.2f)", req.DatabaseId, req.Status, req.HealthScore)
@@ -361,14 +366,14 @@ func (s *KnowledgeServer) UpdateDatabaseHealth(ctx context.Context, req *pb.Upda
 	}, nil
 }
 
-// UnregisterDatabase removes a database
+// UnregisterDatabase removes a database from the registry.
 func (s *KnowledgeServer) UnregisterDatabase(ctx context.Context, req *pb.UnregisterDatabaseRequest) (*pb.Response, error) {
 	if err := s.redisClient.UnregisterDatabase(ctx, req.DatabaseId); err != nil {
 		log.Printf("Failed to unregister database: %v", err)
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("Database unregistered: %s", req.DatabaseId)
@@ -379,13 +384,13 @@ func (s *KnowledgeServer) UnregisterDatabase(ctx context.Context, req *pb.Unregi
 	}, nil
 }
 
-// GetSystemStats returns system-wide statistics
+// ===== [SYSTEM STATISTICS] =====
+
+// GetSystemStats returns system-wide statistics.
 func (s *KnowledgeServer) GetSystemStats(ctx context.Context, req *pb.GetSystemStatsRequest) (*pb.GetSystemStatsResponse, error) {
-	// Count total databases
 	databases, _ := s.redisClient.ListDatabases(ctx)
 	totalDatabases := int32(len(databases))
 
-	// Count by status
 	var healthyCount, degradedCount, offlineCount int32
 	for _, db := range databases {
 		switch db.Status {
@@ -398,41 +403,41 @@ func (s *KnowledgeServer) GetSystemStats(ctx context.Context, req *pb.GetSystemS
 		}
 	}
 
-	// Count detections and actions
-	// TODO: Implement proper counting across all databases
-	totalDetections := int32(0)
-	activeDetections := int32(0)
-	totalActions := int32(0)
-	queuedCount := int32(0)
-	executingCount := int32(0)
-	completedCount := int32(0)
-	failedCount := int32(0)
+	activeDetections, _ := s.redisClient.CountAllActiveDetections(ctx)
+
+	queuedCount, _ := s.redisClient.CountActionsByStatus(ctx, models.StatusQueued)
+	executingCount, _ := s.redisClient.CountActionsByStatus(ctx, models.StatusExecuting)
+	completedCount, _ := s.redisClient.CountActionsByStatus(ctx, models.StatusCompleted)
+	failedCount, _ := s.redisClient.CountActionsByStatus(ctx, models.StatusFailed)
+
+	totalActions, _ := s.redisClient.CountAllActions(ctx)
+
+	uptime := int64(time.Since(s.startTime).Seconds())
 
 	return &pb.GetSystemStatsResponse{
 		TotalDatabases:     totalDatabases,
 		HealthyDatabases:   healthyCount,
 		DegradedDatabases:  degradedCount,
 		OfflineDatabases:   offlineCount,
-		TotalDetections:    totalDetections,
+		TotalDetections:    activeDetections,
 		ActiveDetections:   activeDetections,
-		ResolvedDetections: totalDetections - activeDetections,
+		ResolvedDetections: 0,
 		TotalActions:       totalActions,
 		ActionsQueued:      queuedCount,
 		ActionsExecuting:   executingCount,
 		ActionsCompleted:   completedCount,
 		ActionsFailed:      failedCount,
-		UptimeSeconds:      0,
+		UptimeSeconds:      uptime,
 	}, nil
 }
 
 // ===== [CONFIGURATION MANAGEMENT] =====
 
-// GetSystemConfig retrieves the system configuration
+// GetSystemConfig retrieves the system configuration.
 func (s *KnowledgeServer) GetSystemConfig(ctx context.Context, req *pb.GetSystemConfigRequest) (*pb.SystemConfig, error) {
 	config, err := s.redisClient.GetSystemConfig(ctx)
 	if err != nil {
 		log.Printf("Failed to get system config: %v", err)
-		// Return empty config with defaults if not found
 		return &pb.SystemConfig{
 			Thresholds: &pb.DetectionThresholds{
 				ConnectionPoolCritical:  0.8,
@@ -448,7 +453,7 @@ func (s *KnowledgeServer) GetSystemConfig(ctx context.Context, req *pb.GetSystem
 	return config, nil
 }
 
-// SaveSystemConfig saves the system configuration
+// SaveSystemConfig saves the system configuration.
 func (s *KnowledgeServer) SaveSystemConfig(ctx context.Context, req *pb.SaveSystemConfigRequest) (*pb.Response, error) {
 	if req.Config == nil {
 		return &pb.Response{
@@ -462,7 +467,7 @@ func (s *KnowledgeServer) SaveSystemConfig(ctx context.Context, req *pb.SaveSyst
 		return &pb.Response{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("System config saved (onboarding_complete: %v)", req.Config.OnboardingComplete)
@@ -473,12 +478,11 @@ func (s *KnowledgeServer) SaveSystemConfig(ctx context.Context, req *pb.SaveSyst
 	}, nil
 }
 
-// GetSystemStatus returns the current system status
+// GetSystemStatus returns the current system status.
 func (s *KnowledgeServer) GetSystemStatus(ctx context.Context, req *pb.GetSystemStatusRequest) (*pb.SystemStatus, error) {
 	config, _ := s.redisClient.GetSystemConfig(ctx)
 	databases, _ := s.redisClient.ListDatabases(ctx)
 
-	// Check if any enabled databases exist
 	hasEnabledDB := false
 	for _, db := range databases {
 		if db.Enabled {
@@ -501,14 +505,14 @@ func (s *KnowledgeServer) GetSystemStatus(ctx context.Context, req *pb.GetSystem
 	}, nil
 }
 
-// FlushAllData clears all data from Redis
+// FlushAllData clears all data from Redis.
 func (s *KnowledgeServer) FlushAllData(ctx context.Context, req *pb.FlushAllDataRequest) (*pb.FlushAllDataResponse, error) {
 	if err := s.redisClient.FlushAll(ctx); err != nil {
 		log.Printf("Failed to flush all data: %v", err)
 		return &pb.FlushAllDataResponse{
 			Success: false,
 			Message: err.Error(),
-		}, err
+		}, nil
 	}
 
 	log.Printf("All data flushed from Redis")
