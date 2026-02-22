@@ -15,15 +15,17 @@ import (
 func main() {
 	log.Printf("StartupMonkey Collector starting...")
 
-	// Load bootstrap configuration (service addresses only)
-	cfg, err := config.LoadBootstrap()
+	// Load configuration
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	log.Printf("Bootstrap configuration loaded")
+	log.Printf("Configuration loaded")
 	log.Printf("  Knowledge Address: %s", cfg.KnowledgeAddress)
 	log.Printf("  Analyser Address: %s", cfg.AnalyserAddress)
+	log.Printf("  Collection Interval: %v", cfg.CollectionInterval)
+	log.Printf("  Sync Interval: %v", cfg.SyncInterval)
 
 	// Create orchestrator
 	orch := orchestrator.NewOrchestrator(cfg)
@@ -39,7 +41,7 @@ func main() {
 	// Start health check server
 	health.StartHealthCheckServer("8080")
 
-	// Initialize orchestrator (will wait for config from Knowledge)
+	// Initialize orchestrator (will wait for databases from Knowledge)
 	if err := orch.Start(ctx); err != nil {
 		log.Fatalf("Failed to start orchestrator: %v", err)
 	}
