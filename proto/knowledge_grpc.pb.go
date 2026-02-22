@@ -31,6 +31,7 @@ const (
 	KnowledgeService_ListDatabases_FullMethodName         = "/knowledge.KnowledgeService/ListDatabases"
 	KnowledgeService_UpdateDatabaseHealth_FullMethodName  = "/knowledge.KnowledgeService/UpdateDatabaseHealth"
 	KnowledgeService_UnregisterDatabase_FullMethodName    = "/knowledge.KnowledgeService/UnregisterDatabase"
+	KnowledgeService_UpdateDatabase_FullMethodName        = "/knowledge.KnowledgeService/UpdateDatabase"
 	KnowledgeService_GetSystemConfig_FullMethodName       = "/knowledge.KnowledgeService/GetSystemConfig"
 	KnowledgeService_SaveSystemConfig_FullMethodName      = "/knowledge.KnowledgeService/SaveSystemConfig"
 	KnowledgeService_GetSystemStatus_FullMethodName       = "/knowledge.KnowledgeService/GetSystemStatus"
@@ -67,6 +68,8 @@ type KnowledgeServiceClient interface {
 	UpdateDatabaseHealth(ctx context.Context, in *UpdateDatabaseHealthRequest, opts ...grpc.CallOption) (*Response, error)
 	// Removes a database from the registry
 	UnregisterDatabase(ctx context.Context, in *UnregisterDatabaseRequest, opts ...grpc.CallOption) (*Response, error)
+	// Updates database configuration (enable/disable, connection string, etc.)
+	UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Response, error)
 	// Retrieves the current system configuration
 	GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error)
 	// Saves or updates the system configuration settings
@@ -205,6 +208,16 @@ func (c *knowledgeServiceClient) UnregisterDatabase(ctx context.Context, in *Unr
 	return out, nil
 }
 
+func (c *knowledgeServiceClient) UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, KnowledgeService_UpdateDatabase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *knowledgeServiceClient) GetSystemConfig(ctx context.Context, in *GetSystemConfigRequest, opts ...grpc.CallOption) (*SystemConfig, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SystemConfig)
@@ -275,6 +288,8 @@ type KnowledgeServiceServer interface {
 	UpdateDatabaseHealth(context.Context, *UpdateDatabaseHealthRequest) (*Response, error)
 	// Removes a database from the registry
 	UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error)
+	// Updates database configuration (enable/disable, connection string, etc.)
+	UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Response, error)
 	// Retrieves the current system configuration
 	GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error)
 	// Saves or updates the system configuration settings
@@ -328,6 +343,9 @@ func (UnimplementedKnowledgeServiceServer) UpdateDatabaseHealth(context.Context,
 }
 func (UnimplementedKnowledgeServiceServer) UnregisterDatabase(context.Context, *UnregisterDatabaseRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnregisterDatabase not implemented")
+}
+func (UnimplementedKnowledgeServiceServer) UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDatabase not implemented")
 }
 func (UnimplementedKnowledgeServiceServer) GetSystemConfig(context.Context, *GetSystemConfigRequest) (*SystemConfig, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystemConfig not implemented")
@@ -578,6 +596,24 @@ func _KnowledgeService_UnregisterDatabase_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KnowledgeService_UpdateDatabase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDatabaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KnowledgeServiceServer).UpdateDatabase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KnowledgeService_UpdateDatabase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KnowledgeServiceServer).UpdateDatabase(ctx, req.(*UpdateDatabaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KnowledgeService_GetSystemConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetSystemConfigRequest)
 	if err := dec(in); err != nil {
@@ -704,6 +740,10 @@ var KnowledgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnregisterDatabase",
 			Handler:    _KnowledgeService_UnregisterDatabase_Handler,
+		},
+		{
+			MethodName: "UpdateDatabase",
+			Handler:    _KnowledgeService_UpdateDatabase_Handler,
 		},
 		{
 			MethodName: "GetSystemConfig",
