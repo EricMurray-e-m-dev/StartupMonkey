@@ -1,3 +1,4 @@
+// Package grpc provides the gRPC client for communicating with the Analyser service.
 package grpc
 
 import (
@@ -10,18 +11,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// MetricsClient handles streaming metrics to the Analyser service.
 type MetricsClient struct {
 	analyserAddress string
 	conn            *grpc.ClientConn
 	client          pb.MetricsServiceClient
 }
 
+// NewMetricsClient creates a new MetricsClient for the given Analyser address.
 func NewMetricsClient(analyserAddress string) *MetricsClient {
 	return &MetricsClient{
 		analyserAddress: analyserAddress,
 	}
 }
 
+// Connect establishes a gRPC connection to the Analyser service.
 func (c *MetricsClient) Connect() error {
 	if c.analyserAddress == "" {
 		return fmt.Errorf("analyser address cannot be empty")
@@ -42,8 +46,8 @@ func (c *MetricsClient) Connect() error {
 	return nil
 }
 
+// StreamMetrics sends a batch of metric snapshots to the Analyser.
 func (c *MetricsClient) StreamMetrics(ctx context.Context, metrics []*pb.MetricSnapshot) (*pb.MetricsAck, error) {
-
 	if c.client == nil {
 		return nil, fmt.Errorf("client not connected")
 	}
@@ -57,7 +61,6 @@ func (c *MetricsClient) StreamMetrics(ctx context.Context, metrics []*pb.MetricS
 		if err := stream.Send(metric); err != nil {
 			return nil, fmt.Errorf("failed to send metric: %w", err)
 		}
-		log.Printf("Sent metric for DB: %s", metric.DatabaseId)
 	}
 
 	ack, err := stream.CloseAndRecv()
@@ -65,19 +68,16 @@ func (c *MetricsClient) StreamMetrics(ctx context.Context, metrics []*pb.MetricS
 		return nil, fmt.Errorf("failed to receive ack: %w", err)
 	}
 
-	log.Printf("Received ack: %d metrics , status %s", ack.TotalMetrics, ack.Status)
 	return ack, nil
 }
 
+// Close closes the gRPC connection.
 func (c *MetricsClient) Close() error {
 	if c.conn != nil {
 		err := c.conn.Close()
-
 		c.conn = nil
 		c.client = nil
-
 		return err
 	}
-
 	return nil
 }

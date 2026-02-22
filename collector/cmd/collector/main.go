@@ -59,6 +59,7 @@ func main() {
 
 	cancel()
 
+	health.StopHealthCheckServer()
 	if err := orch.Stop(); err != nil {
 		log.Printf("Error during shutdown: %v", err)
 	}
