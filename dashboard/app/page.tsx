@@ -2,18 +2,14 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, Zap, Database, CheckCircle, XCircle, Clock, Eye, Settings } from "lucide-react";
+import { Activity, AlertTriangle, Zap, Database, CheckCircle, XCircle, Clock, Eye, Settings, Circle } from "lucide-react";
 import { useDetections } from "@/hooks/useDetections";
 import { useActions } from "@/hooks/useActions";
+import { useDatabase } from "@/components/providers/DatabaseProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface SystemConfig {
-  database?: {
-    id: string;
-    name: string;
-    type: string;
-  };
   execution_mode?: string;
   onboarding_complete?: boolean;
 }
@@ -21,10 +17,11 @@ interface SystemConfig {
 export default function Home() {
   const { detections } = useDetections(5000);
   const { actions } = useActions(5000);
+  const { selectedDatabase, databases, loading: databasesLoading } = useDatabase();
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [servicesHealth, setServicesHealth] = useState<Record<string, boolean>>({});
 
-  // Fetch system config
+  // Fetch system config (for execution_mode)
   useEffect(() => {
     const fetchConfig = async () => {
       try {
@@ -39,7 +36,7 @@ export default function Home() {
     };
 
     fetchConfig();
-    const interval = setInterval(fetchConfig, 30000); // Refresh every 30s
+    const interval = setInterval(fetchConfig, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -74,9 +71,8 @@ export default function Home() {
   }, [detections.length, actions.length]);
 
   // Calculate stats
-  const activeDetections = detections;
-  const criticalDetections = activeDetections.filter(d => d.severity === 'critical').length;
-  const warningDetections = activeDetections.filter(d => d.severity === 'warning').length;
+  const criticalDetections = detections.filter(d => d.severity === 'critical').length;
+  const warningDetections = detections.filter(d => d.severity === 'warning').length;
 
   const pendingApproval = actions.filter(a => a.status === 'pending_approval').length;
   const suggested = actions.filter(a => a.status === 'suggested').length;
@@ -98,7 +94,10 @@ export default function Home() {
         <div>
           <h1 className="text-3xl font-bold">Overview</h1>
           <p className="text-muted-foreground">
-            System status and recent activity
+            {selectedDatabase 
+              ? `Monitoring ${selectedDatabase.database_name}`
+              : 'System status and recent activity'
+            }
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -122,19 +121,31 @@ export default function Home() {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {config?.database ? (
+            {databasesLoading ? (
+              <div className="text-lg font-bold text-muted-foreground">Loading...</div>
+            ) : selectedDatabase ? (
               <>
-                <div className="text-lg font-bold truncate">{config.database.name}</div>
+                <div className="flex items-center gap-2">
+                  <HealthIndicator status={selectedDatabase.health_status} />
+                  <span className="text-lg font-bold truncate">{selectedDatabase.database_name}</span>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {config.database.type} • {config.database.id}
+                  {selectedDatabase.database_type} • {selectedDatabase.host}:{selectedDatabase.port}
                 </p>
               </>
-            ) : (
+            ) : databases.length === 0 ? (
               <>
                 <div className="text-lg font-bold text-muted-foreground">Not configured</div>
                 <Link href="/settings" className="text-xs text-blue-500 hover:underline">
-                  Configure database →
+                  Add database →
                 </Link>
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-bold text-muted-foreground">Select a database</div>
+                <p className="text-xs text-muted-foreground">
+                  {databases.length} database{databases.length !== 1 ? 's' : ''} available
+                </p>
               </>
             )}
           </CardContent>
@@ -149,7 +160,7 @@ export default function Home() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeDetections.length}</div>
+            <div className="text-2xl font-bold">{detections.length}</div>
             <p className="text-xs text-muted-foreground">
               {criticalDetections > 0 && <span className="text-red-500">{criticalDetections} critical</span>}
               {criticalDetections > 0 && warningDetections > 0 && ', '}
@@ -212,7 +223,9 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             {detections.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No detections yet</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedDatabase ? 'No detections for this database' : 'No detections yet'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {detections.slice(0, 5).map((detection, i) => (
@@ -246,7 +259,9 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             {actions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No actions yet</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedDatabase ? 'No actions for this database' : 'No actions yet'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {actions.slice(0, 5).map((action, i) => (
@@ -270,6 +285,16 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+function HealthIndicator({ status }: { status?: string }) {
+  const color = status === 'healthy' 
+    ? 'text-green-500' 
+    : status === 'degraded' 
+      ? 'text-yellow-500' 
+      : 'text-muted-foreground';
+  
+  return <Circle className={`h-3 w-3 fill-current ${color}`} />;
 }
 
 function ServiceBadge({ name, healthy }: { name: string; healthy?: boolean }) {

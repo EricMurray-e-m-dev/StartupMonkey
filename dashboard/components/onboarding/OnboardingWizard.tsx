@@ -13,10 +13,10 @@ interface OnboardingWizardProps {
 }
 
 interface DatabaseConfig {
-    id: string;
-    name: string;
+    database_id: string;
+    database_name: string;
     connection_string: string;
-    type: string;
+    database_type: string;
     enabled: boolean;
 }
 
@@ -26,12 +26,6 @@ interface DetectionThresholds {
     sequential_scan_delta: number;
     p95_latency_ms: number;
     cache_hit_rate_threshold: number;
-}
-
-interface SystemConfig {
-    database: DatabaseConfig;
-    thresholds: DetectionThresholds;
-    onboarding_complete: boolean;
 }
 
 const DEFAULT_THRESHOLDS: DetectionThresholds = {
@@ -50,10 +44,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     const [error, setError] = useState<string | null>(null);
 
     const [database, setDatabase] = useState<DatabaseConfig>({
-        id: '',
-        name: '',
+        database_id: '',
+        database_name: '',
         connection_string: '',
-        type: 'postgres',
+        database_type: 'postgres',
         enabled: true,
     });
 
@@ -66,8 +60,8 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     const handleNameChange = (name: string) => {
         setDatabase(prev => ({
             ...prev,
-            name,
-            id: generateDatabaseId(name),
+            database_name: name,
+            database_id: generateDatabaseId(name),
         }));
     };
 
@@ -76,8 +70,6 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         setTestResult(null);
         setError(null);
 
-        // For now, we just validate the format
-        // Real connection test would require Collector to attempt connection
         try {
             const connStr = database.connection_string;
             
@@ -107,36 +99,47 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         }
     };
 
-    const handleSaveConfig = async () => {
+    const handleComplete = async () => {
         setSaving(true);
         setError(null);
 
         try {
-            const config: SystemConfig = {
-                database,
-                thresholds,
-                onboarding_complete: true,
-            };
-
-            const response = await fetch('/api/config', {
+            // Step 1: Register the database
+            const dbResponse = await fetch('/api/databases', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config),
+                body: JSON.stringify(database),
             });
 
-            if (!response.ok) {
+            if (!dbResponse.ok) {
+                const data = await dbResponse.json();
+                throw new Error(data.error || 'Failed to register database');
+            }
+
+            // Step 2: Save thresholds and mark onboarding complete
+            const configResponse = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    thresholds,
+                    onboarding_complete: true,
+                    execution_mode: 'autonomous',
+                }),
+            });
+
+            if (!configResponse.ok) {
                 throw new Error('Failed to save configuration');
             }
 
             onComplete();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save configuration');
+            setError(err instanceof Error ? err.message : 'Failed to complete setup');
         } finally {
             setSaving(false);
         }
     };
 
-    const canProceedStep1 = database.name && database.connection_string && testResult === 'success';
+    const canProceedStep1 = database.database_name && database.connection_string && testResult === 'success';
 
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -168,7 +171,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                                 <Input
                                     id="db-name"
                                     placeholder="My Production Database"
-                                    value={database.name}
+                                    value={database.database_name}
                                     onChange={(e) => handleNameChange(e.target.value)}
                                 />
                                 <p className="text-sm text-muted-foreground">
@@ -179,8 +182,8 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                             <div className="space-y-2">
                                 <Label htmlFor="db-type">Database Type</Label>
                                 <Select
-                                    value={database.type}
-                                    onValueChange={(value) => setDatabase(prev => ({ ...prev, type: value }))}
+                                    value={database.database_type}
+                                    onValueChange={(value) => setDatabase(prev => ({ ...prev, database_type: value }))}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
@@ -332,7 +335,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                                 <Button variant="outline" onClick={() => setStep(1)}>
                                     Back
                                 </Button>
-                                <Button onClick={handleSaveConfig} disabled={saving}>
+                                <Button onClick={handleComplete} disabled={saving}>
                                     {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                     Start Monitoring
                                 </Button>
