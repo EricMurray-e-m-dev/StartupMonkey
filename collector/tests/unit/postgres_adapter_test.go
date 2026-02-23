@@ -44,3 +44,12 @@ func TestPostgresAdapter_CollectMetrics_NotConnected(t *testing.T) {
 	assert.Nil(t, metrics)
 	assert.Equal(t, adapter.ErrNotConnected, err)
 }
+
+func TestPostgresAdapter_GetUnavailableFeatures_NotConnected(t *testing.T) {
+	pgAdapter := adapter.NewPostgresAdapter("postgres://test@localhost/testdb", "test-db-1")
+
+	// Before connection, pg_stat_statements should be unavailable
+	features := pgAdapter.GetUnavailableFeatures()
+
+	assert.Contains(t, features, "pg_stat_statements")
+}

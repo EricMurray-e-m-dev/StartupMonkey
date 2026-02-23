@@ -15,6 +15,7 @@ func TestNewOrchestrator(t *testing.T) {
 		AnalyserAddress:    "localhost:50051",
 		KnowledgeAddress:   "localhost:50053",
 		CollectionInterval: 30 * time.Second,
+		SyncInterval:       30 * time.Second,
 	}
 
 	orch := orchestrator.NewOrchestrator(cfg)
@@ -27,6 +28,7 @@ func TestOrchestrator_Start_FailsWithoutKnowledge(t *testing.T) {
 		AnalyserAddress:    "localhost:50051",
 		KnowledgeAddress:   "localhost:99999", // Invalid port
 		CollectionInterval: 30 * time.Second,
+		SyncInterval:       30 * time.Second,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -35,7 +37,7 @@ func TestOrchestrator_Start_FailsWithoutKnowledge(t *testing.T) {
 	orch := orchestrator.NewOrchestrator(cfg)
 	err := orch.Start(ctx)
 
-	// Should fail to connect to Knowledge or timeout waiting for config
+	// Should fail to connect to Knowledge or timeout waiting for databases
 	assert.Error(t, err)
 }
 
@@ -44,6 +46,7 @@ func TestOrchestrator_Stop_SafeWhenNotStarted(t *testing.T) {
 		AnalyserAddress:    "localhost:50051",
 		KnowledgeAddress:   "localhost:50053",
 		CollectionInterval: 30 * time.Second,
+		SyncInterval:       30 * time.Second,
 	}
 
 	orch := orchestrator.NewOrchestrator(cfg)

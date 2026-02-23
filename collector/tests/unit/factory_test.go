@@ -8,16 +8,23 @@ import (
 )
 
 func TestNewAdapter_Postgres(t *testing.T) {
-	a, err := adapter.NewAdapter("postgres", "postgres://test@localhost/test", "postgres")
+	a, err := adapter.NewAdapter("postgres", "postgres://test@localhost/test", "test-db")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, a)
+}
+
+func TestNewAdapter_PostgreSQL_Alias(t *testing.T) {
+	a, err := adapter.NewAdapter("postgresql", "postgres://test@localhost/test", "test-db")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, a)
 }
 
 func TestNewAdapter_UnsupportedType(t *testing.T) {
-	a, err := adapter.NewAdapter("unsupported-db", "conn-string", "id")
+	a, err := adapter.NewAdapter("unsupported-db", "conn-string", "test-db")
 
 	assert.Error(t, err)
 	assert.Nil(t, a)
-	assert.Contains(t, err.Error(), "unsupported")
+	assert.ErrorIs(t, err, adapter.ErrUnsupportedDatabase)
 }
