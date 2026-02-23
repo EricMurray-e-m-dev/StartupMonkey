@@ -6,15 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { 
+    Loader2, Save, RotateCcw, AlertCircle, CheckCircle, AlertTriangle, 
+    Plus, Pencil, Trash2, Database, Circle 
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useDatabase } from "@/components/providers/DatabaseProvider";
 
-interface DatabaseConfig {
-    id: string;
-    name: string;
+interface DatabaseEntry {
+    database_id: string;
+    database_name: string;
     connection_string: string;
-    type: string;
+    database_type: string;
+    host: string;
+    port: number;
     enabled: boolean;
+    health_status?: string;
+    health_score?: number;
 }
 
 interface DetectionThresholds {
@@ -25,11 +35,18 @@ interface DetectionThresholds {
     cache_hit_rate_threshold: number;
 }
 
+interface WebhookConfig {
+    url: string;
+    auth_header: string;
+    enabled: boolean;
+    events: string[];
+}
+
 interface SystemConfig {
-    database: DatabaseConfig | null;
     thresholds: DetectionThresholds | null;
     onboarding_complete: boolean;
     execution_mode?: string;
+    webhook?: WebhookConfig | null;
 }
 
 const DEFAULT_THRESHOLDS: DetectionThresholds = {
@@ -39,21 +56,6 @@ const DEFAULT_THRESHOLDS: DetectionThresholds = {
     p95_latency_ms: 100,
     cache_hit_rate_threshold: 0.9,
 };
-
-interface WebhookConfig {
-    url: string;
-    auth_header: string;
-    enabled: boolean;
-    events: string[];
-}
-
-interface SystemConfig {
-    database: DatabaseConfig | null;
-    thresholds: DetectionThresholds | null;
-    onboarding_complete: boolean;
-    execution_mode?: string;
-    webhook?: WebhookConfig | null;
-}
 
 const DEFAULT_WEBHOOK: WebhookConfig = {
     url: "",
@@ -70,7 +72,19 @@ const WEBHOOK_EVENTS = [
     { id: "action.rolledback", label: "Action Rolled Back" },
 ];
 
+const EMPTY_DATABASE: DatabaseEntry = {
+    database_id: "",
+    database_name: "",
+    connection_string: "",
+    database_type: "postgres",
+    host: "",
+    port: 5432,
+    enabled: true,
+};
+
 export default function SettingsPage() {
+    const { refreshDatabases } = useDatabase();
+    
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flushing, setFlushing] = useState(false);
@@ -78,49 +92,58 @@ export default function SettingsPage() {
     const [executionMode, setExecutionMode] = useState("autonomous");
     const [unavailableFeatures, setUnavailableFeatures] = useState<string[]>([]);
 
-    const [database, setDatabase] = useState<DatabaseConfig>({
-        id: "",
-        name: "",
-        connection_string: "",
-        type: "postgres",
-        enabled: true,
-    });
+    // Database management
+    const [databases, setDatabases] = useState<DatabaseEntry[]>([]);
+    const [databaseDialogOpen, setDatabaseDialogOpen] = useState(false);
+    const [editingDatabase, setEditingDatabase] = useState<DatabaseEntry | null>(null);
+    const [databaseForm, setDatabaseForm] = useState<DatabaseEntry>(EMPTY_DATABASE);
+    const [databaseSaving, setDatabaseSaving] = useState(false);
+    const [databaseDeleting, setDatabaseDeleting] = useState<string | null>(null);
 
     const [thresholds, setThresholds] = useState<DetectionThresholds>(DEFAULT_THRESHOLDS);
     const [webhook, setWebhook] = useState<WebhookConfig>(DEFAULT_WEBHOOK);
 
     useEffect(() => {
         fetchConfig();
+        fetchDatabases();
         fetchHealthStatus();
     }, []);
 
+    const fetchDatabases = async () => {
+        try {
+            const response = await fetch("/api/databases");
+            if (response.ok) {
+                const data = await response.json();
+                setDatabases(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch databases:", error);
+        }
+    };
+
     const fetchConfig = async () => {
-    try {
-        const response = await fetch("/api/config");
-        const config: SystemConfig = await response.json();
+        try {
+            const response = await fetch("/api/config");
+            const config: SystemConfig = await response.json();
 
-        if (config.database) {
-            setDatabase(config.database);
-        }
+            if (config.thresholds) {
+                setThresholds(config.thresholds);
+            }
 
-        if (config.thresholds) {
-            setThresholds(config.thresholds);
-        }
+            if (config.execution_mode) {
+                setExecutionMode(config.execution_mode);
+            }
 
-        if (config.execution_mode) {
-            setExecutionMode(config.execution_mode);
+            if (config.webhook) {
+                setWebhook(config.webhook);
+            }
+        } catch (error) {
+            console.error("Failed to fetch config:", error);
+            setMessage({ type: "error", text: "Failed to load configuration" });
+        } finally {
+            setLoading(false);
         }
-
-        if (config.webhook) {
-            setWebhook(config.webhook);
-        }
-    } catch (error) {
-        console.error("Failed to fetch config:", error);
-        setMessage({ type: "error", text: "Failed to load configuration" });
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     const fetchHealthStatus = async () => {
         try {
@@ -136,33 +159,157 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
+    // Database CRUD handlers
+    const openAddDatabase = () => {
+        setEditingDatabase(null);
+        setDatabaseForm(EMPTY_DATABASE);
+        setDatabaseDialogOpen(true);
+    };
 
-    try {
-        const config = {
-            database,
-            thresholds,
-            onboarding_complete: true,
-            execution_mode: executionMode,
-            webhook,
-        };
+    const openEditDatabase = (db: DatabaseEntry) => {
+        setEditingDatabase(db);
+        setDatabaseForm({ ...db });
+        setDatabaseDialogOpen(true);
+    };
 
-        const response = await fetch("/api/config", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(config),
-        });
+    const generateDatabaseId = (name: string) => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'database';
+    };
 
-        if (!response.ok) {
-            throw new Error("Failed to save configuration");
+    const handleDatabaseNameChange = (name: string) => {
+        setDatabaseForm(prev => ({
+            ...prev,
+            database_name: name,
+            database_id: editingDatabase ? prev.database_id : generateDatabaseId(name),
+        }));
+    };
+
+    const handleSaveDatabase = async () => {
+        setDatabaseSaving(true);
+        setMessage(null);
+
+        try {
+            if (editingDatabase) {
+                // Update existing
+                const response = await fetch(`/api/databases/${editingDatabase.database_id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        connection_string: databaseForm.connection_string,
+                        database_name: databaseForm.database_name,
+                        enabled: databaseForm.enabled,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to update database");
+                }
+
+                setMessage({ type: "success", text: "Database updated successfully." });
+            } else {
+                // Create new
+                const response = await fetch("/api/databases", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(databaseForm),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to add database");
+                }
+
+                setMessage({ type: "success", text: "Database added successfully." });
+            }
+
+            setDatabaseDialogOpen(false);
+            fetchDatabases();
+            refreshDatabases();
+        } catch (error) {
+            console.error("Failed to save database:", error);
+            setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to save database" });
+        } finally {
+            setDatabaseSaving(false);
+        }
+    };
+
+    const handleDeleteDatabase = async (databaseId: string) => {
+        if (!confirm("Are you sure you want to remove this database? This will stop monitoring it.")) {
+            return;
         }
 
-        setMessage({
-            type: "success",
-            text: "Configuration saved. Restart Collector and Analyser to apply changes.",
-        });
+        setDatabaseDeleting(databaseId);
+        setMessage(null);
+
+        try {
+            const response = await fetch(`/api/databases/${databaseId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to remove database");
+            }
+
+            setMessage({ type: "success", text: "Database removed successfully." });
+            fetchDatabases();
+            refreshDatabases();
+        } catch (error) {
+            console.error("Failed to delete database:", error);
+            setMessage({ type: "error", text: "Failed to remove database" });
+        } finally {
+            setDatabaseDeleting(null);
+        }
+    };
+
+    const handleToggleEnabled = async (db: DatabaseEntry) => {
+        try {
+            const response = await fetch(`/api/databases/${db.database_id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    connection_string: db.connection_string,
+                    database_name: db.database_name,
+                    enabled: !db.enabled,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update database");
+            }
+
+            fetchDatabases();
+            refreshDatabases();
+        } catch (error) {
+            console.error("Failed to toggle database:", error);
+            setMessage({ type: "error", text: "Failed to update database" });
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        setMessage(null);
+
+        try {
+            const config = {
+                thresholds,
+                onboarding_complete: true,
+                execution_mode: executionMode,
+                webhook,
+            };
+
+            const response = await fetch("/api/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(config),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save configuration");
+            }
+
+            setMessage({
+                type: "success",
+                text: "Configuration saved successfully.",
+            });
         } catch (error) {
             console.error("Failed to save config:", error);
             setMessage({ type: "error", text: "Failed to save configuration" });
@@ -197,14 +344,6 @@ export default function SettingsPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-        );
-    }
-
     const toggleWebhookEvent = (eventId: string) => {
         setWebhook((prev) => ({
             ...prev,
@@ -214,12 +353,20 @@ export default function SettingsPage() {
         }));
     };
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 max-w-4xl">
             <div>
                 <h1 className="text-2xl font-bold">Settings</h1>
                 <p className="text-muted-foreground">
-                    Configure your database connection and detection thresholds
+                    Manage databases, thresholds, and system configuration
                 </p>
             </div>
 
@@ -264,38 +411,118 @@ export default function SettingsPage() {
                 </Card>
             )}
 
-            {/* Database Configuration */}
+            {/* Database Management */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Database Connection</CardTitle>
-                    <CardDescription>
-                        Configure the database that StartupMonkey monitors
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Databases</CardTitle>
+                            <CardDescription>
+                                Manage the databases that StartupMonkey monitors
+                            </CardDescription>
+                        </div>
+                        <Button onClick={openAddDatabase} size="sm">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Database
+                        </Button>
+                    </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <CardContent>
+                    {databases.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p>No databases configured</p>
+                            <p className="text-sm">Add a database to start monitoring</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {databases.map((db) => (
+                                <div
+                                    key={db.database_id}
+                                    className="flex items-center justify-between p-4 border rounded-lg"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <HealthIndicator status={db.health_status} />
+                                            <div>
+                                                <p className="font-medium">{db.database_name}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {db.database_type} • {db.host}:{db.port}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor={`enabled-${db.database_id}`} className="text-sm text-muted-foreground">
+                                                {db.enabled ? "Enabled" : "Disabled"}
+                                            </Label>
+                                            <Switch
+                                                id={`enabled-${db.database_id}`}
+                                                checked={db.enabled}
+                                                onCheckedChange={() => handleToggleEnabled(db)}
+                                            />
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => openEditDatabase(db)}
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDeleteDatabase(db.database_id)}
+                                            disabled={databaseDeleting === db.database_id}
+                                        >
+                                            {databaseDeleting === db.database_id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Database Dialog */}
+            <Dialog open={databaseDialogOpen} onOpenChange={setDatabaseDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingDatabase ? "Edit Database" : "Add Database"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {editingDatabase
+                                ? "Update the database connection details."
+                                : "Add a new database to monitor."}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="db-name">Database Name</Label>
+                            <Label htmlFor="dialog-db-name">Database Name</Label>
                             <Input
-                                id="db-name"
-                                value={database.name}
-                                onChange={(e) =>
-                                    setDatabase((prev) => ({
-                                        ...prev,
-                                        name: e.target.value,
-                                        id: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "_"),
-                                    }))
-                                }
+                                id="dialog-db-name"
+                                placeholder="My Production Database"
+                                value={databaseForm.database_name}
+                                onChange={(e) => handleDatabaseNameChange(e.target.value)}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="db-type">Database Type</Label>
+                            <Label htmlFor="dialog-db-type">Database Type</Label>
                             <Select
-                                value={database.type}
+                                value={databaseForm.database_type}
                                 onValueChange={(value) =>
-                                    setDatabase((prev) => ({ ...prev, type: value }))
+                                    setDatabaseForm((prev) => ({ ...prev, database_type: value }))
                                 }
+                                disabled={!!editingDatabase}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
@@ -306,25 +533,46 @@ export default function SettingsPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="dialog-conn-string">Connection String</Label>
+                            <Input
+                                id="dialog-conn-string"
+                                type="password"
+                                placeholder="postgresql://user:password@host:5432/database"
+                                value={databaseForm.connection_string}
+                                onChange={(e) =>
+                                    setDatabaseForm((prev) => ({ ...prev, connection_string: e.target.value }))
+                                }
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="dialog-enabled"
+                                checked={databaseForm.enabled}
+                                onCheckedChange={(checked: boolean) =>
+                                    setDatabaseForm((prev) => ({ ...prev, enabled: checked }))
+                                }
+                            />
+                            <Label htmlFor="dialog-enabled">Enable monitoring</Label>
+                        </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="conn-string">Connection String</Label>
-                        <Input
-                            id="conn-string"
-                            type="password"
-                            placeholder="postgresql://user:password@host:5432/database"
-                            value={database.connection_string}
-                            onChange={(e) =>
-                                setDatabase((prev) => ({ ...prev, connection_string: e.target.value }))
-                            }
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Changes require Collector restart to take effect
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDatabaseDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleSaveDatabase}
+                            disabled={databaseSaving || !databaseForm.database_name || !databaseForm.connection_string}
+                        >
+                            {databaseSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            {editingDatabase ? "Update" : "Add"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Execution Mode */}
             <Card>
@@ -337,10 +585,7 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="exec-mode">Mode</Label>
-                        <Select
-                            value={executionMode}
-                            onValueChange={setExecutionMode}
-                        >
+                        <Select value={executionMode} onValueChange={setExecutionMode}>
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
@@ -370,7 +615,7 @@ export default function SettingsPage() {
                 <CardHeader>
                     <CardTitle>Detection Thresholds</CardTitle>
                     <CardDescription>
-                        Configure when detections should trigger. Changes require Analyser restart.
+                        Configure when detections should trigger (applies to all databases)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -567,7 +812,7 @@ export default function SettingsPage() {
                         <div>
                             <p className="font-medium">Flush All Data</p>
                             <p className="text-sm text-muted-foreground">
-                                Delete all detections, actions, metrics history, and configuration
+                                Delete all detections, actions, and metrics history
                             </p>
                         </div>
                         <Button
@@ -593,4 +838,14 @@ export default function SettingsPage() {
             </div>
         </div>
     );
+}
+
+function HealthIndicator({ status }: { status?: string }) {
+    const color = status === 'healthy' 
+        ? 'text-green-500' 
+        : status === 'degraded' 
+            ? 'text-yellow-500' 
+            : 'text-muted-foreground';
+    
+    return <Circle className={`h-3 w-3 fill-current ${color}`} />;
 }
