@@ -14,8 +14,11 @@ class DetectionsStore {
         }
     }
 
-    getAll() {
-        return this.detections;
+    getAll(databaseId = null) {
+        if (!databaseId) {
+            return this.detections;
+        }
+        return this.detections.filter(d => d.database_id === databaseId);
     }
 
     clear() {

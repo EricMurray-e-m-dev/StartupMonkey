@@ -1,7 +1,7 @@
 class MetricsStore {
     constructor() {
         this.metrics = [];
-        this.maxSize =  100;
+        this.maxSize = 100;
     }
 
     add(metric) {
@@ -11,16 +11,29 @@ class MetricsStore {
         }
     }
 
-    getLatest() {
-        return this.metrics[0] || null;
+    getLatest(databaseId = null) {
+        if (!databaseId) {
+            return this.metrics[0] || null;
+        }
+        return this.metrics.find(m => 
+            (m.database_id || m.DatabaseID) === databaseId
+        ) || null;
     }
 
-    getAll() {
-        return this.metrics;
+    getAll(databaseId = null) {
+        if (!databaseId) {
+            return this.metrics;
+        }
+        return this.metrics.filter(m => 
+            (m.database_id || m.DatabaseID) === databaseId
+        );
     }
 
-    getHistory(limit = 20) {
-        return this.metrics.slice(0, limit);
+    getHistory(limit = 20, databaseId = null) {
+        const filtered = databaseId 
+            ? this.metrics.filter(m => (m.database_id || m.DatabaseID) === databaseId)
+            : this.metrics;
+        return filtered.slice(0, limit);
     }
 
     clear() {
