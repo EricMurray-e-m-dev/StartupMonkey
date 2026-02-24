@@ -1,14 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Database, Activity, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Database, Activity, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
 import { useMetrics } from '@/hooks/useMetrics';
+import { useDatabase } from '@/components/providers/DatabaseProvider';
+
+/** Format Unix timestamp (seconds) to locale string */
+function formatTimestamp(timestamp: number): string {
+    if (!timestamp || timestamp === 0) return 'Unknown';
+    const ms = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(ms).toLocaleString();
+}
 
 export default function MetricsPage() {
     const { metrics, loading, error } = useMetrics(5000);
+    const { selectedDatabase, selectedDatabaseId } = useDatabase();
+    const [showRawMetrics, setShowRawMetrics] = useState(false);
 
     if (loading) {
         return (
@@ -36,7 +48,10 @@ export default function MetricsPage() {
             <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                    No metrics available yet. Make sure Collector is running.
+                    {selectedDatabaseId
+                        ? `No metrics available for ${selectedDatabase?.database_name || 'this database'}. Make sure Collector is running.`
+                        : 'No metrics available yet. Make sure Collector is running.'
+                    }
                 </AlertDescription>
             </Alert>
         );
@@ -50,14 +65,15 @@ export default function MetricsPage() {
     const overallPercent = Math.round(metrics.health_score * 100);
 
     // Get measurements
-    const measurements = metrics.measurements;
+    const measurements = metrics.measurements || {};
     const activeConns = measurements.active_connections || 0;
     const maxConns = measurements.max_connections || 100;
     const seqScans = measurements.sequential_scans || 0;
     const cacheHitRate = measurements.cache_hit_rate || 0;
 
     // Database size from extended metrics
-    const dbSizeMB = metrics.extended_metrics?.['pg.database_size_mb']?.toFixed(2) || '0';
+    const extendedMetrics = metrics.extended_metrics || {};
+    const dbSizeMB = extendedMetrics['pg.database_size_mb']?.toFixed(2) || '0';
 
     return (
         <div className="space-y-6">
@@ -65,14 +81,17 @@ export default function MetricsPage() {
             <div>
                 <h1 className="text-3xl font-bold">Real-time Metrics</h1>
                 <p className="text-muted-foreground">
-                    Database: {metrics.database_id} ({metrics.database_type})
+                    {selectedDatabase 
+                        ? `${selectedDatabase.database_name} (${selectedDatabase.database_type})`
+                        : `${metrics.database_id} (${metrics.database_type})`
+                    }
                 </p>
                 <p className="text-xs text-muted-foreground">
-                    Last updated: {new Date(metrics.timestamp * 1000).toLocaleTimeString()}
+                    Last updated: {formatTimestamp(metrics.timestamp)}
                 </p>
             </div>
 
-            {/* Overall Health Score - Big Card */}
+            {/* Overall Health Score */}
             <Card className="border-2">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -151,22 +170,32 @@ export default function MetricsPage() {
                 </Alert>
             )}
 
-            {/* Raw Data (for debugging) */}
+            {/* Raw Data (collapsible, for debugging) */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Raw Metrics</CardTitle>
+                <CardHeader className="cursor-pointer" onClick={() => setShowRawMetrics(!showRawMetrics)}>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm">Raw Metrics</CardTitle>
+                        <Button variant="ghost" size="sm">
+                            {showRawMetrics ? (
+                                <ChevronUp className="h-4 w-4" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
                 </CardHeader>
-                <CardContent>
-                    <pre className="text-xs overflow-auto max-h-96 p-4 bg-muted rounded">
-                        {JSON.stringify(metrics, null, 2)}
-                    </pre>
-                </CardContent>
+                {showRawMetrics && (
+                    <CardContent>
+                        <pre className="text-xs overflow-auto max-h-96 p-4 bg-muted rounded">
+                            {JSON.stringify(metrics, null, 2)}
+                        </pre>
+                    </CardContent>
+                )}
             </Card>
         </div>
     );
 }
 
-// Helper Components remain the same
 function HealthCard({ 
     title, 
     value, 

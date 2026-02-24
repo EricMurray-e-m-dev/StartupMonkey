@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
-
 const COLLECTOR_URL = process.env.COLLECTOR_URL || "http://localhost:3001";
 
 export async function POST(
@@ -11,14 +9,14 @@ export async function POST(
     try {
         const { id } = await params;
 
-        const response = await fetch(`${COLLECTOR_URL}/actions/${id}/approve`, {
+        const response = await fetch(`${COLLECTOR_URL}/actions/${id}/rollback`, {
             method: "POST",
         });
 
         if (!response.ok) {
             const error = await response.text();
             return NextResponse.json(
-                { error: error || "Failed to approve action" },
+                { error: error || "Failed to rollback action" },
                 { status: response.status }
             );
         }
@@ -26,9 +24,9 @@ export async function POST(
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {
-        console.error("Failed to approve action:", error);
+        console.error("Failed to rollback action:", error);
         return NextResponse.json(
-            { error: "Failed to approve action" },
+            { error: "Failed to rollback action" },
             { status: 500 }
         );
     }
