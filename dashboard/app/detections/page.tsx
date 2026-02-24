@@ -18,7 +18,7 @@ function formatTimestamp(timestamp: number): string {
 
 export default function DetectionsPage() {
     const { detections, loading } = useDetections(5000);
-    const { selectedDatabase, selectedDatabaseId } = useDatabase();
+    const { selectedDatabase, isAllSelected } = useDatabase();
 
     if (loading) {
         return (
@@ -40,9 +40,11 @@ export default function DetectionsPage() {
             <div>
                 <h1 className="text-3xl font-bold">Live Detections</h1>
                 <p className="text-muted-foreground">
-                    {selectedDatabase 
-                        ? `Performance issues for ${selectedDatabase.database_name}`
-                        : 'Real-time performance issue detection'
+                    {isAllSelected 
+                        ? 'Performance issues across all databases'
+                        : selectedDatabase 
+                            ? `Performance issues for ${selectedDatabase.database_name}`
+                            : 'Real-time performance issue detection'
                     }
                 </p>
             </div>
@@ -77,9 +79,11 @@ export default function DetectionsPage() {
                 <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                        {selectedDatabaseId
-                            ? `No issues detected for ${selectedDatabase?.database_name || 'this database'}. Your database is running smoothly!`
-                            : 'No issues detected. Your database is running smoothly!'
+                        {isAllSelected
+                            ? 'No issues detected across any database. All databases are running smoothly!'
+                            : selectedDatabase
+                                ? `No issues detected for ${selectedDatabase.database_name}. Your database is running smoothly!`
+                                : 'No issues detected. Your database is running smoothly!'
                         }
                     </AlertDescription>
                 </Alert>
@@ -88,7 +92,7 @@ export default function DetectionsPage() {
             {/* Detections List */}
             <div className="space-y-4">
                 {detections.map((detection) => (
-                    <DetectionCard key={detection.id} detection={detection} />
+                    <DetectionCard key={detection.id} detection={detection} showDatabaseBadge={isAllSelected} />
                 ))}
             </div>
         </div>
@@ -122,7 +126,7 @@ function SummaryCard({
     );
 }
 
-function DetectionCard({ detection }: { detection: Detection }) {
+function DetectionCard({ detection, showDatabaseBadge = false }: { detection: Detection; showDatabaseBadge?: boolean }) {
     const severityConfig = {
         critical: {
             variant: 'destructive' as const,
@@ -150,7 +154,14 @@ function DetectionCard({ detection }: { detection: Detection }) {
                     <div className="flex items-start gap-3">
                         {config.icon}
                         <div>
-                            <CardTitle className="text-lg">{detection.title}</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">{detection.title}</CardTitle>
+                                {showDatabaseBadge && (
+                                    <Badge variant="outline" className="text-xs">
+                                        {detection.database_id}
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription className="mt-1">
                                 {formatTimestamp(detection.timestamp)}
                             </CardDescription>
@@ -200,15 +211,26 @@ function DetectionCard({ detection }: { detection: Detection }) {
                     </div>
                 )}
 
-                {/* Footer: Action Type + Database Info */}
-                <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
-                    <span>Database: {detection.database_id}</span>
-                    {detection.action_type && (
+                {/* Footer: Action Type + Database Info (only when not viewing all) */}
+                {!showDatabaseBadge && (
+                    <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
+                        <span>Database: {detection.database_id}</span>
+                        {detection.action_type && (
+                            <Badge variant="outline" className="text-xs">
+                                Action: {detection.action_type}
+                            </Badge>
+                        )}
+                    </div>
+                )}
+
+                {/* Action type only when viewing all */}
+                {showDatabaseBadge && detection.action_type && (
+                    <div className="flex items-center justify-end pt-2 border-t text-xs text-muted-foreground">
                         <Badge variant="outline" className="text-xs">
                             Action: {detection.action_type}
                         </Badge>
-                    )}
-                </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

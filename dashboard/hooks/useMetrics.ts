@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useDatabase } from '@/components/providers/DatabaseProvider';
+import { useDatabase, ALL_DATABASES } from '@/components/providers/DatabaseProvider';
 import { Metrics } from '@/types/metrics';
 
 export function useMetrics(pollInterval: number = 5000) {
@@ -8,7 +8,17 @@ export function useMetrics(pollInterval: number = 5000) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const isAllSelected = selectedDatabaseId === ALL_DATABASES;
+
     useEffect(() => {
+        // Metrics can't be aggregated across databases
+        if (isAllSelected) {
+            setMetrics(null);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
         const fetchMetrics = async () => {
             try {
                 const params = selectedDatabaseId 
@@ -37,11 +47,12 @@ export function useMetrics(pollInterval: number = 5000) {
             }
         };
 
+        setLoading(true);
         fetchMetrics();
         const interval = setInterval(fetchMetrics, pollInterval);
 
         return () => clearInterval(interval);
-    }, [pollInterval, selectedDatabaseId]);
+    }, [pollInterval, selectedDatabaseId, isAllSelected]);
 
-    return { metrics, loading, error };
+    return { metrics, loading, error, isAllSelected };
 }

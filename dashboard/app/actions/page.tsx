@@ -48,7 +48,7 @@ function formatTimestamp(timestamp: string | number): string {
 
 export default function ActionsPage() {
     const { actions, loading } = useActions(5000);
-    const { selectedDatabase, selectedDatabaseId } = useDatabase();
+    const { selectedDatabase, isAllSelected } = useDatabase();
 
     if (loading) {
         return (
@@ -75,9 +75,11 @@ export default function ActionsPage() {
             <div>
                 <h1 className="text-3xl font-bold">Action Queue</h1>
                 <p className="text-muted-foreground">
-                    {selectedDatabase 
-                        ? `Actions for ${selectedDatabase.database_name}`
-                        : 'Real-time autonomous action execution'
+                    {isAllSelected 
+                        ? 'Actions across all databases'
+                        : selectedDatabase 
+                            ? `Actions for ${selectedDatabase.database_name}`
+                            : 'Real-time autonomous action execution'
                     }
                 </p>
             </div>
@@ -121,9 +123,11 @@ export default function ActionsPage() {
                 <Alert>
                     <Wrench className="h-4 w-4" />
                     <AlertDescription>
-                        {selectedDatabaseId 
-                            ? `No actions for ${selectedDatabase?.database_name || 'this database'}. Actions will appear here when optimisations are executed.`
-                            : 'No actions in queue. Actions will appear here when optimisations are executed.'
+                        {isAllSelected 
+                            ? 'No actions across any database. Actions will appear here when optimisations are executed.'
+                            : selectedDatabase
+                                ? `No actions for ${selectedDatabase.database_name}. Actions will appear here when optimisations are executed.`
+                                : 'No actions in queue. Actions will appear here when optimisations are executed.'
                         }
                     </AlertDescription>
                 </Alert>
@@ -132,7 +136,7 @@ export default function ActionsPage() {
             {/* Actions List */}
             <div className="space-y-4">
                 {actions.map((action) => (
-                    <ActionCard key={action.action_id} action={action} />
+                    <ActionCard key={action.action_id} action={action} showDatabaseBadge={isAllSelected} />
                 ))}
             </div>
         </div>
@@ -161,7 +165,7 @@ function SummaryCard({
     );
 }
 
-function ActionCard({ action }: { action: ActionResult }) {
+function ActionCard({ action, showDatabaseBadge = false }: { action: ActionResult; showDatabaseBadge?: boolean }) {
     const [isRollingBack, setIsRollingBack] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
@@ -298,9 +302,16 @@ function ActionCard({ action }: { action: ActionResult }) {
                     <div className="flex items-start gap-3">
                         {config.icon}
                         <div>
-                            <CardTitle className="text-lg">
-                                {action.action_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">
+                                    {action.action_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </CardTitle>
+                                {showDatabaseBadge && (
+                                    <Badge variant="outline" className="text-xs">
+                                        {action.database_id}
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription className="mt-1">
                                 ID: {action.action_id}
                             </CardDescription>
@@ -424,13 +435,22 @@ function ActionCard({ action }: { action: ActionResult }) {
                     </div>
                 )}
 
-                {/* Database Info */}
-                <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                    <span>Database: {action.database_id}</span>
-                    {action.detection_id && (
+                {/* Database Info - only show when not viewing all (since badge already shows it) */}
+                {!showDatabaseBadge && (
+                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                        <span>Database: {action.database_id}</span>
+                        {action.detection_id && (
+                            <span>Detection: {action.detection_id}</span>
+                        )}
+                    </div>
+                )}
+
+                {/* Detection ID only when viewing all */}
+                {showDatabaseBadge && action.detection_id && (
+                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
                         <span>Detection: {action.detection_id}</span>
-                    )}
-                </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

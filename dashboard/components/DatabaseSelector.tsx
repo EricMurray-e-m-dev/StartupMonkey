@@ -1,6 +1,6 @@
 'use client';
 
-import { useDatabase } from '@/components/providers/DatabaseProvider';
+import { useDatabase, ALL_DATABASES } from '@/components/providers/DatabaseProvider';
 import {
     Select,
     SelectContent,
@@ -8,7 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Database, Circle } from 'lucide-react';
+import { Database, Circle, Layers } from 'lucide-react';
 
 export function DatabaseSelector() {
     const { databases, selectedDatabaseId, setSelectedDatabaseId, loading } = useDatabase();
@@ -32,20 +32,31 @@ export function DatabaseSelector() {
     }
 
     return (
-        <Select value={selectedDatabaseId || ''} onValueChange={setSelectedDatabaseId}>
+        <Select value={selectedDatabaseId || ALL_DATABASES} onValueChange={setSelectedDatabaseId}>
             <SelectTrigger className="w-[200px]">
-                <div className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    <SelectValue placeholder="Select database" />
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <Database className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                        <SelectValue placeholder="Select database" />
+                    </span>
                 </div>
             </SelectTrigger>
             <SelectContent>
+                {/* All Databases Option */}
+                <SelectItem value={ALL_DATABASES}>
+                    <div className="flex items-center gap-2">
+                        <Layers className="h-3 w-3" />
+                        <span>All Databases</span>
+                    </div>
+                </SelectItem>
+
+                {/* Individual Databases */}
                 {databases.map((db) => (
                     <SelectItem key={db.database_id} value={db.database_id}>
                         <div className="flex items-center gap-2">
                             <HealthIndicator status={db.health_status} />
-                            <span>{db.database_name}</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="truncate max-w-[120px]">{db.database_name}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">
                                 ({db.database_type})
                             </span>
                         </div>

@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Database, Activity, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, Database, Activity, TrendingUp, ChevronDown, ChevronUp, Layers } from "lucide-react";
 import { useMetrics } from '@/hooks/useMetrics';
 import { useDatabase } from '@/components/providers/DatabaseProvider';
 
@@ -18,9 +18,55 @@ function formatTimestamp(timestamp: number): string {
 }
 
 export default function MetricsPage() {
-    const { metrics, loading, error } = useMetrics(5000);
-    const { selectedDatabase, selectedDatabaseId } = useDatabase();
+    const { metrics, loading, error, isAllSelected } = useMetrics(5000);
+    const { selectedDatabase, databases } = useDatabase();
     const [showRawMetrics, setShowRawMetrics] = useState(false);
+
+    // Show prompt to select a database when "All" is selected
+    if (isAllSelected) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold">Real-time Metrics</h1>
+                    <p className="text-muted-foreground">
+                        Select a database to view metrics
+                    </p>
+                </div>
+
+                <Alert>
+                    <Layers className="h-4 w-4" />
+                    <AlertDescription>
+                        Metrics cannot be aggregated across databases. Please select a specific database from the dropdown to view its metrics.
+                    </AlertDescription>
+                </Alert>
+
+                {/* Show database list as quick links */}
+                {databases.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Available Databases</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                                {databases.map((db) => (
+                                    <div 
+                                        key={db.database_id}
+                                        className="flex items-center gap-2 p-3 rounded-lg border bg-muted/50"
+                                    >
+                                        <Database className="h-4 w-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">{db.database_name}</p>
+                                            <p className="text-xs text-muted-foreground">{db.database_type}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -45,15 +91,26 @@ export default function MetricsPage() {
 
     if (!metrics) {
         return (
-            <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                    {selectedDatabaseId
-                        ? `No metrics available for ${selectedDatabase?.database_name || 'this database'}. Make sure Collector is running.`
-                        : 'No metrics available yet. Make sure Collector is running.'
-                    }
-                </AlertDescription>
-            </Alert>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold">Real-time Metrics</h1>
+                    <p className="text-muted-foreground">
+                        {selectedDatabase 
+                            ? `${selectedDatabase.database_name} (${selectedDatabase.database_type})`
+                            : 'Select a database'
+                        }
+                    </p>
+                </div>
+                <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        {selectedDatabase
+                            ? `No metrics available for ${selectedDatabase.database_name}. Make sure Collector is running.`
+                            : 'No metrics available yet. Make sure Collector is running.'
+                        }
+                    </AlertDescription>
+                </Alert>
+            </div>
         );
     }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useDatabase } from "@/components/providers/DatabaseProvider";
+import { useDatabase, ALL_DATABASES } from "@/components/providers/DatabaseProvider";
 import { Detection } from "@/types/detection";
 
 export function useDetections(interval: number = 5000) {
@@ -11,7 +11,7 @@ export function useDetections(interval: number = 5000) {
     useEffect(() => {
         const fetchDetections = async () => {
             try {
-                const params = selectedDatabaseId 
+                const params = selectedDatabaseId && selectedDatabaseId !== ALL_DATABASES
                     ? `?database_id=${selectedDatabaseId}` 
                     : '';
                 const response = await fetch(`/api/detections/latest${params}`);

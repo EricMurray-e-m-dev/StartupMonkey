@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useDatabase } from "@/components/providers/DatabaseProvider";
+import { useDatabase, ALL_DATABASES } from "@/components/providers/DatabaseProvider";
 import { ActionResult } from "@/types/actions";
 
 export function useActions(interval: number = 5000) {
@@ -11,7 +11,7 @@ export function useActions(interval: number = 5000) {
     useEffect(() => {
         const fetchActions = async () => {
             try {
-                const params = selectedDatabaseId 
+                const params = selectedDatabaseId && selectedDatabaseId !== ALL_DATABASES
                     ? `?database_id=${selectedDatabaseId}` 
                     : '';
                 const response = await fetch(`/api/actions/latest${params}`);

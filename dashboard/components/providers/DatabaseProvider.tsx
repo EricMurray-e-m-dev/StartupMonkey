@@ -21,6 +21,7 @@ interface DatabaseContextType {
     setSelectedDatabaseId: (id: string | null) => void;
     refreshDatabases: () => Promise<void>;
     loading: boolean;
+    isAllSelected: boolean;
 }
 
 const DatabaseContext = createContext<DatabaseContextType>({
@@ -30,15 +31,17 @@ const DatabaseContext = createContext<DatabaseContextType>({
     setSelectedDatabaseId: () => {},
     refreshDatabases: async () => {},
     loading: true,
+    isAllSelected: true,
 });
 
 export const useDatabase = () => useContext(DatabaseContext);
 
 const STORAGE_KEY = 'startupmonkey_selected_database';
+export const ALL_DATABASES = 'all';
 
 export default function DatabaseProvider({ children }: { children: ReactNode }) {
     const [databases, setDatabases] = useState<Database[]>([]);
-    const [selectedDatabaseId, setSelectedDatabaseIdState] = useState<string | null>(null);
+    const [selectedDatabaseId, setSelectedDatabaseIdState] = useState<string | null>(ALL_DATABASES);
     const [loading, setLoading] = useState(true);
 
     const fetchDatabases = useCallback(async () => {
@@ -72,13 +75,16 @@ export default function DatabaseProvider({ children }: { children: ReactNode }) 
             // Restore selection from localStorage
             const savedId = localStorage.getItem(STORAGE_KEY);
             
-            if (savedId && dbs.some((db: Database) => db.database_id === savedId)) {
+            if (savedId === ALL_DATABASES) {
+                // "All" was previously selected
+                setSelectedDatabaseIdState(ALL_DATABASES);
+            } else if (savedId && dbs.some((db: Database) => db.database_id === savedId)) {
                 // Saved selection still valid
                 setSelectedDatabaseIdState(savedId);
-            } else if (dbs.length > 0) {
-                // Default to first database
-                setSelectedDatabaseIdState(dbs[0].database_id);
-                localStorage.setItem(STORAGE_KEY, dbs[0].database_id);
+            } else {
+                // Default to "All Databases"
+                setSelectedDatabaseIdState(ALL_DATABASES);
+                localStorage.setItem(STORAGE_KEY, ALL_DATABASES);
             }
             
             setLoading(false);
@@ -93,7 +99,10 @@ export default function DatabaseProvider({ children }: { children: ReactNode }) 
         return () => clearInterval(interval);
     }, [fetchDatabases]);
 
-    const selectedDatabase = databases.find(db => db.database_id === selectedDatabaseId) || null;
+    const isAllSelected = selectedDatabaseId === ALL_DATABASES;
+    const selectedDatabase = isAllSelected 
+        ? null 
+        : databases.find(db => db.database_id === selectedDatabaseId) || null;
 
     return (
         <DatabaseContext.Provider
@@ -104,6 +113,7 @@ export default function DatabaseProvider({ children }: { children: ReactNode }) 
                 setSelectedDatabaseId,
                 refreshDatabases: fetchDatabases,
                 loading,
+                isAllSelected,
             }}
         >
             {children}

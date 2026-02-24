@@ -17,7 +17,7 @@ interface SystemConfig {
 export default function Home() {
   const { detections } = useDetections(5000);
   const { actions } = useActions(5000);
-  const { selectedDatabase, databases, loading: databasesLoading } = useDatabase();
+  const { selectedDatabase, databases, loading: databasesLoading, isAllSelected } = useDatabase();
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [servicesHealth, setServicesHealth] = useState<Record<string, boolean>>({});
 
@@ -88,15 +88,21 @@ export default function Home() {
 
   const currentMode = executionModeDisplay[config?.execution_mode as keyof typeof executionModeDisplay] || executionModeDisplay.autonomous;
 
+  // Calculate overall health when viewing all databases
+  const healthyCount = databases.filter(db => db.health_status === 'healthy').length;
+  const degradedCount = databases.filter(db => db.health_status === 'degraded').length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Overview</h1>
           <p className="text-muted-foreground">
-            {selectedDatabase 
-              ? `Monitoring ${selectedDatabase.database_name}`
-              : 'System status and recent activity'
+            {isAllSelected 
+              ? `Monitoring ${databases.length} database${databases.length !== 1 ? 's' : ''}`
+              : selectedDatabase 
+                ? `Monitoring ${selectedDatabase.database_name}`
+                : 'System status and recent activity'
             }
           </p>
         </div>
@@ -116,13 +122,23 @@ export default function Home() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Database
+              {isAllSelected ? 'Databases' : 'Database'}
             </CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {databasesLoading ? (
               <div className="text-lg font-bold text-muted-foreground">Loading...</div>
+            ) : isAllSelected ? (
+              <>
+                <div className="text-2xl font-bold">{databases.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {healthyCount > 0 && <span className="text-green-500">{healthyCount} healthy</span>}
+                  {healthyCount > 0 && degradedCount > 0 && ', '}
+                  {degradedCount > 0 && <span className="text-yellow-500">{degradedCount} degraded</span>}
+                  {healthyCount === 0 && degradedCount === 0 && 'No status data'}
+                </p>
+              </>
             ) : selectedDatabase ? (
               <>
                 <div className="flex items-center gap-2">
@@ -224,7 +240,7 @@ export default function Home() {
           <CardContent>
             {detections.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {selectedDatabase ? 'No detections for this database' : 'No detections yet'}
+                {isAllSelected ? 'No detections across any database' : selectedDatabase ? 'No detections for this database' : 'No detections yet'}
               </p>
             ) : (
               <div className="space-y-3">
@@ -235,7 +251,10 @@ export default function Home() {
                     }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{detection.title}</p>
-                      <p className="text-xs text-muted-foreground">{detection.detector_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isAllSelected && detection.database_id && `${detection.database_id} • `}
+                        {detection.detector_name}
+                      </p>
                     </div>
                     <Badge variant={detection.severity === 'critical' ? 'destructive' : 'secondary'} className="text-xs">
                       {detection.severity}
@@ -260,7 +279,7 @@ export default function Home() {
           <CardContent>
             {actions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {selectedDatabase ? 'No actions for this database' : 'No actions yet'}
+                {isAllSelected ? 'No actions across any database' : selectedDatabase ? 'No actions for this database' : 'No actions yet'}
               </p>
             ) : (
               <div className="space-y-3">
