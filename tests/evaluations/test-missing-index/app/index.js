@@ -83,4 +83,22 @@ app.listen(port, () => {
   console.log('  GET  /posts/user/:id   - Get posts by user (SLOW - no index)');
   console.log('  GET  /stats            - Check indexes and scan counts');
   console.log('  POST /reset-stats      - Reset pg_stat counters');
+  
+  console.log('Starting load generator...');
+  
+  // Self-generate load to trigger sequential scans
+  const generateLoad = async () => {
+    const userId = Math.floor(Math.random() * 1000) + 1;
+    try {
+      await pool.query(
+        'SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10',
+        [userId]
+      );
+    } catch (err) {
+      console.error('Load generator error:', err.message);
+    }
+  };
+
+  setInterval(generateLoad, 100);
+  console.log('Load generator started - 10 queries/sec');
 });
