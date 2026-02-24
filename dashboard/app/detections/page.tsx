@@ -5,10 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, AlertTriangle, Info, CheckCircle } from "lucide-react";
 import { useDetections } from "@/hooks/useDetections";
+import { useDatabase } from "@/components/providers/DatabaseProvider";
 import { Detection } from "@/types/detection";
+
+/** Format Unix timestamp (seconds) to locale string */
+function formatTimestamp(timestamp: number): string {
+    if (!timestamp || timestamp === 0) return 'Unknown';
+    // Handle both seconds and milliseconds
+    const ms = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+    return new Date(ms).toLocaleString();
+}
 
 export default function DetectionsPage() {
     const { detections, loading } = useDetections(5000);
+    const { selectedDatabase, isAllSelected } = useDatabase();
 
     if (loading) {
         return (
@@ -20,13 +30,22 @@ export default function DetectionsPage() {
         );
     }
 
+    const criticalCount = detections.filter(d => d.severity === 'critical').length;
+    const warningCount = detections.filter(d => d.severity === 'warning').length;
+    const infoCount = detections.filter(d => d.severity === 'info').length;
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold">Live Detections</h1>
                 <p className="text-muted-foreground">
-                    Real-time performance issue detection
+                    {isAllSelected 
+                        ? 'Performance issues across all databases'
+                        : selectedDatabase 
+                            ? `Performance issues for ${selectedDatabase.database_name}`
+                            : 'Real-time performance issue detection'
+                    }
                 </p>
             </div>
 
@@ -39,21 +58,19 @@ export default function DetectionsPage() {
                 />
                 <SummaryCard
                     title="Critical"
-                    value={detections.filter(d => d.severity === 'critical').length}
+                    value={criticalCount}
                     icon={<AlertCircle className="h-4 w-4 text-red-500" />}
-                    variant="critical"
+                    showAlert={criticalCount > 0}
                 />
                 <SummaryCard
                     title="Warning"
-                    value={detections.filter(d => d.severity === 'warning').length}
+                    value={warningCount}
                     icon={<AlertTriangle className="h-4 w-4 text-yellow-500" />}
-                    variant="warning"
                 />
                 <SummaryCard
                     title="Info"
-                    value={detections.filter(d => d.severity === 'info').length}
+                    value={infoCount}
                     icon={<Info className="h-4 w-4 text-blue-500" />}
-                    variant="info"
                 />
             </div>
 
@@ -62,7 +79,12 @@ export default function DetectionsPage() {
                 <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                        No issues detected. Your database is running smoothly!
+                        {isAllSelected
+                            ? 'No issues detected across any database. All databases are running smoothly!'
+                            : selectedDatabase
+                                ? `No issues detected for ${selectedDatabase.database_name}. Your database is running smoothly!`
+                                : 'No issues detected. Your database is running smoothly!'
+                        }
                     </AlertDescription>
                 </Alert>
             )}
@@ -70,31 +92,30 @@ export default function DetectionsPage() {
             {/* Detections List */}
             <div className="space-y-4">
                 {detections.map((detection) => (
-                    <DetectionCard key={detection.id} detection={detection} />
+                    <DetectionCard key={detection.id} detection={detection} showDatabaseBadge={isAllSelected} />
                 ))}
             </div>
         </div>
     );
 }
 
-// Summary Card Component
 function SummaryCard({ 
     title, 
     value, 
     icon, 
-    variant 
+    showAlert = false
 }: { 
     title: string; 
     value: number; 
     icon: React.ReactNode;
-    variant?: 'critical' | 'warning' | 'info';
+    showAlert?: boolean;
 }) {
     return (
         <Card>
             <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
                     <div className="text-muted-foreground">{icon}</div>
-                    {variant === 'critical' && value > 0 && (
+                    {showAlert && (
                         <Badge variant="destructive" className="text-xs">!</Badge>
                     )}
                 </div>
@@ -105,8 +126,7 @@ function SummaryCard({
     );
 }
 
-// Detection Card Component
-function DetectionCard({ detection }: { detection: Detection }) {
+function DetectionCard({ detection, showDatabaseBadge = false }: { detection: Detection; showDatabaseBadge?: boolean }) {
     const severityConfig = {
         critical: {
             variant: 'destructive' as const,
@@ -134,9 +154,16 @@ function DetectionCard({ detection }: { detection: Detection }) {
                     <div className="flex items-start gap-3">
                         {config.icon}
                         <div>
-                            <CardTitle className="text-lg">{detection.title}</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">{detection.title}</CardTitle>
+                                {showDatabaseBadge && (
+                                    <Badge variant="outline" className="text-xs">
+                                        {detection.database_id}
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription className="mt-1">
-                                {new Date(detection.timestamp * 1000).toLocaleString()}
+                                {formatTimestamp(detection.timestamp)}
                             </CardDescription>
                         </div>
                     </div>
@@ -160,12 +187,14 @@ function DetectionCard({ detection }: { detection: Detection }) {
                 </div>
 
                 {/* Recommendation */}
-                <div>
-                    <h4 className="text-sm font-semibold mb-1">Recommendation</h4>
-                    <p className="text-sm text-muted-foreground">
-                        {detection.recommendation}
-                    </p>
-                </div>
+                {detection.recommendation && (
+                    <div>
+                        <h4 className="text-sm font-semibold mb-1">Recommendation</h4>
+                        <p className="text-sm text-muted-foreground">
+                            {detection.recommendation}
+                        </p>
+                    </div>
+                )}
 
                 {/* Evidence */}
                 {detection.evidence && Object.keys(detection.evidence).length > 0 && (
@@ -182,11 +211,23 @@ function DetectionCard({ detection }: { detection: Detection }) {
                     </div>
                 )}
 
-                {/* Action Type */}
-                {detection.action_type && (
-                    <div className="flex items-center gap-2 pt-2 border-t">
+                {/* Footer: Action Type + Database Info (only when not viewing all) */}
+                {!showDatabaseBadge && (
+                    <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
+                        <span>Database: {detection.database_id}</span>
+                        {detection.action_type && (
+                            <Badge variant="outline" className="text-xs">
+                                Action: {detection.action_type}
+                            </Badge>
+                        )}
+                    </div>
+                )}
+
+                {/* Action type only when viewing all */}
+                {showDatabaseBadge && detection.action_type && (
+                    <div className="flex items-center justify-end pt-2 border-t text-xs text-muted-foreground">
                         <Badge variant="outline" className="text-xs">
-                            Recommended Action: {detection.action_type}
+                            Action: {detection.action_type}
                         </Badge>
                     </div>
                 )}

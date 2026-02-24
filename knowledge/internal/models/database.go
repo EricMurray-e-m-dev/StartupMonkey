@@ -15,4 +15,5 @@ type Database struct {
 	Status           string            `json:"status"`
 	HealthScore      float64           `json:"health_score"`
 	Metadata         map[string]string `json:"metadata,omitempty"`
+	Enabled          bool              `json:"enabled"`
 }

@@ -3,7 +3,7 @@ module github.com/EricMurray-e-m-dev/StartupMonkey/executor
 go 1.25.1
 
 require (
-	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260218142428-9c0457d3eb42
+	github.com/EricMurray-e-m-dev/StartupMonkey/proto v0.0.0-20260222212517-45a234105f4c
 	github.com/docker/docker v25.0.6+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jackc/pgx/v5 v5.7.6

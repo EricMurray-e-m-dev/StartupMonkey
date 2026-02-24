@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 const COLLECTOR_URL = process.env.COLLECTOR_URL || "http://localhost:3001";
 
 export async function POST(

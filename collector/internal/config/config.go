@@ -1,3 +1,4 @@
+// Package config provides configuration loading for the Collector service.
 package config
 
 import (
@@ -9,33 +10,28 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config holds bootstrap configuration for the Collector service.
+// Database connections are managed dynamically via Knowledge service.
 type Config struct {
-	// Database connection (loaded from Knowledge)
-	DBConnectionString string
-	DBAdapter          string
-	DatabaseID         string
-	DatabaseName       string
-
-	// Service addresses (from env vars)
+	// Service addresses
 	AnalyserAddress  string
 	NatsURL          string
 	KnowledgeAddress string
 
 	// Operational settings
 	CollectionInterval time.Duration
+	SyncInterval       time.Duration // How often to check for database changes
 
 	// Feature flags
 	EnableMetricsPublishing bool
 }
 
-// LoadBootstrap loads only service addresses needed to connect to Knowledge.
-// Database config will be fetched from Knowledge service.
-func LoadBootstrap() (*Config, error) {
-	// Try multiple .env locations
+// Load loads configuration from environment variables.
+func Load() (*Config, error) {
 	envPaths := []string{
 		".env",
 		"../.env",
-		"/app/.env", // Docker
+		"/app/.env",
 	}
 
 	envLoaded := false
@@ -52,16 +48,13 @@ func LoadBootstrap() (*Config, error) {
 	}
 
 	config := &Config{
-		// Service addresses (with defaults)
-		AnalyserAddress:  getEnvOrDefault("ANALYSER_ADDRESS", "localhost:50051"),
-		NatsURL:          getEnvOrDefault("NATS_URL", "nats://localhost:4222"),
-		KnowledgeAddress: getEnvOrDefault("KNOWLEDGE_ADDRESS", "localhost:50053"),
-
-		// Features
+		AnalyserAddress:         getEnvOrDefault("ANALYSER_ADDRESS", "localhost:50051"),
+		NatsURL:                 getEnvOrDefault("NATS_URL", "nats://localhost:4222"),
+		KnowledgeAddress:        getEnvOrDefault("KNOWLEDGE_ADDRESS", "localhost:50053"),
 		EnableMetricsPublishing: getEnvOrDefault("ENABLE_METRICS_PUBLISHING", "true") == "true",
 	}
 
-	// Parse collection interval with default
+	// Parse collection interval
 	intervalStr := getEnvOrDefault("COLLECTION_INTERVAL", "10s")
 	interval, err := time.ParseDuration(intervalStr)
 	if err != nil {
@@ -69,64 +62,42 @@ func LoadBootstrap() (*Config, error) {
 	}
 	config.CollectionInterval = interval
 
-	if err := config.ValidateBootstrap(); err != nil {
+	// Parse sync interval (how often to check for new/removed databases)
+	syncStr := getEnvOrDefault("SYNC_INTERVAL", "30s")
+	syncInterval, err := time.ParseDuration(syncStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SYNC_INTERVAL: %w", err)
+	}
+	config.SyncInterval = syncInterval
+
+	if err := config.Validate(); err != nil {
 		return nil, err
 	}
 
 	return config, nil
 }
 
-// SetDatabaseConfig sets the database configuration fetched from Knowledge.
-func (c *Config) SetDatabaseConfig(connString, dbType, dbID, dbName string) {
-	c.DBConnectionString = connString
-	c.DBAdapter = dbType
-	c.DatabaseID = dbID
-	c.DatabaseName = dbName
-}
-
-// ValidateBootstrap validates only the bootstrap configuration.
-func (c *Config) ValidateBootstrap() error {
-	required := map[string]string{
-		"ANALYSER_ADDRESS":  c.AnalyserAddress,
-		"KNOWLEDGE_ADDRESS": c.KnowledgeAddress,
+// Validate checks that required configuration is present.
+func (c *Config) Validate() error {
+	if c.AnalyserAddress == "" {
+		return fmt.Errorf("ANALYSER_ADDRESS is required")
 	}
 
-	for name, value := range required {
-		if value == "" {
-			return fmt.Errorf("%s is required", name)
-		}
+	if c.KnowledgeAddress == "" {
+		return fmt.Errorf("KNOWLEDGE_ADDRESS is required")
 	}
 
 	if c.CollectionInterval < 1*time.Second {
 		return fmt.Errorf("COLLECTION_INTERVAL must be at least 1 second")
 	}
 
-	return nil
-}
-
-// ValidateFull validates the complete configuration including database.
-func (c *Config) ValidateFull() error {
-	if err := c.ValidateBootstrap(); err != nil {
-		return err
-	}
-
-	required := map[string]string{
-		"DB_CONNECTION_STRING": c.DBConnectionString,
-		"DB_ADAPTER":           c.DBAdapter,
-		"DATABASE_ID":          c.DatabaseID,
-		"DATABASE_NAME":        c.DatabaseName,
-	}
-
-	for name, value := range required {
-		if value == "" {
-			return fmt.Errorf("%s is required", name)
-		}
+	if c.SyncInterval < 5*time.Second {
+		return fmt.Errorf("SYNC_INTERVAL must be at least 5 seconds")
 	}
 
 	return nil
 }
 
-// Helper function for defaults
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfig_ValidateBootstrap_MissingFields(t *testing.T) {
+func TestConfig_Validate_MissingFields(t *testing.T) {
 	tests := []struct {
 		name   string
 		config config.Config
@@ -20,6 +20,7 @@ func TestConfig_ValidateBootstrap_MissingFields(t *testing.T) {
 			config: config.Config{
 				KnowledgeAddress:   "localhost:50053",
 				CollectionInterval: 30 * time.Second,
+				SyncInterval:       30 * time.Second,
 			},
 			errMsg: "ANALYSER_ADDRESS",
 		},
@@ -28,14 +29,35 @@ func TestConfig_ValidateBootstrap_MissingFields(t *testing.T) {
 			config: config.Config{
 				AnalyserAddress:    "localhost:50051",
 				CollectionInterval: 30 * time.Second,
+				SyncInterval:       30 * time.Second,
 			},
 			errMsg: "KNOWLEDGE_ADDRESS",
 		},
+		{
+			name: "collection interval too short",
+			config: config.Config{
+				AnalyserAddress:    "localhost:50051",
+				KnowledgeAddress:   "localhost:50053",
+				CollectionInterval: 500 * time.Millisecond,
+				SyncInterval:       30 * time.Second,
+			},
+			errMsg: "COLLECTION_INTERVAL",
+		},
+		{
+			name: "sync interval too short",
+			config: config.Config{
+				AnalyserAddress:    "localhost:50051",
+				KnowledgeAddress:   "localhost:50053",
+				CollectionInterval: 10 * time.Second,
+				SyncInterval:       2 * time.Second,
+			},
+			errMsg: "SYNC_INTERVAL",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.ValidateBootstrap()
+			err := tt.config.Validate()
 
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errMsg)
@@ -43,173 +65,100 @@ func TestConfig_ValidateBootstrap_MissingFields(t *testing.T) {
 	}
 }
 
-func TestConfig_ValidateFull_MissingFields(t *testing.T) {
-	tests := []struct {
-		name   string
-		config config.Config
-		errMsg string
-	}{
-		{
-			name: "missing connection string",
-			config: config.Config{
-				DBAdapter:          "postgres",
-				AnalyserAddress:    "localhost:50051",
-				KnowledgeAddress:   "localhost:50053",
-				DatabaseID:         "test",
-				DatabaseName:       "testdb",
-				CollectionInterval: 30 * time.Second,
-			},
-			errMsg: "DB_CONNECTION_STRING",
-		},
-		{
-			name: "missing adapter",
-			config: config.Config{
-				DBConnectionString: "conn",
-				AnalyserAddress:    "localhost:50051",
-				KnowledgeAddress:   "localhost:50053",
-				DatabaseID:         "test",
-				DatabaseName:       "testdb",
-				CollectionInterval: 30 * time.Second,
-			},
-			errMsg: "DB_ADAPTER",
-		},
-		{
-			name: "missing database ID",
-			config: config.Config{
-				DBConnectionString: "conn",
-				DBAdapter:          "postgres",
-				AnalyserAddress:    "localhost:50051",
-				KnowledgeAddress:   "localhost:50053",
-				DatabaseName:       "testdb",
-				CollectionInterval: 30 * time.Second,
-			},
-			errMsg: "DATABASE_ID",
-		},
-		{
-			name: "missing database name",
-			config: config.Config{
-				DBConnectionString: "conn",
-				DBAdapter:          "postgres",
-				AnalyserAddress:    "localhost:50051",
-				KnowledgeAddress:   "localhost:50053",
-				DatabaseID:         "test",
-				CollectionInterval: 30 * time.Second,
-			},
-			errMsg: "DATABASE_NAME",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.ValidateFull()
-
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tt.errMsg)
-		})
-	}
-}
-
-func TestConfig_ValidateBootstrap_ValidConfig(t *testing.T) {
+func TestConfig_Validate_ValidConfig(t *testing.T) {
 	cfg := &config.Config{
 		AnalyserAddress:    "localhost:50051",
 		KnowledgeAddress:   "localhost:50053",
 		CollectionInterval: 30 * time.Second,
+		SyncInterval:       30 * time.Second,
 	}
 
-	err := cfg.ValidateBootstrap()
+	err := cfg.Validate()
 
 	assert.NoError(t, err)
 }
 
-func TestConfig_ValidateFull_ValidConfig(t *testing.T) {
-	cfg := &config.Config{
-		DBConnectionString: "postgres://test@localhost/test",
-		DBAdapter:          "postgres",
-		AnalyserAddress:    "localhost:50051",
-		KnowledgeAddress:   "localhost:50053",
-		DatabaseID:         "test-db",
-		DatabaseName:       "test",
-		CollectionInterval: 30 * time.Second,
-	}
-
-	err := cfg.ValidateFull()
-
-	assert.NoError(t, err)
-}
-
-func TestConfig_LoadBootstrap_WithDefaults(t *testing.T) {
+func TestConfig_Load_WithDefaults(t *testing.T) {
 	// Clear any existing env vars
-	os.Unsetenv("DB_CONNECTION_STRING")
-	os.Unsetenv("DB_ADAPTER")
-	os.Unsetenv("DATABASE_ID")
-	os.Unsetenv("DATABASE_NAME")
+	os.Clearenv()
 
-	// Set required bootstrap fields
+	// Set required fields (or rely on defaults)
 	os.Setenv("ANALYSER_ADDRESS", "localhost:50051")
 	os.Setenv("KNOWLEDGE_ADDRESS", "localhost:50053")
 
 	defer os.Clearenv()
 
-	cfg, err := config.LoadBootstrap()
+	cfg, err := config.Load()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "localhost:50051", cfg.AnalyserAddress)
 	assert.Equal(t, "localhost:50053", cfg.KnowledgeAddress)
 	assert.Equal(t, 10*time.Second, cfg.CollectionInterval) // Default
-	// DB fields should be empty (loaded from Knowledge later)
-	assert.Empty(t, cfg.DBConnectionString)
-	assert.Empty(t, cfg.DBAdapter)
-	assert.Empty(t, cfg.DatabaseID)
+	assert.Equal(t, 30*time.Second, cfg.SyncInterval)       // Default
 }
 
-func TestConfig_LoadBootstrap_CustomInterval(t *testing.T) {
+func TestConfig_Load_CustomIntervals(t *testing.T) {
+	os.Clearenv()
+
 	os.Setenv("ANALYSER_ADDRESS", "localhost:50051")
 	os.Setenv("KNOWLEDGE_ADDRESS", "localhost:50053")
-	os.Setenv("COLLECTION_INTERVAL", "30s")
+	os.Setenv("COLLECTION_INTERVAL", "15s")
+	os.Setenv("SYNC_INTERVAL", "60s")
 
 	defer os.Clearenv()
 
-	cfg, err := config.LoadBootstrap()
+	cfg, err := config.Load()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
-	assert.Equal(t, 30*time.Second, cfg.CollectionInterval)
+	assert.Equal(t, 15*time.Second, cfg.CollectionInterval)
+	assert.Equal(t, 60*time.Second, cfg.SyncInterval)
 }
 
-func TestConfig_ValidateBootstrap_InvalidInterval(t *testing.T) {
-	cfg := &config.Config{
-		AnalyserAddress:    "localhost:50051",
-		KnowledgeAddress:   "localhost:50053",
-		CollectionInterval: 500 * time.Millisecond, // Too short
-	}
+func TestConfig_Load_InvalidCollectionInterval(t *testing.T) {
+	os.Clearenv()
 
-	err := cfg.ValidateBootstrap()
+	os.Setenv("ANALYSER_ADDRESS", "localhost:50051")
+	os.Setenv("KNOWLEDGE_ADDRESS", "localhost:50053")
+	os.Setenv("COLLECTION_INTERVAL", "invalid")
+
+	defer os.Clearenv()
+
+	cfg, err := config.Load()
 
 	assert.Error(t, err)
+	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "COLLECTION_INTERVAL")
 }
 
-func TestConfig_SetDatabaseConfig(t *testing.T) {
-	cfg := &config.Config{
-		AnalyserAddress:    "localhost:50051",
-		KnowledgeAddress:   "localhost:50053",
-		CollectionInterval: 10 * time.Second,
-	}
+func TestConfig_Load_InvalidSyncInterval(t *testing.T) {
+	os.Clearenv()
 
-	cfg.SetDatabaseConfig(
-		"postgres://user:pass@localhost:5432/mydb",
-		"postgres",
-		"my-db-id",
-		"My Database",
-	)
+	os.Setenv("ANALYSER_ADDRESS", "localhost:50051")
+	os.Setenv("KNOWLEDGE_ADDRESS", "localhost:50053")
+	os.Setenv("SYNC_INTERVAL", "invalid")
 
-	assert.Equal(t, "postgres://user:pass@localhost:5432/mydb", cfg.DBConnectionString)
-	assert.Equal(t, "postgres", cfg.DBAdapter)
-	assert.Equal(t, "my-db-id", cfg.DatabaseID)
-	assert.Equal(t, "My Database", cfg.DatabaseName)
+	defer os.Clearenv()
 
-	// Should pass full validation now
-	err := cfg.ValidateFull()
+	cfg, err := config.Load()
+
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "SYNC_INTERVAL")
+}
+
+func TestConfig_Load_MetricsPublishingFlag(t *testing.T) {
+	os.Clearenv()
+
+	os.Setenv("ANALYSER_ADDRESS", "localhost:50051")
+	os.Setenv("KNOWLEDGE_ADDRESS", "localhost:50053")
+	os.Setenv("ENABLE_METRICS_PUBLISHING", "false")
+
+	defer os.Clearenv()
+
+	cfg, err := config.Load()
+
 	assert.NoError(t, err)
+	assert.False(t, cfg.EnableMetricsPublishing)
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import OnboardingProvider from "@/components/providers/OnboardingProvider";
+import DatabaseProvider from "@/components/providers/DatabaseProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner"
 
@@ -38,9 +39,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <OnboardingProvider>
-            <AppShell>
-              {children}
-            </AppShell>
+            <DatabaseProvider>
+              <AppShell>
+                {children}
+              </AppShell>
+            </DatabaseProvider>
           </OnboardingProvider>
           <Toaster />
         </ThemeProvider>

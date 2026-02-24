@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Loader2, XCircle, Wrench, Undo2, AlertTriangle, ExternalLink, Eye, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 import { useActions } from "@/hooks/useActions";
+import { useDatabase } from "@/components/providers/DatabaseProvider";
 import { ActionResult } from "@/types/actions";
 import { useState } from "react";
 
-// Recommendation type definition
+// TODO: Move these to @/types/actions.ts
 interface Recommendation {
     title: string;
     description: string;
@@ -21,7 +22,6 @@ interface Recommendation {
     deployable_action_type?: string;
 }
 
-// Slow Query type definition
 interface SlowQuery {
     query_pattern: string;
     execution_time_ms: number;
@@ -30,7 +30,6 @@ interface SlowQuery {
     recommendation: string;
 }
 
-// Optimization Guide type definition
 interface OptimizationGuide {
     title: string;
     url: string;
@@ -38,8 +37,18 @@ interface OptimizationGuide {
     key_tips?: string[];
 }
 
+/** Format Unix timestamp (seconds) to locale string */
+function formatTimestamp(timestamp: string | number): string {
+    const ts = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
+    if (isNaN(ts) || ts === 0) return 'Unknown';
+    // Handle both seconds and milliseconds
+    const ms = ts < 1e12 ? ts * 1000 : ts;
+    return new Date(ms).toLocaleString();
+}
+
 export default function ActionsPage() {
     const { actions, loading } = useActions(5000);
+    const { selectedDatabase, isAllSelected } = useDatabase();
 
     if (loading) {
         return (
@@ -66,7 +75,12 @@ export default function ActionsPage() {
             <div>
                 <h1 className="text-3xl font-bold">Action Queue</h1>
                 <p className="text-muted-foreground">
-                    Real-time autonomous action execution
+                    {isAllSelected 
+                        ? 'Actions across all databases'
+                        : selectedDatabase 
+                            ? `Actions for ${selectedDatabase.database_name}`
+                            : 'Real-time autonomous action execution'
+                    }
                 </p>
             </div>
 
@@ -76,37 +90,31 @@ export default function ActionsPage() {
                     title="Suggested"
                     value={suggestedCount}
                     icon={<Eye className="h-4 w-4 text-slate-500" />}
-                    variant="suggested"
                 />
                 <SummaryCard
                     title="Pending"
                     value={pendingApprovalCount}
                     icon={<Clock className="h-4 w-4 text-orange-500" />}
-                    variant="pending"
                 />
                 <SummaryCard
                     title="Queued"
                     value={queuedCount}
                     icon={<Clock className="h-4 w-4 text-blue-500" />}
-                    variant="queued"
                 />
                 <SummaryCard
                     title="Executing"
                     value={executingCount}
                     icon={<Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />}
-                    variant="executing"
                 />
                 <SummaryCard
                     title="Completed"
                     value={completedCount}
                     icon={<CheckCircle className="h-4 w-4 text-green-500" />}
-                    variant="completed"
                 />
                 <SummaryCard
                     title="Failed"
                     value={failedCount}
                     icon={<XCircle className="h-4 w-4 text-red-500" />}
-                    variant="failed"
                 />
             </div>
 
@@ -115,7 +123,12 @@ export default function ActionsPage() {
                 <Alert>
                     <Wrench className="h-4 w-4" />
                     <AlertDescription>
-                        No actions in queue. Actions will appear here when optimizations are executed.
+                        {isAllSelected 
+                            ? 'No actions across any database. Actions will appear here when optimisations are executed.'
+                            : selectedDatabase
+                                ? `No actions for ${selectedDatabase.database_name}. Actions will appear here when optimisations are executed.`
+                                : 'No actions in queue. Actions will appear here when optimisations are executed.'
+                        }
                     </AlertDescription>
                 </Alert>
             )}
@@ -123,14 +136,13 @@ export default function ActionsPage() {
             {/* Actions List */}
             <div className="space-y-4">
                 {actions.map((action) => (
-                    <ActionCard key={action.action_id} action={action} />
+                    <ActionCard key={action.action_id} action={action} showDatabaseBadge={isAllSelected} />
                 ))}
             </div>
         </div>
     );
 }
 
-// Summary Card Component
 function SummaryCard({ 
     title, 
     value, 
@@ -139,7 +151,6 @@ function SummaryCard({
     title: string; 
     value: number; 
     icon: React.ReactNode;
-    variant: 'suggested' | 'pending' | 'queued' | 'executing' | 'completed' | 'failed';
 }) {
     return (
         <Card>
@@ -154,8 +165,7 @@ function SummaryCard({
     );
 }
 
-// Action Card Component
-function ActionCard({ action }: { action: ActionResult }) {
+function ActionCard({ action, showDatabaseBadge = false }: { action: ActionResult; showDatabaseBadge?: boolean }) {
     const [isRollingBack, setIsRollingBack] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
@@ -164,12 +174,8 @@ function ActionCard({ action }: { action: ActionResult }) {
         setIsRollingBack(true);
     
         try {
-            const response = await fetch('/api/actions/rollback', {
+            const response = await fetch(`/api/actions/${action.action_id}/rollback`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ action_id: action.action_id }),
             });
 
             if (!response.ok) {
@@ -177,16 +183,12 @@ function ActionCard({ action }: { action: ActionResult }) {
                 throw new Error(error.error || 'Rollback failed');
             }
 
-            const result = await response.json();
-            toast.success('Action rolled back successfully', {
-                description: `${action.action_type} has been reverted`,
+            toast.success('Rollback requested', {
+                description: `${action.action_type} rollback is in progress`,
             });
-
-            console.log("Rollback result: " + result);
         } catch (error) {
-            console.error("Rollback error: " + error);
             toast.error('Rollback failed', {
-                description: error instanceof Error ? error.message : 'Unknown Error',
+                description: error instanceof Error ? error.message : 'Unknown error',
             });
         } finally {
             setIsRollingBack(false);
@@ -210,9 +212,8 @@ function ActionCard({ action }: { action: ActionResult }) {
                 description: `${action.action_type} is now executing`,
             });
         } catch (error) {
-            console.error("Approval error:", error);
             toast.error('Approval failed', {
-                description: error instanceof Error ? error.message : 'Unknown Error',
+                description: error instanceof Error ? error.message : 'Unknown error',
             });
         } finally {
             setIsApproving(false);
@@ -236,9 +237,8 @@ function ActionCard({ action }: { action: ActionResult }) {
                 description: `${action.action_type} has been rejected`,
             });
         } catch (error) {
-            console.error("Rejection error:", error);
             toast.error('Rejection failed', {
-                description: error instanceof Error ? error.message : 'Unknown Error',
+                description: error instanceof Error ? error.message : 'Unknown error',
             });
         } finally {
             setIsRejecting(false);
@@ -290,10 +290,10 @@ function ActionCard({ action }: { action: ActionResult }) {
 
     const config = statusConfig[action.status as keyof typeof statusConfig] || statusConfig.queued;
 
-    // Check action type
     const isRecommendation = action.action_type === 'recommendation' || action.action_type === 'cache_optimization_recommendation';
     const isConfigTuning = action.action_type === 'tune_config_high_latency';
     const isPendingApproval = action.status === 'pending_approval';
+    const canRollback = action.status === 'completed' && action.can_rollback && !isRecommendation;
 
     return (
         <Card className={config.bgClass}>
@@ -302,14 +302,21 @@ function ActionCard({ action }: { action: ActionResult }) {
                     <div className="flex items-start gap-3">
                         {config.icon}
                         <div>
-                            <CardTitle className="text-lg">
-                                {action.action_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">
+                                    {action.action_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                </CardTitle>
+                                {showDatabaseBadge && (
+                                    <Badge variant="outline" className="text-xs">
+                                        {action.database_id}
+                                    </Badge>
+                                )}
+                            </div>
                             <CardDescription className="mt-1">
-                                Action ID: {action.action_id}
+                                ID: {action.action_id}
                             </CardDescription>
                             <CardDescription className="mt-1">
-                                {new Date(Number(action.created_at) * 1000).toLocaleString()}
+                                {formatTimestamp(action.created_at)}
                             </CardDescription>
                         </div>
                     </div>
@@ -352,7 +359,7 @@ function ActionCard({ action }: { action: ActionResult }) {
                         )}
 
                         {/* Rollback button for completed actions */}
-                        {action.status === 'completed' && action.can_rollback && !isRecommendation && (
+                        {canRollback && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -372,11 +379,13 @@ function ActionCard({ action }: { action: ActionResult }) {
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* Message */}
-                <div>
-                    <p className="text-sm text-muted-foreground">
-                        {action.message}
-                    </p>
-                </div>
+                {action.message && (
+                    <div>
+                        <p className="text-sm text-muted-foreground">
+                            {action.message}
+                        </p>
+                    </div>
+                )}
 
                 {/* Observe mode hint */}
                 {action.status === 'suggested' && (
@@ -426,17 +435,27 @@ function ActionCard({ action }: { action: ActionResult }) {
                     </div>
                 )}
 
-                {/* Database Info */}
-                <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                    <span>Database: {action.database_id}</span>
-                    <span>Detection: {action.detection_id}</span>
-                </div>
+                {/* Database Info - only show when not viewing all (since badge already shows it) */}
+                {!showDatabaseBadge && (
+                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                        <span>Database: {action.database_id}</span>
+                        {action.detection_id && (
+                            <span>Detection: {action.detection_id}</span>
+                        )}
+                    </div>
+                )}
+
+                {/* Detection ID only when viewing all */}
+                {showDatabaseBadge && action.detection_id && (
+                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                        <span>Detection: {action.detection_id}</span>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
 }
 
-// Config Tuning Display Component
 function ConfigTuningDisplay({ 
     changes 
 }: { 
@@ -452,7 +471,7 @@ function ConfigTuningDisplay({
             {/* Configuration Changes */}
             {Object.keys(configChanges).length > 0 && (
                 <div className="border-l-4 border-green-500 pl-4 py-2">
-                    <h4 className="text-sm font-semibold mb-2 text-green-600">Configuration Optimized</h4>
+                    <h4 className="text-sm font-semibold mb-2 text-green-600">Configuration Optimised</h4>
                     <div className="space-y-2">
                         {Object.entries(configChanges).map(([param, newValue]) => (
                             <div key={param} className="text-xs">
@@ -487,7 +506,7 @@ function ConfigTuningDisplay({
                 </div>
             )}
 
-            {/* Optimization Guide */}
+            {/* Optimisation Guide */}
             {guide && (
                 <div className="border-l-4 border-slate-500 pl-4 py-2">
                     <h4 className="text-sm font-semibold mb-2 text-slate-600 dark:text-slate-400">{guide.title}</h4>
@@ -525,7 +544,7 @@ function SlowQueryCard({
 }) {
     const [expanded, setExpanded] = useState(false);
 
-    const issueColors = {
+    const issueColors: Record<string, string> = {
         sequential_scan: 'text-red-600',
         missing_index: 'text-amber-600',
         complex_join: 'text-amber-600',
@@ -533,9 +552,8 @@ function SlowQueryCard({
         high_latency: 'text-slate-600 dark:text-slate-400',
     };
 
-    // Safe fallbacks for all properties
     const issueType = query.issue_type || 'high_latency';
-    const issueColor = issueColors[issueType as keyof typeof issueColors] || 'text-slate-600';
+    const issueColor = issueColors[issueType] || 'text-slate-600';
     const executionTime = query.execution_time_ms ?? 0;
     const callCount = query.call_count ?? 0;
     const queryPattern = query.query_pattern || 'Query pattern not available';
@@ -587,7 +605,6 @@ function SlowQueryCard({
     );
 }
 
-// Recommendation Display Component
 function RecommendationDisplay({ 
     recommendations, 
     databaseId 
@@ -601,11 +618,9 @@ function RecommendationDisplay({
         setDeployingRedis(true);
 
         try {
-            const response = await fetch('http://localhost:8084/api/deploy-redis', {
+            const response = await fetch('/api/actions/deploy-redis', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     database_id: databaseId,
                     port: '6380',
@@ -618,16 +633,11 @@ function RecommendationDisplay({
                 const error = await response.json();
                 throw new Error(error.error || 'Deployment failed');
             }
-
-            const result = await response.json();
             
             toast.success('Redis deployment started', {
                 description: 'Redis container is being deployed. Check action queue for status.',
             });
-
-            console.log('Deploy result:', result);
         } catch (error) {
-            console.error('Deploy error:', error);
             toast.error('Deployment failed', {
                 description: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -650,7 +660,6 @@ function RecommendationDisplay({
     );
 }
 
-// Individual Recommendation Card Component
 function RecommendationCard({ 
     recommendation,
     onDeployRedis,
@@ -665,17 +674,14 @@ function RecommendationCard({
     const riskConfig = {
         safe: {
             borderColor: 'border-green-500',
-            badgeVariant: 'default' as const,
             badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
         },
         medium: {
             borderColor: 'border-yellow-500',
-            badgeVariant: 'default' as const,
             badgeClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
         },
         advanced: {
             borderColor: 'border-red-500',
-            badgeVariant: 'default' as const,
             badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
         }
     };
@@ -689,7 +695,7 @@ function RecommendationCard({
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <h4 className="text-sm font-semibold">{recommendation.title}</h4>
-                        <Badge className={config.badgeClass} variant={config.badgeVariant}>
+                        <Badge className={config.badgeClass}>
                             {recommendation.risk_level}
                         </Badge>
                     </div>
@@ -732,7 +738,7 @@ function RecommendationCard({
 
                     {showSteps && (
                         <ol className="mt-2 space-y-1 text-xs text-muted-foreground list-decimal list-inside">
-                            {recommendation.steps.map((step: string, i: number) => (
+                            {recommendation.steps.map((step, i) => (
                                 <li key={i}>{step}</li>
                             ))}
                         </ol>
@@ -755,9 +761,7 @@ function RecommendationCard({
                                 Deploying...
                             </>
                         ) : (
-                            <>
-                                Deploy Redis (Advanced)
-                            </>
+                            'Deploy Redis (Advanced)'
                         )}
                     </Button>
                 </div>

@@ -17,8 +17,11 @@ class ActionsStore {
         }
     }
 
-    getAll() {
-        return this.actions;
+    getAll(databaseId = null) {
+        if (!databaseId) {
+            return this.actions;
+        }
+        return this.actions.filter(a => a.database_id === databaseId);
     }
 
     clear() {

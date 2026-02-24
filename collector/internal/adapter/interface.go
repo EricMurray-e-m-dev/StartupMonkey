@@ -1,11 +1,11 @@
-// Package adapter provides the system with a range of adapters for different databases
+// Package adapter provides database-specific metric collection implementations.
 package adapter
 
 import (
 	"errors"
 )
 
-// MetricAdapter defines loosely what every DB Adapter will have to do in the future.
+// MetricAdapter defines the interface that all database adapters must implement.
 type MetricAdapter interface {
 	Connect() error
 	CollectMetrics() (*RawMetrics, error)
@@ -15,12 +15,12 @@ type MetricAdapter interface {
 }
 
 var (
-	// NotConnected - Connect() not called | failed
+	// ErrNotConnected is returned when Connect() has not been called or failed.
 	ErrNotConnected = errors.New("adapter: not connected to database")
 
-	// ConnectionLost - self explanatory for now
+	// ErrConnectionLost is returned when the database connection is lost.
 	ErrConnectionLost = errors.New("adapter: database connection lost")
 
-	// UnsupportedDatabase - If connected DB is unsupported fallback error
+	// ErrUnsupportedDatabase is returned when an unknown database type is requested.
 	ErrUnsupportedDatabase = errors.New("adapter: unsupported database type")
 )

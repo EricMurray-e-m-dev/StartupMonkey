@@ -1,3 +1,4 @@
+// Package system provides host-level system metrics collection.
 package system
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// Metrics holds system-level resource utilisation metrics.
 type Metrics struct {
 	CPUUsagePercent    float64
 	MemoryUsagePercent float64
@@ -16,6 +18,8 @@ type Metrics struct {
 	LoadAvg15m         float64
 }
 
+// Collect gathers current system metrics.
+// Individual metric failures are silently ignored for graceful degradation.
 func Collect() (*Metrics, error) {
 	m := &Metrics{}
 
@@ -44,7 +48,7 @@ func Collect() (*Metrics, error) {
 	return m, nil
 }
 
-// ToExtendedMetrics converts to map for inclusion in RawMetrics
+// ToExtendedMetrics converts system metrics to a map for inclusion in RawMetrics.
 func (m *Metrics) ToExtendedMetrics() map[string]float64 {
 	return map[string]float64{
 		"system.cpu_usage_percent":    m.CPUUsagePercent,

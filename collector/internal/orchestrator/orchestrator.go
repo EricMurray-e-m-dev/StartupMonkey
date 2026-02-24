@@ -1,30 +1,42 @@
+// Package orchestrator manages the Collector service lifecycle and coordinates
+// metric collection from multiple databases.
 package orchestrator
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/config"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/eventbus"
 	grpcclient "github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/grpc"
-	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/health"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/knowledge"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/system"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	pb "github.com/EricMurray-e-m-dev/StartupMonkey/proto"
 )
 
+// AdapterEntry holds an adapter and its associated components for a single database.
+type AdapterEntry struct {
+	Adapter    adapter.MetricAdapter
+	Normaliser normaliser.Normaliser
+	DatabaseID string
+	DBType     string
+	DBName     string
+	ConnString string
+}
+
 // Orchestrator manages the Collector service lifecycle and coordinates
 // metric collection, normalization, and distribution to downstream services.
 type Orchestrator struct {
 	config *config.Config
 
-	// Database connection and metric collection
-	adapter    adapter.MetricAdapter
-	normaliser normaliser.Normaliser
+	// Multi-database support
+	adapters   map[string]*AdapterEntry
+	adaptersMu sync.RWMutex
 
 	// Downstream service connections
 	client          *grpcclient.MetricsClient
@@ -32,9 +44,11 @@ type Orchestrator struct {
 	knowledgeClient *knowledge.Client
 }
 
+// NewOrchestrator creates a new Orchestrator instance.
 func NewOrchestrator(cfg *config.Config) *Orchestrator {
 	return &Orchestrator{
-		config: cfg,
+		config:   cfg,
+		adapters: make(map[string]*AdapterEntry),
 	}
 }
 
@@ -42,19 +56,14 @@ func NewOrchestrator(cfg *config.Config) *Orchestrator {
 func (o *Orchestrator) Start(ctx context.Context) error {
 	log.Printf("Starting Collector Orchestrator...")
 
-	// Connect to Knowledge first - we need config from there
+	// Connect to Knowledge first
 	if err := o.connectKnowledge(); err != nil {
 		return fmt.Errorf("failed to connect to Knowledge: %w", err)
 	}
 
-	// Wait for system config from Knowledge (user must complete onboarding)
-	if err := o.waitForConfig(ctx); err != nil {
-		return fmt.Errorf("failed to get config from Knowledge: %w", err)
-	}
-
-	// Now we have database config, connect to database
-	if err := o.connectDatabase(); err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+	// Wait for at least one enabled database
+	if err := o.waitForDatabases(ctx); err != nil {
+		return fmt.Errorf("failed to get databases from Knowledge: %w", err)
 	}
 
 	// Initialize downstream services
@@ -63,9 +72,6 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	}
 
 	o.connectNATS()
-
-	// Register database with Knowledge
-	o.registerDatabase()
 
 	log.Printf("Collector Orchestrator started successfully")
 	return nil
@@ -83,10 +89,9 @@ func (o *Orchestrator) connectKnowledge() error {
 	return nil
 }
 
-// waitForConfig polls Knowledge for system configuration.
-// Blocks until configuration is available (onboarding complete).
-func (o *Orchestrator) waitForConfig(ctx context.Context) error {
-	log.Printf("Waiting for system configuration from Knowledge...")
+// waitForDatabases polls Knowledge until at least one enabled database exists.
+func (o *Orchestrator) waitForDatabases(ctx context.Context) error {
+	log.Printf("Waiting for enabled databases from Knowledge...")
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -97,68 +102,99 @@ func (o *Orchestrator) waitForConfig(ctx context.Context) error {
 			return ctx.Err()
 
 		case <-ticker.C:
-			config, err := o.knowledgeClient.GetSystemConfig(ctx)
-			if err != nil {
-				log.Printf("Failed to get config: %v (retrying...)", err)
+			if err := o.syncDatabases(ctx); err != nil {
+				log.Printf("Failed to sync databases: %v (retrying...)", err)
 				continue
 			}
 
-			if config == nil || config.Database == nil || config.Database.ConnectionString == "" {
-				log.Printf("Awaiting configuration... (complete onboarding in Dashboard)")
+			o.adaptersMu.RLock()
+			count := len(o.adapters)
+			o.adaptersMu.RUnlock()
+
+			if count == 0 {
+				log.Printf("No enabled databases found (complete onboarding in Dashboard)")
 				continue
 			}
 
-			if !config.OnboardingComplete {
-				log.Printf("Awaiting configuration... (onboarding not complete)")
-				continue
-			}
-
-			// Config received - apply to local config
-			log.Printf("Configuration received from Knowledge")
-			o.config.SetDatabaseConfig(
-				config.Database.ConnectionString,
-				config.Database.Type,
-				config.Database.Id,
-				config.Database.Name,
-			)
-
-			if err := o.config.ValidateFull(); err != nil {
-				log.Printf("Invalid config from Knowledge: %v (retrying...)", err)
-				continue
-			}
-
-			log.Printf("  Database ID: %s", o.config.DatabaseID)
-			log.Printf("  Database Type: %s", o.config.DBAdapter)
-			log.Printf("  Database Name: %s", o.config.DatabaseName)
-
+			log.Printf("Found %d enabled database(s)", count)
 			return nil
 		}
 	}
 }
 
-// connectDatabase establishes connection to the target database.
-func (o *Orchestrator) connectDatabase() error {
-	log.Printf("Connecting to database (adapter: %s, id: %s)", o.config.DBAdapter, o.config.DatabaseID)
-
-	var err error
-	o.adapter, err = adapter.NewAdapter(o.config.DBAdapter, o.config.DBConnectionString, o.config.DatabaseID)
+// syncDatabases synchronizes adapters with the databases registered in Knowledge.
+// Adds new databases, removes unregistered/disabled ones.
+func (o *Orchestrator) syncDatabases(ctx context.Context) error {
+	databases, err := o.knowledgeClient.ListDatabases(ctx, true) // enabled_only=true
 	if err != nil {
-		return fmt.Errorf("failed to create adapter: %w", err)
+		return fmt.Errorf("failed to list databases: %w", err)
 	}
 
-	if err := o.adapter.Connect(); err != nil {
-		return fmt.Errorf("connection failed: %w", err)
+	// Build set of current database IDs from Knowledge
+	knownIDs := make(map[string]bool)
+	for _, db := range databases {
+		knownIDs[db.DatabaseId] = true
 	}
 
-	if err := o.adapter.HealthCheck(); err != nil {
-		return fmt.Errorf("health check failed: %w", err)
+	o.adaptersMu.Lock()
+	defer o.adaptersMu.Unlock()
+
+	// Remove adapters for databases no longer in Knowledge or disabled
+	for id, entry := range o.adapters {
+		if !knownIDs[id] {
+			log.Printf("Removing adapter for database: %s (no longer enabled)", id)
+			if err := entry.Adapter.Close(); err != nil {
+				log.Printf("Error closing adapter for %s: %v", id, err)
+			}
+			delete(o.adapters, id)
+		}
 	}
 
-	o.normaliser = normaliser.NewNormaliser(o.config.DBAdapter)
-	health.SetUnavailableFeatures(o.adapter.GetUnavailableFeatures())
+	// Add adapters for new databases
+	for _, db := range databases {
+		if _, exists := o.adapters[db.DatabaseId]; exists {
+			continue // Already have adapter
+		}
 
-	log.Printf("Database connected and healthy")
+		log.Printf("Adding adapter for database: %s (type: %s)", db.DatabaseId, db.DatabaseType)
+
+		entry, err := o.createAdapterEntry(db)
+		if err != nil {
+			log.Printf("Failed to create adapter for %s: %v", db.DatabaseId, err)
+			continue
+		}
+
+		o.adapters[db.DatabaseId] = entry
+		log.Printf("Database connected: %s (%s)", db.DatabaseId, db.DatabaseName)
+	}
+
 	return nil
+}
+
+// createAdapterEntry creates a new adapter entry for a database.
+func (o *Orchestrator) createAdapterEntry(db *pb.RegisteredDatabase) (*AdapterEntry, error) {
+	adpt, err := adapter.NewAdapter(db.DatabaseType, db.ConnectionString, db.DatabaseId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create adapter: %w", err)
+	}
+
+	if err := adpt.Connect(); err != nil {
+		return nil, fmt.Errorf("connection failed: %w", err)
+	}
+
+	if err := adpt.HealthCheck(); err != nil {
+		adpt.Close()
+		return nil, fmt.Errorf("health check failed: %w", err)
+	}
+
+	return &AdapterEntry{
+		Adapter:    adpt,
+		Normaliser: normaliser.NewNormaliser(db.DatabaseType),
+		DatabaseID: db.DatabaseId,
+		DBType:     db.DatabaseType,
+		DBName:     db.DatabaseName,
+		ConnString: db.ConnectionString,
+	}, nil
 }
 
 // connectAnalyser establishes gRPC connection to the Analyser service.
@@ -193,34 +229,19 @@ func (o *Orchestrator) connectNATS() {
 	log.Printf("Connected to NATS")
 }
 
-// registerDatabase registers the database with Knowledge service.
-func (o *Orchestrator) registerDatabase() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	info := &knowledge.DatabaseInfo{
-		DatabaseID:       o.config.DatabaseID,
-		ConnectionString: o.config.DBConnectionString,
-		DatabaseType:     o.config.DBAdapter,
-		DatabaseName:     o.config.DatabaseName,
-	}
-
-	if err := o.knowledgeClient.RegisterDatabase(ctx, info); err != nil {
-		log.Printf("Warning: failed to register database with Knowledge: %v", err)
-	}
-}
-
 // Run starts the periodic metric collection loop.
 func (o *Orchestrator) Run(ctx context.Context) error {
-	log.Printf("Starting metric collection (interval: %v)", o.config.CollectionInterval)
+	log.Printf("Starting metric collection (interval: %v, sync: %v)",
+		o.config.CollectionInterval, o.config.SyncInterval)
 
-	ticker := time.NewTicker(o.config.CollectionInterval)
-	defer ticker.Stop()
+	collectionTicker := time.NewTicker(o.config.CollectionInterval)
+	defer collectionTicker.Stop()
+
+	syncTicker := time.NewTicker(o.config.SyncInterval)
+	defer syncTicker.Stop()
 
 	// Perform initial collection immediately
-	if err := o.collectAndSend(ctx); err != nil {
-		log.Printf("Error in initial collection cycle: %v", err)
-	}
+	o.collectFromAllDatabases(ctx)
 
 	for {
 		select {
@@ -228,67 +249,113 @@ func (o *Orchestrator) Run(ctx context.Context) error {
 			log.Printf("Shutting down metric collection")
 			return ctx.Err()
 
-		case <-ticker.C:
-			if err := o.collectAndSend(ctx); err != nil {
-				log.Printf("Error in collection cycle: %v", err)
+		case <-collectionTicker.C:
+			o.collectFromAllDatabases(ctx)
+
+		case <-syncTicker.C:
+			if err := o.syncDatabases(ctx); err != nil {
+				log.Printf("Error syncing databases: %v", err)
 			}
 		}
 	}
 }
 
-// collectAndSend performs a single metric collection cycle.
-func (o *Orchestrator) collectAndSend(ctx context.Context) error {
-	log.Printf("--- Collection Cycle Start ---")
+// collectFromAllDatabases collects metrics from all connected databases.
+func (o *Orchestrator) collectFromAllDatabases(ctx context.Context) {
+	o.adaptersMu.RLock()
+	entries := make([]*AdapterEntry, 0, len(o.adapters))
+	for _, entry := range o.adapters {
+		entries = append(entries, entry)
+	}
+	o.adaptersMu.RUnlock()
 
-	log.Printf("Collecting metrics from database...")
-	rawMetrics, err := o.adapter.CollectMetrics()
+	if len(entries) == 0 {
+		log.Printf("No databases to collect from")
+		return
+	}
+
+	log.Printf("--- Collection Cycle Start (%d databases) ---", len(entries))
+
+	// Collect system metrics once (shared across all databases)
+	var sysMetrics *system.Metrics
+	var sysErr error
+	sysMetrics, sysErr = system.Collect()
+	if sysErr != nil {
+		log.Printf("Warning: failed to collect system metrics: %v", sysErr)
+	}
+
+	for _, entry := range entries {
+		if err := o.collectAndSend(ctx, entry, sysMetrics); err != nil {
+			log.Printf("Error collecting from %s: %v", entry.DatabaseID, err)
+			// Update health status in Knowledge
+			o.updateDatabaseHealth(ctx, entry.DatabaseID, "degraded", 0.5)
+		} else {
+			o.updateDatabaseHealth(ctx, entry.DatabaseID, "healthy", 1.0)
+		}
+	}
+
+	log.Printf("--- Collection Cycle Complete ---")
+}
+
+// collectAndSend performs a single metric collection cycle for one database.
+func (o *Orchestrator) collectAndSend(ctx context.Context, entry *AdapterEntry, sysMetrics *system.Metrics) error {
+	log.Printf("Collecting metrics from: %s", entry.DatabaseID)
+
+	rawMetrics, err := entry.Adapter.CollectMetrics()
 	if err != nil {
 		return fmt.Errorf("metric collection failed: %w", err)
 	}
 
-	// Collect system metrics
-	sysMetrics, err := system.Collect()
-	if err != nil {
-		log.Printf("Warning: failed to collect system metrics: %v", err)
-	} else {
+	// Add system metrics if available
+	if sysMetrics != nil {
 		for k, v := range sysMetrics.ToExtendedMetrics() {
 			rawMetrics.ExtendedMetrics[k] = v
 		}
 	}
 
-	log.Printf("Normalising metrics...")
-	normalised, err := o.normaliser.Normalise(rawMetrics)
+	normalised, err := entry.Normaliser.Normalise(rawMetrics)
 	if err != nil {
 		return fmt.Errorf("normalization failed: %w", err)
 	}
 
-	log.Printf("Metrics normalised - Health Score: %.2f, Available: %v", normalised.HealthScore, normalised.AvailableMetrics)
-
 	snapshot := o.toProtobuf(normalised)
 
-	log.Printf("Sending metrics to Analyser...")
 	ack, err := o.client.StreamMetrics(ctx, []*pb.MetricSnapshot{snapshot})
 	if err != nil {
 		return fmt.Errorf("failed to send metrics to Analyser: %w", err)
 	}
 
-	log.Printf("Metrics sent successfully - Ack: %d metrics, status: %s", ack.TotalMetrics, ack.Status)
+	log.Printf("  %s: Health=%.2f, Ack=%d metrics", entry.DatabaseID, normalised.HealthScore, ack.TotalMetrics)
 
 	if o.natsPublisher != nil {
 		if err := o.natsPublisher.PublishMetrics(normalised); err != nil {
 			log.Printf("Warning: failed to publish metrics to NATS: %v", err)
-		} else {
-			log.Printf("Metrics published to event bus [%s]", normalised.DatabaseID)
 		}
 	}
 
-	log.Printf("--- Collection Cycle Complete ---")
 	return nil
+}
+
+// updateDatabaseHealth updates the health status in Knowledge.
+func (o *Orchestrator) updateDatabaseHealth(ctx context.Context, dbID, status string, score float64) {
+	if err := o.knowledgeClient.UpdateDatabaseHealth(ctx, dbID, status, score); err != nil {
+		log.Printf("Warning: failed to update health for %s: %v", dbID, err)
+	}
 }
 
 // Stop gracefully closes all connections.
 func (o *Orchestrator) Stop() error {
 	log.Printf("Stopping Orchestrator...")
+
+	// Close all database adapters
+	o.adaptersMu.Lock()
+	for id, entry := range o.adapters {
+		if err := entry.Adapter.Close(); err != nil {
+			log.Printf("Error closing adapter %s: %v", id, err)
+		}
+	}
+	o.adapters = make(map[string]*AdapterEntry)
+	o.adaptersMu.Unlock()
 
 	if o.client != nil {
 		if err := o.client.Close(); err != nil {
@@ -303,12 +370,6 @@ func (o *Orchestrator) Stop() error {
 	if o.knowledgeClient != nil {
 		if err := o.knowledgeClient.Close(); err != nil {
 			log.Printf("Error closing Knowledge client: %v", err)
-		}
-	}
-
-	if o.adapter != nil {
-		if err := o.adapter.Close(); err != nil {
-			log.Printf("Error closing database adapter: %v", err)
 		}
 	}
 

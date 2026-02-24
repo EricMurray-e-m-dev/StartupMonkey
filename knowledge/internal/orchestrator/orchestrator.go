@@ -1,3 +1,5 @@
+// Package orchestrator manages the Knowledge service lifecycle including
+// Redis connections, gRPC API server, and health check endpoints.
 package orchestrator
 
 import (

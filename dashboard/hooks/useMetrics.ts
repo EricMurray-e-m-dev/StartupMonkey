@@ -1,16 +1,30 @@
 import { useState, useEffect } from 'react';
+import { useDatabase, ALL_DATABASES } from '@/components/providers/DatabaseProvider';
 import { Metrics } from '@/types/metrics';
 
 export function useMetrics(pollInterval: number = 5000) {
+    const { selectedDatabaseId } = useDatabase();
     const [metrics, setMetrics] = useState<Metrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const isAllSelected = selectedDatabaseId === ALL_DATABASES;
+
     useEffect(() => {
+        // Metrics can't be aggregated across databases
+        if (isAllSelected) {
+            setMetrics(null);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
         const fetchMetrics = async () => {
             try {
-                // Fetch from Dashboard's own API route (not directly from collector)
-                const res = await fetch('/api/metrics/latest');
+                const params = selectedDatabaseId 
+                    ? `?database_id=${selectedDatabaseId}` 
+                    : '';
+                const res = await fetch(`/api/metrics/latest${params}`);
                 
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
@@ -18,10 +32,11 @@ export function useMetrics(pollInterval: number = 5000) {
 
                 const data = await res.json();
                 
-                // Only set metrics if data exists
                 if (data && Object.keys(data).length > 0) {
                     setMetrics(data);
                     setError(null);
+                } else {
+                    setMetrics(null);
                 }
                 
                 setLoading(false);
@@ -32,14 +47,12 @@ export function useMetrics(pollInterval: number = 5000) {
             }
         };
 
-        // Fetch immediately
+        setLoading(true);
         fetchMetrics();
-
-        // Then poll
         const interval = setInterval(fetchMetrics, pollInterval);
 
         return () => clearInterval(interval);
-    }, [pollInterval]);
+    }, [pollInterval, selectedDatabaseId, isAllSelected]);
 
-    return { metrics, loading, error };
+    return { metrics, loading, error, isAllSelected };
 }

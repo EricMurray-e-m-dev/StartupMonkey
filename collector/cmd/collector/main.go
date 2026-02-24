@@ -15,15 +15,17 @@ import (
 func main() {
 	log.Printf("StartupMonkey Collector starting...")
 
-	// Load bootstrap configuration (service addresses only)
-	cfg, err := config.LoadBootstrap()
+	// Load configuration
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	log.Printf("Bootstrap configuration loaded")
+	log.Printf("Configuration loaded")
 	log.Printf("  Knowledge Address: %s", cfg.KnowledgeAddress)
 	log.Printf("  Analyser Address: %s", cfg.AnalyserAddress)
+	log.Printf("  Collection Interval: %v", cfg.CollectionInterval)
+	log.Printf("  Sync Interval: %v", cfg.SyncInterval)
 
 	// Create orchestrator
 	orch := orchestrator.NewOrchestrator(cfg)
@@ -32,31 +34,36 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Listen for shutdown signals
+	// Listen for shutdown signals in goroutine (fixes race condition)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		log.Printf("Shutdown signal received...")
+		cancel()
+	}()
 
 	// Start health check server
 	health.StartHealthCheckServer("8080")
 
-	// Initialize orchestrator (will wait for config from Knowledge)
+	// Initialize orchestrator (will wait for databases from Knowledge)
 	if err := orch.Start(ctx); err != nil {
-		log.Fatalf("Failed to start orchestrator: %v", err)
+		if err == context.Canceled {
+			log.Printf("Startup cancelled by user")
+		} else {
+			log.Fatalf("Failed to start orchestrator: %v", err)
+		}
+		orch.Stop()
+		health.StopHealthCheckServer()
+		return
 	}
 
-	// Start metric collection in background
-	go func() {
-		if err := orch.Run(ctx); err != nil && err != context.Canceled {
-			log.Printf("Orchestrator error: %v", err)
-		}
-	}()
+	// Start metric collection (blocks until context cancelled)
+	if err := orch.Run(ctx); err != nil && err != context.Canceled {
+		log.Printf("Orchestrator error: %v", err)
+	}
 
-	// Block until shutdown signal
-	<-sigChan
-	log.Printf("Shutdown signal received...")
-
-	cancel()
-
+	health.StopHealthCheckServer()
 	if err := orch.Stop(); err != nil {
 		log.Printf("Error during shutdown: %v", err)
 	}

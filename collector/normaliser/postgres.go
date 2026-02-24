@@ -1,3 +1,4 @@
+// Package normaliser converts raw database metrics into normalised health scores.
 package normaliser
 
 import (
@@ -6,31 +7,35 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/internal/adapter"
 )
 
+// PostgresNormaliser converts raw PostgreSQL metrics to normalised health scores.
 type PostgresNormaliser struct {
 	previousMetrics map[string]*NormalisedMetrics
 }
 
+// NewPostgresNormaliser creates a new PostgreSQL normaliser.
 func NewPostgresNormaliser() *PostgresNormaliser {
 	return &PostgresNormaliser{
 		previousMetrics: make(map[string]*NormalisedMetrics),
 	}
 }
 
+// Normalise converts raw PostgreSQL metrics to normalised health scores.
+// Health scores range from 0.0 (critical) to 1.0 (healthy).
 func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetrics, error) {
 	normalised := &NormalisedMetrics{
 		DatabaseID:       raw.DatabaseID,
 		DatabaseType:     raw.DatabaseType,
 		Timestamp:        raw.Timestamp,
 		Measurements:     Measurements{},
-		MetricDeltas:     map[string]float64{},
+		MetricDeltas:     make(map[string]float64),
 		TimeDeltaSeconds: 0,
 		ExtendedMetrics:  make(map[string]float64),
 		Labels:           make(map[string]string),
 	}
 
-	var healthScores []float64 // Track only scores for available metrics
+	var healthScores []float64
 
-	// === CONNECTION HEALTH ===
+	// Connection health: based on active/max ratio
 	if raw.Connections != nil && raw.Connections.Active != nil && raw.Connections.Max != nil {
 		active := float64(*raw.Connections.Active)
 		max := float64(*raw.Connections.Max)
@@ -51,12 +56,11 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.ConnectionHealth = 1.0
 	}
 
-	// === QUERY HEALTH ===
+	// Query health: based on latency and sequential scans
 	if raw.Queries != nil {
-		var queryHealth float64 = 1.0
+		queryHealth := 1.0
 		hasQueryMetrics := false
 
-		// Map sequential scans
 		if raw.Queries.SequentialScans != nil {
 			normalised.Measurements.SequentialScans = raw.Queries.SequentialScans
 			hasQueryMetrics = true
@@ -72,7 +76,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		}
 
 		if latency > 0 {
-			// Health Score: 1.0 = 0ms | 0.5 = 500ms | 0.0 = 1000ms+
+			// Health: 1.0 at 0ms, 0.5 at 500ms, 0.0 at 1000ms+
 			queryHealth = math.Max(0, 1.0-(latency/1000.0))
 
 			normalised.Measurements.AvgQueryLatencyMs = raw.Queries.AvgLatencyMs
@@ -87,10 +91,10 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 			hasQueryMetrics = true
 		}
 
-		// Penalize for sequential scans (they indicate missing indexes)
+		// Penalise for sequential scans (indicate missing indexes)
 		if raw.Queries.SequentialScans != nil {
 			seqScans := float64(*raw.Queries.SequentialScans)
-			// Reduce health by 10% for every 100 sequential scans (capped at 50% reduction)
+			// Reduce health by 10% per 100 sequential scans (max 50% reduction)
 			seqScanPenalty := math.Min(0.5, (seqScans/100.0)*0.1)
 			queryHealth = math.Max(0, queryHealth-seqScanPenalty)
 		}
@@ -104,13 +108,12 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.QueryHealth = 1.0
 	}
 
-	// === STORAGE HEALTH ===
+	// Storage health: based on used/total ratio
 	if raw.Storage != nil && raw.Storage.UsedSizeBytes != nil && raw.Storage.TotalSizeBytes != nil {
 		used := float64(*raw.Storage.UsedSizeBytes)
 		total := float64(*raw.Storage.TotalSizeBytes)
 
 		if total > 0 {
-			// Health Score: 1.0 = Empty | 0.0 = Full
 			normalised.StorageHealth = 1.0 - (used / total)
 
 			normalised.Measurements.UsedStorageBytes = raw.Storage.UsedSizeBytes
@@ -125,9 +128,8 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.StorageHealth = 1.0
 	}
 
-	// === CACHE HEALTH ===
+	// Cache health: direct hit rate (already 0.0-1.0)
 	if raw.Cache != nil && raw.Cache.HitRate != nil {
-		// Cache rate already 0.0 - 1.0
 		normalised.CacheHealth = *raw.Cache.HitRate
 
 		normalised.Measurements.CacheHitRate = raw.Cache.HitRate
@@ -139,7 +141,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.CacheHealth = 1.0
 	}
 
-	// === OVERALL HEALTH (FIXED) ===
+	// Overall health: average of available health scores
 	if len(healthScores) > 0 {
 		var total float64
 		for _, score := range healthScores {
@@ -150,6 +152,7 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.HealthScore = 1.0
 	}
 
+	// Pass through extended metrics and labels
 	if raw.ExtendedMetrics != nil {
 		normalised.ExtendedMetrics = raw.ExtendedMetrics
 	}
@@ -158,13 +161,14 @@ func (n *PostgresNormaliser) Normalise(raw *adapter.RawMetrics) (*NormalisedMetr
 		normalised.Labels = raw.Labels
 	}
 
+	// Calculate deltas from previous collection
 	n.calculateDeltas(normalised)
-
 	n.previousMetrics[normalised.DatabaseID] = normalised
 
 	return normalised, nil
 }
 
+// calculateDeltas computes metric changes between collection cycles.
 func (n *PostgresNormaliser) calculateDeltas(current *NormalisedMetrics) {
 	previous, exists := n.previousMetrics[current.DatabaseID]
 
@@ -181,10 +185,10 @@ func (n *PostgresNormaliser) calculateDeltas(current *NormalisedMetrics) {
 	}
 	current.TimeDeltaSeconds = timeDelta
 
-	// FIXED: Sequential scans delta (was comparing current to current)
+	// Sequential scans delta
 	if current.Measurements.SequentialScans != nil && previous.Measurements.SequentialScans != nil {
 		currentVal := float64(*current.Measurements.SequentialScans)
-		previousVal := float64(*previous.Measurements.SequentialScans) // Fixed!
+		previousVal := float64(*previous.Measurements.SequentialScans)
 		delta := currentVal - previousVal
 
 		if delta < 0 {

@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: testpass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: testdb
     ports:
-      - "5433:5432"  # Different port to avoid conflicts
+      - "5433:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d testdb"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -28,12 +28,8 @@ services:
     ports:
       - "4000:4000"
     environment:
-      DATABASE_URL: postgresql://testuser:testpass@postgres:5432/testdb
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-
-# Optional: Add StartupMonkey connection info
-# To test: point StartupMonkey's DB_CONNECTION_STRING to:
-# postgresql://testuser:testpass@localhost:5433/testdb?sslmode=disable
