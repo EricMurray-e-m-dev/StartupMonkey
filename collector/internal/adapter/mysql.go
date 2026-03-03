@@ -295,7 +295,7 @@ func (m *MySQLAdapter) getTableScanStats(ctx context.Context) ([]MySQLTableScanS
 		SELECT 
 			t1.OBJECT_NAME as table_name,
 			COALESCE(t1.COUNT_READ, 0) as full_scans,
-			COALESCE(t1.SUM_ROWS_FETCHED, 0) as rows_read,
+			COALESCE(t1.COUNT_FETCH, 0) as rows_read,
 			COALESCE(SUM(t2.COUNT_READ), 0) as index_reads
 		FROM performance_schema.table_io_waits_summary_by_index_usage t1
 		LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage t2
@@ -305,7 +305,7 @@ func (m *MySQLAdapter) getTableScanStats(ctx context.Context) ([]MySQLTableScanS
 		WHERE t1.INDEX_NAME IS NULL
 		AND t1.OBJECT_SCHEMA = DATABASE()
 		AND t1.COUNT_READ > 0
-		GROUP BY t1.OBJECT_NAME, t1.COUNT_READ, t1.SUM_ROWS_FETCHED
+		GROUP BY t1.OBJECT_NAME, t1.COUNT_READ, t1.COUNT_FETCH
 		ORDER BY t1.COUNT_READ DESC
 		LIMIT 10
 	`)

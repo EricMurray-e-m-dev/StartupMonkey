@@ -36,6 +36,19 @@ const DEFAULT_THRESHOLDS: DetectionThresholds = {
     cache_hit_rate_threshold: 0.9,
 };
 
+const CONNECTION_STRING_CONFIG: Record<string, { prefixes: string[]; placeholder: string; description: string }> = {
+    postgres: {
+        prefixes: ['postgres://', 'postgresql://'],
+        placeholder: 'postgresql://user:password@host:5432/database',
+        description: 'Your PostgreSQL connection string',
+    },
+    mysql: {
+        prefixes: ['mysql://'],
+        placeholder: 'mysql://user:password@host:3306/database',
+        description: 'Your MySQL connection string',
+    },
+};
+
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const [step, setStep] = useState(1);
     const [saving, setSaving] = useState(false);
@@ -65,6 +78,20 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         }));
     };
 
+    const handleDatabaseTypeChange = (type: string) => {
+        setDatabase(prev => ({
+            ...prev,
+            database_type: type,
+            connection_string: '',
+        }));
+        setTestResult(null);
+        setError(null);
+    };
+
+    const getConnectionConfig = () => {
+        return CONNECTION_STRING_CONFIG[database.database_type] || CONNECTION_STRING_CONFIG.postgres;
+    };
+
     const handleTestConnection = async () => {
         setTesting(true);
         setTestResult(null);
@@ -72,13 +99,15 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
         try {
             const connStr = database.connection_string;
+            const config = getConnectionConfig();
             
             if (!connStr) {
                 throw new Error('Connection string is required');
             }
 
-            if (!connStr.startsWith('postgres://') && !connStr.startsWith('postgresql://')) {
-                throw new Error('Connection string must start with postgres:// or postgresql://');
+            const hasValidPrefix = config.prefixes.some(prefix => connStr.startsWith(prefix));
+            if (!hasValidPrefix) {
+                throw new Error(`Connection string must start with ${config.prefixes.join(' or ')}`);
             }
 
             // Basic format validation
@@ -140,6 +169,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     };
 
     const canProceedStep1 = database.database_name && database.connection_string && testResult === 'success';
+    const connectionConfig = getConnectionConfig();
 
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -183,15 +213,14 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                                 <Label htmlFor="db-type">Database Type</Label>
                                 <Select
                                     value={database.database_type}
-                                    onValueChange={(value) => setDatabase(prev => ({ ...prev, database_type: value }))}
+                                    onValueChange={handleDatabaseTypeChange}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="postgres">PostgreSQL</SelectItem>
-                                        <SelectItem value="mysql" disabled>MySQL (coming soon)</SelectItem>
-                                        <SelectItem value="sqlite" disabled>SQLite (coming soon)</SelectItem>
+                                        <SelectItem value="mysql">MySQL</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -201,12 +230,12 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                                 <Input
                                     id="conn-string"
                                     type="password"
-                                    placeholder="postgresql://user:password@host:5432/database"
+                                    placeholder={connectionConfig.placeholder}
                                     value={database.connection_string}
                                     onChange={(e) => setDatabase(prev => ({ ...prev, connection_string: e.target.value }))}
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    Your PostgreSQL connection string
+                                    {connectionConfig.description}
                                 </p>
                             </div>
 

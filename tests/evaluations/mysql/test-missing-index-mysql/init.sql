@@ -1,6 +1,8 @@
--- Enable performance schema (already on via command flag)
--- Create table without index on user_id (same pattern as Postgres test)
+-- Grant performance_schema access to testuser
+GRANT SELECT ON performance_schema.* TO 'testuser'@'%';
+FLUSH PRIVILEGES;
 
+-- Create table without index on user_id
 CREATE TABLE posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -9,22 +11,19 @@ CREATE TABLE posts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert 100k rows
-DELIMITER //
-CREATE PROCEDURE populate_posts()
-BEGIN
-    DECLARE i INT DEFAULT 0;
-    WHILE i < 100000 DO
-        INSERT INTO posts (user_id, title, content)
-        VALUES (
-            FLOOR(1 + RAND() * 1000),
-            CONCAT('Post Title ', i),
-            CONCAT('This is the content for post number ', i)
-        );
-        SET i = i + 1;
-    END WHILE;
-END //
-DELIMITER ;
-
-CALL populate_posts();
-DROP PROCEDURE populate_posts;
+-- Insert 100k rows using a simpler approach
+INSERT INTO posts (user_id, title, content)
+SELECT 
+    FLOOR(1 + RAND() * 1000),
+    CONCAT('Post Title ', seq),
+    CONCAT('This is the content for post number ', seq)
+FROM (
+    SELECT @row := @row + 1 AS seq 
+    FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) a,
+         (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) b,
+         (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) c,
+         (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) d,
+         (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) e,
+         (SELECT @row := 0) r
+    LIMIT 100000
+) seq_table;
