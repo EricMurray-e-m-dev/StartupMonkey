@@ -14,6 +14,8 @@ func NewNormaliser(databaseType string) Normaliser {
 	switch databaseType {
 	case "postgres", "postgresql":
 		return NewPostgresNormaliser()
+	case "mysql", "mariadb":
+		return NewMySQLNormaliser()
 	default:
 		return nil
 	}
