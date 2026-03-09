@@ -195,17 +195,19 @@ func (h *DetectionHandler) RejectAction(actionID string) (*models.ActionResult, 
 func (h *DetectionHandler) createAction(detection *models.Detection, actionID string) (actions.Action, error) {
 	ctx := context.Background()
 
+	// Get database type from detection metadata (set by detector)
+	databaseType := getStringFromMap(detection.ActionMetaData, "database_type", "postgres")
+
 	metadata := &models.ActionMetadata{
 		ActionID:     actionID,
 		ActionType:   detection.ActionType,
 		DatabaseID:   detection.DatabaseID,
-		DatabaseType: "postgres", // TODO: get from detection
+		DatabaseType: databaseType,
 		CreatedAt:    time.Now(),
 	}
 
 	switch detection.ActionType {
 	case "create_index":
-		// Fetch database connection string from Knowledge
 		if h.knowledgeClient == nil {
 			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
 		}
@@ -221,10 +223,7 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
 		}
 
-		dbConnectionString := dbResp.ConnectionString
-
-		// TODO: replace with factory pattern when adding multi-database support
-		adapter, err := database.NewPostgresAdapter(ctx, dbConnectionString, detection.DatabaseID)
+		adapter, err := database.NewAdapter(ctx, databaseType, dbResp.ConnectionString, detection.DatabaseID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database adapter: %w", err)
 		}
@@ -280,7 +279,6 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 		return action, nil
 
 	case "tune_config_high_latency":
-		// Fetch database connection from Knowledge
 		if h.knowledgeClient == nil {
 			return nil, fmt.Errorf("knowledge client not available - cannot fetch database connection")
 		}
@@ -296,26 +294,11 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
 		}
 
-		// Determine database type (default to postgres for now)
-		databaseType := getStringFromMap(detection.ActionMetaData, "database_type", "postgres")
-
-		// Create adapter based on database type
-		var adapter database.DatabaseAdapter
-		switch databaseType {
-		case "postgres":
-			adapter, err = database.NewPostgresAdapter(
-				ctx,
-				dbResp.ConnectionString,
-				detection.DatabaseID,
-			)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create postgres adapter: %w", err)
-			}
-		default:
-			return nil, fmt.Errorf("unsupported database type for config tuning: %s", databaseType)
+		adapter, err := database.NewAdapter(ctx, databaseType, dbResp.ConnectionString, detection.DatabaseID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create adapter: %w", err)
 		}
 
-		// Create action with adapter
 		return actions.NewTuneConfigAction(
 			actionID,
 			detection.DetectionID,
@@ -348,7 +331,7 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
 		}
 
-		adapter, err := database.NewPostgresAdapter(ctx, dbResp.ConnectionString, detection.DatabaseID)
+		adapter, err := database.NewAdapter(ctx, databaseType, dbResp.ConnectionString, detection.DatabaseID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database adapter: %w", err)
 		}
@@ -376,7 +359,7 @@ func (h *DetectionHandler) createAction(detection *models.Detection, actionID st
 			return nil, fmt.Errorf("database not found in Knowledge: %s", detection.DatabaseID)
 		}
 
-		adapter, err := database.NewPostgresAdapter(ctx, dbResp.ConnectionString, detection.DatabaseID)
+		adapter, err := database.NewAdapter(ctx, databaseType, dbResp.ConnectionString, detection.DatabaseID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database adapter: %w", err)
 		}
