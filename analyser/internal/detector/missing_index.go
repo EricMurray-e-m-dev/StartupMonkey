@@ -2,6 +2,7 @@ package detector
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/models"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
@@ -46,21 +47,21 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 		}
 	}
 
-	worstTable, found := snapshot.Labels["pg.worst_seq_scan_table"]
-	if !found || worstTable == "" {
-		// TODO: Implement Fallback
+	// Database-agnostic label lookup
+	prefix, worstTable := findLabelBySuffix(snapshot.Labels, "worst_seq_scan_table")
+	if worstTable == "" {
 		return nil
 	}
 
-	recommendedColumn, hasColumn := snapshot.Labels["pg.recommended_index_column"]
-	if !hasColumn || recommendedColumn == "" {
-		// TODO: Implement Fallback
+	_, recommendedColumn := findLabelBySuffix(snapshot.Labels, "recommended_index_column")
+	if recommendedColumn == "" {
 		return nil
 	}
 
-	prefix := fmt.Sprintf("pg.table.%s", worstTable)
-	tableSeqScans := int64(snapshot.ExtendedMetrics[prefix+".seq_scans"])
-	seqTupRead := int64(snapshot.ExtendedMetrics[prefix+".seq_tup_read"])
+	// Use the same prefix for extended metrics (e.g., "pg.table." or "mysql.table.")
+	tablePrefix := fmt.Sprintf("%s.table.%s", prefix, worstTable)
+	tableSeqScans := int64(snapshot.ExtendedMetrics[tablePrefix+".seq_scans"])
+	seqTupRead := int64(snapshot.ExtendedMetrics[tablePrefix+".seq_tup_read"])
 
 	detection := models.NewDetection(d.Name(), d.Category(), snapshot.DatabaseID)
 	detection.Severity = models.SeverityWarning
@@ -80,6 +81,7 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 		"sequential_scans": tableSeqScans,
 		"rows_read":        seqTupRead,
 		"query_health":     snapshot.QueryHealth,
+		"database_type":    snapshot.DatabaseType,
 	}
 
 	if snapshot.MetricDeltas != nil {
@@ -93,19 +95,32 @@ func (d *MissingIndexDetector) Detect(snapshot *normaliser.NormalisedMetrics) *m
 
 	detection.Recommendation = fmt.Sprintf(
 		"Create an index on %s.%s to optimize query performance. "+
-			"This column was identified through query analysis. "+
-			"Use CREATE INDEX CONCURRENTLY to avoid blocking production queries.",
+			"This column was identified through query analysis.",
 		worstTable, recommendedColumn,
 	)
 
 	detection.ActionType = "create_index"
 	detection.ActionMetadata = map[string]interface{}{
-		"table_name":  worstTable,
-		"column_name": recommendedColumn,
-		"priority":    "high",
+		"table_name":    worstTable,
+		"column_name":   recommendedColumn,
+		"database_type": snapshot.DatabaseType,
+		"priority":      "high",
 	}
 
 	return detection
+}
+
+// findLabelBySuffix searches for a label ending with the given suffix.
+// Returns the prefix (e.g., "pg", "mysql") and the value.
+func findLabelBySuffix(labels map[string]string, suffix string) (string, string) {
+	for key, value := range labels {
+		if strings.HasSuffix(key, "."+suffix) {
+			// Extract prefix (everything before the last dot + suffix)
+			prefix := strings.TrimSuffix(key, "."+suffix)
+			return prefix, value
+		}
+	}
+	return "", ""
 }
 
 func (d *MissingIndexDetector) SetThreshold(threshold int32) {

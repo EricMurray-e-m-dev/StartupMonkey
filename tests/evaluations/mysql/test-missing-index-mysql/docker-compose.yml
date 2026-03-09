@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - --performance_schema=ON
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./app
+    ports:
+      - "4001:4001"
+    environment:
+      DATABASE_URL: mysql://testuser:testpass@mysql:3306/testdb
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped

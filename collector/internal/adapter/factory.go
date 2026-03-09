@@ -6,6 +6,8 @@ func NewAdapter(adapterType string, connectionString string, databaseID string) 
 	switch adapterType {
 	case "postgres", "postgresql":
 		return NewPostgresAdapter(connectionString, databaseID), nil
+	case "mysql", "mariadb":
+		return NewMySQLAdapter(connectionString, databaseID), nil
 	default:
 		return nil, ErrUnsupportedDatabase
 	}
