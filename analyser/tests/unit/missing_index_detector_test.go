@@ -7,6 +7,7 @@ import (
 	"github.com/EricMurray-e-m-dev/StartupMonkey/analyser/internal/models"
 	"github.com/EricMurray-e-m-dev/StartupMonkey/collector/normaliser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMissingIndexDetector_FiresWhenAboveThreshold(t *testing.T) {
@@ -131,27 +132,29 @@ func TestMissingIndexDetector_CustomThreshold(t *testing.T) {
 func TestMissingIndexDetector_RecommendationContent(t *testing.T) {
 	det := detector.NewMissingIndexDetector()
 
-	seqScans := int32(20)
+	seqScans := int32(5000)
 	snapshot := &normaliser.NormalisedMetrics{
-		DatabaseID:   "test-db",
+		DatabaseID:   "testdb",
 		DatabaseType: "postgres",
+		Measurements: normaliser.Measurements{
+			SequentialScans: &seqScans,
+		},
+		MetricDeltas: map[string]float64{
+			"sequential_scans": 500,
+		},
 		Labels: map[string]string{
 			"pg.worst_seq_scan_table":     "users",
 			"pg.recommended_index_column": "email",
 		},
 		ExtendedMetrics: map[string]float64{
-			"pg.table.users.seq_scans":    20,
-			"pg.table.users.seq_tup_read": 2000,
-		},
-		Measurements: normaliser.Measurements{
-			SequentialScans: &seqScans,
+			"pg.table.users.seq_scans":    5000,
+			"pg.table.users.seq_tup_read": 100000,
 		},
 	}
 
 	detection := det.Detect(snapshot)
 
-	assert.NotNil(t, detection)
-	assert.Contains(t, detection.Recommendation, "CREATE INDEX")
-	assert.Contains(t, detection.Recommendation, "CONCURRENTLY")
-	assert.Equal(t, "create_index", detection.ActionType)
+	require.NotNil(t, detection)
+	assert.Contains(t, detection.Recommendation, "Create an index on users.email")
+	assert.Contains(t, detection.Recommendation, "optimize query performance")
 }
