@@ -47,6 +47,11 @@ const CONNECTION_STRING_CONFIG: Record<string, { prefixes: string[]; placeholder
         placeholder: 'mysql://user:password@host:3306/database',
         description: 'Your MySQL connection string',
     },
+    mongodb: {
+        prefixes: ['mongodb://', 'mongodb+srv://'],
+        placeholder: 'mongodb://user:password@host:27017/database?authSource=admin',
+        description: 'Your MongoDB connection string',
+    },
 };
 
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
@@ -221,6 +226,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                                     <SelectContent>
                                         <SelectItem value="postgres">PostgreSQL</SelectItem>
                                         <SelectItem value="mysql">MySQL</SelectItem>
+                                        <SelectItem value="mongodb">MongoDB</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

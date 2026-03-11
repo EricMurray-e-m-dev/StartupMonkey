@@ -1,4 +1,4 @@
-v// Switch to testdb
+// Switch to testdb
 db = db.getSiblingDB('testdb');
 
 // Create application user
