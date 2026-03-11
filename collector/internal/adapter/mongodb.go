@@ -219,7 +219,7 @@ func (m *MongoDBAdapter) collectCollectionScans(ctx context.Context, metrics *Ra
 			if len(parts) >= 2 {
 				collName := parts[len(parts)-1]
 				metrics.Labels["mongodb.worst_seq_scan_table"] = collName
-				metrics.ExtendedMetrics[fmt.Sprintf("mongodb.collection.%s.seq_scans", collName)] = float64(result.Count)
+				metrics.ExtendedMetrics[fmt.Sprintf("mongodb.table.%s.seq_scans", collName)] = float64(result.Count)
 
 				m.identifyMissingIndex(ctx, collName, metrics)
 			}
@@ -279,8 +279,8 @@ func (m *MongoDBAdapter) collectCollectionScansFromCollStats(ctx context.Context
 				worstCollection = collName
 			}
 
-			metrics.ExtendedMetrics[fmt.Sprintf("mongodb.collection.%s.seq_scans", collName)] = float64(scanEstimate)
-			metrics.ExtendedMetrics[fmt.Sprintf("mongodb.collection.%s.idx_scans", collName)] = float64(totalIndexAccesses)
+			metrics.ExtendedMetrics[fmt.Sprintf("mongodb.table.%s.seq_scans", collName)] = float64(scanEstimate)
+			metrics.ExtendedMetrics[fmt.Sprintf("mongodb.table.%s.idx_scans", collName)] = float64(totalIndexAccesses)
 		}
 	}
 
