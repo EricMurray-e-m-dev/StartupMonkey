@@ -16,6 +16,8 @@ func NewNormaliser(databaseType string) Normaliser {
 		return NewPostgresNormaliser()
 	case "mysql", "mariadb":
 		return NewMySQLNormaliser()
+	case "mongo", "mongodb":
+		return NewMongoDBNormaliser()
 	default:
 		return nil
 	}
