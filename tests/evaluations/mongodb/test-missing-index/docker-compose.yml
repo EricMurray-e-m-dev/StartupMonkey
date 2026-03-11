@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb-test
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
+      MONGO_INITDB_DATABASE: testdb
+    volumes:
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    command: ["mongod", "--profile", "2", "--slowms", "100"]
+    # --profile 2 = log all operations
+    # --slowms 100 = threshold for slow query logging
+
+  load-generator:
+    build: ./app
+    container_name: mongodb-load-generator
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://testuser:testpass@mongodb:27017/testdb?authSource=testdb
+    restart: unless-stopped
