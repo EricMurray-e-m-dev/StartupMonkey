@@ -8,6 +8,8 @@ func NewAdapter(adapterType string, connectionString string, databaseID string) 
 		return NewPostgresAdapter(connectionString, databaseID), nil
 	case "mysql", "mariadb":
 		return NewMySQLAdapter(connectionString, databaseID), nil
+	case "mongodb", "mongo":
+		return NewMongoDBAdapter(connectionString, databaseID), nil
 	default:
 		return nil, ErrUnsupportedDatabase
 	}

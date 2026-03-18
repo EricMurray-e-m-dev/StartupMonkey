@@ -13,6 +13,8 @@ func NewAdapter(ctx context.Context, databaseType, connectionString, databaseID 
 		return NewPostgresAdapter(ctx, connectionString, databaseID)
 	case "mysql", "mariadb":
 		return NewMySQLAdapter(ctx, connectionString, databaseID)
+	case "mongo", "mongodb":
+		return NewMongoDBAdapter(ctx, connectionString, databaseID)
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", databaseType)
 	}
