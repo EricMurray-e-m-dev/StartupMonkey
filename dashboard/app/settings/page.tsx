@@ -72,6 +72,12 @@ const WEBHOOK_EVENTS = [
     { id: "action.rolledback", label: "Action Rolled Back" },
 ];
 
+const CONNECTION_STRING_PLACEHOLDERS: Record<string, string> = {
+    postgres: "postgresql://user:password@host:5432/database",
+    mysql: "mysql://user:password@host:3306/database",
+    mongodb: "mongodb://user:password@host:27017/database?authSource=admin",
+};
+
 const EMPTY_DATABASE: DatabaseEntry = {
     database_id: "",
     database_name: "",
@@ -181,6 +187,14 @@ export default function SettingsPage() {
             ...prev,
             database_name: name,
             database_id: editingDatabase ? prev.database_id : generateDatabaseId(name),
+        }));
+    };
+
+    const handleDatabaseTypeChange = (type: string) => {
+        setDatabaseForm(prev => ({
+            ...prev,
+            database_type: type,
+            connection_string: editingDatabase ? prev.connection_string : '',
         }));
     };
 
@@ -519,9 +533,7 @@ export default function SettingsPage() {
                             <Label htmlFor="dialog-db-type">Database Type</Label>
                             <Select
                                 value={databaseForm.database_type}
-                                onValueChange={(value) =>
-                                    setDatabaseForm((prev) => ({ ...prev, database_type: value }))
-                                }
+                                onValueChange={handleDatabaseTypeChange}
                                 disabled={!!editingDatabase}
                             >
                                 <SelectTrigger>
@@ -529,7 +541,8 @@ export default function SettingsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="postgres">PostgreSQL</SelectItem>
-                                    <SelectItem value="mysql" disabled>MySQL (coming soon)</SelectItem>
+                                    <SelectItem value="mysql">MySQL</SelectItem>
+                                    <SelectItem value="mongodb">MongoDB</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -539,7 +552,7 @@ export default function SettingsPage() {
                             <Input
                                 id="dialog-conn-string"
                                 type="password"
-                                placeholder="postgresql://user:password@host:5432/database"
+                                placeholder={CONNECTION_STRING_PLACEHOLDERS[databaseForm.database_type] || CONNECTION_STRING_PLACEHOLDERS.postgres}
                                 value={databaseForm.connection_string}
                                 onChange={(e) =>
                                     setDatabaseForm((prev) => ({ ...prev, connection_string: e.target.value }))
