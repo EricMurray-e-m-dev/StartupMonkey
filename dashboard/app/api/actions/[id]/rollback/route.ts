@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const COLLECTOR_URL = process.env.COLLECTOR_URL || "http://localhost:3001";
+const EXECUTOR_URL = process.env.EXECUTOR_URL || "http://localhost:8084";
 
 export async function POST(
     request: NextRequest,
@@ -9,7 +9,9 @@ export async function POST(
     try {
         const { id } = await params;
 
-        const response = await fetch(`${COLLECTOR_URL}/actions/${id}/rollback`, {
+        console.log(`Rolling back action: ${id}`);
+
+        const response = await fetch(`${EXECUTOR_URL}/api/actions/${id}/rollback`, {
             method: "POST",
         });
 
