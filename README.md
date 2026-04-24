@@ -1,6 +1,9 @@
 # StartupMonkey
 
-Autonomous database performance optimisation system for early-stage startups and solo developers.
+Autonomous database performance optimisation system for early-stage startups and solo developers.  
+
+
+(Screencast is available towards the bottom)
 
 ![Build](https://github.com/EricMurray-e-m-dev/StartupMonkey/actions/workflows/on-commit.yml/badge.svg)
 ![Tests](https://github.com/EricMurray-e-m-dev/StartupMonkey/actions/workflows/integration-tests.yml/badge.svg)
@@ -98,6 +101,11 @@ go test ./... -v
 ## Documentation
 
 See the [Wiki](https://github.com/EricMurray-e-m-dev/StartupMonkey/wiki) for detailed documentation.
+
+## Screencast / Demo
+
+For academics -> watch the full system demonstration: [StartupMonkey Screencast](https://www.youtube.com/watch?v=BTfmA6_T7tY)
+
 
 ## Limitations
 
