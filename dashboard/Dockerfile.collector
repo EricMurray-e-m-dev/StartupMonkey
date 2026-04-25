@@ -3,16 +3,19 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY dashboard/package*.json ./
 
 # Install dependencies
 RUN npm ci --only=production
 
 # Copy collector script
-COPY lib/collector.js ./lib/
+COPY dashboard/lib/collector.js ./lib/
 
 # Copy stores directory
-COPY stores/ ./stores/
+COPY dashboard/stores/ ./stores/
+
+# Copy proto files
+COPY proto/ /proto/
 
 EXPOSE 3001
 

@@ -49,8 +49,8 @@ services:
       - REDIS_ADDR=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     ports:
-      - "0:50053"   # gRPC
-      - "0:8083"    # Health check
+      - "0:50053"
+      - "0:8083"
     depends_on:
       redis:
         condition: service_healthy
@@ -74,10 +74,11 @@ services:
       - DATABASE_ID=${DATABASE_ID:-docker-test-db}
       - DATABASE_NAME=${POSTGRES_DB:-testdb}
       - ANALYSER_ADDRESS=analyser:50051
-      - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-30s}
+      - KNOWLEDGE_ADDRESS=knowledge:50053
+      - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-10s}
       - NATS_URL=nats://nats:4222
     ports:
-      - "0:8080"    # Health check
+      - "0:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,8 +102,8 @@ services:
       - NATS_URL=nats://nats:4222
       - KNOWLEDGE_ADDRESS=knowledge:50053
     ports:
-      - "0:50051"   # gRPC
-      - "0:8081"    # Health check
+      - "0:50051"
+      - "0:8081"
     depends_on:
       nats:
         condition: service_started
@@ -127,9 +128,9 @@ services:
       - KNOWLEDGE_ADDRESS=knowledge:50053
       - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-testdb}?sslmode=disable
     ports:
-      - "0:50052"   # gRPC
-      - "0:8082"    # Health check
-      - "0:8084"    # HTTP API (rollback)
+      - "0:50052"
+      - "0:8082"
+      - "0:8084"
     depends_on:
       nats:
         condition: service_started
@@ -152,15 +153,18 @@ services:
   # Dashboard Services
   dashboard-collector:
     build:
-      context: ./dashboard
-      dockerfile: Dockerfile.collector
+      context: .
+      dockerfile: dashboard/Dockerfile.collector
     environment:
       - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
     ports:
       - "0:3001"
     depends_on:
       nats:
         condition: service_started
+      knowledge:
+        condition: service_healthy
     networks:
       - startupmonkey
     restart: unless-stopped
@@ -174,7 +178,7 @@ services:
       - NEXT_PUBLIC_COLLECTOR_URL=http://dashboard-collector:3001
       - EXECUTOR_HTTP_URL=http://executor:8084
     ports:
-      - "3000:3000"   # Fixed port for easy access
+      - "3000:3000"
     depends_on:
       dashboard-collector:
         condition: service_started

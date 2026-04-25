@@ -57,10 +57,13 @@ services:
       - DATABASE_ID=${DATABASE_ID:-user-database}
       - DATABASE_NAME=${DATABASE_NAME:-database}
       - ANALYSER_ADDRESS=analyser:50051
+      - KNOWLEDGE_ADDRESS=knowledge:50053
       - COLLECTION_INTERVAL=${COLLECTION_INTERVAL:-30s}
       - NATS_URL=nats://nats:4222
     depends_on:
       analyser:
+        condition: service_healthy
+      knowledge:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
@@ -120,9 +123,12 @@ services:
     image: ghcr.io/ericmurray-e-m-dev/startupmonkey/dashboard-collector:latest
     environment:
       - NATS_URL=nats://nats:4222
+      - KNOWLEDGE_ADDRESS=knowledge:50053
     depends_on:
       nats:
         condition: service_started
+      knowledge:
+        condition: service_healthy
     networks:
       - startupmonkey
     restart: unless-stopped
